@@ -63,11 +63,44 @@
   <!-- ============================ LOBBY ============================ -->
   <section id="p-lobby" class="phase-screen hidden">
     <div class="wrap">
-      <p class="eyebrow">Room code</p>
-      <div id="lobbyCode" class="room-code-huge" data-ph-mask>······</div>
-      <p id="lobbyMode" class="muted-note"></p>
+      <div class="lobby-head">
+        <p class="eyebrow">Room code — share it to join</p>
+        <div class="room-code-block">
+          <div id="lobbyCode" class="room-code-huge" data-ph-mask>······</div>
+        </div>
+      </div>
+
+      <!-- Owner-directed feature: remind the host to put the reveal on a TV.
+           JS (renderLobby) sets data-role (host|guest) and data-state
+           (waiting|connected); CSS switches the layout between them. -->
+      <div id="lobbyTv" class="tv-connect" data-role="host" data-state="waiting">
+        <span class="tv-connect-glyph" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="13" rx="2" />
+            <path d="M8 21h8M12 17v4" />
+          </svg>
+        </span>
+        <div class="tv-connect-body">
+          <p class="tv-connect-title">Connect to the TV</p>
+          <p class="tv-connect-copy">The reveal is best on the big screen, so the
+            whole couch can watch the flag sharpen. Set it up in two steps:</p>
+          <ol class="tv-connect-steps">
+            <li>On the TV, open <span class="tv-connect-url">screen.html</span></li>
+            <li>Enter this room code:
+              <strong id="lobbyTvCode" class="tv-connect-code" data-ph-mask>······</strong></li>
+          </ol>
+          <p class="tv-connect-hint">Playing on a TV? Open
+            <span class="tv-connect-url">screen.html</span> there and enter the code above.</p>
+          <p class="tv-connect-ok"><strong>TV connected</strong> — eyes up on the big screen.</p>
+        </div>
+      </div>
+
+      <p class="section-label">Who's in</p>
       <ul id="lobbyTeams" class="totals-list" data-ph-mask></ul>
+      <p id="lobbyMode" class="muted-note"></p>
       <div id="lobbyNote" class="waiting-note"></div>
+
       <div class="action-bar">
         <button id="btnLeave" class="btn-ghost">Leave</button>
         <button id="btnStart" class="btn-primary hidden">Start the game</button>

@@ -574,9 +574,24 @@ function render() {
 // ---------------------------------------------------------------------------
 function renderLobby(gs) {
   $("lobbyCode").textContent = code;
-  $("lobbyMode").textContent = screenLive()
-    ? "📺 A TV is connected — eyes up there."
-    : "📱 No TV — the flag reveals on your phone.";
+  const owner = isOwner();
+
+  // TV-connect callout: prominent, actionable card for the host; a quiet hint
+  // for other phones; a calm confirmation once a TV is actually live. The code
+  // is echoed into a masked element so replay never captures it.
+  const tv = $("lobbyTv");
+  if (tv) {
+    $("lobbyTvCode").textContent = code;
+    tv.dataset.role = owner ? "host" : "guest";
+    tv.dataset.state = screenLive() ? "connected" : "waiting";
+  }
+
+  // The mode note now summarises how the game is set up (a Configure detail),
+  // not where the flag renders — the callout above owns the TV story.
+  const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
+  const inputLabel = cfg.inputMode === "choice" ? "Tap-to-choose" : "Type the country";
+  $("lobbyMode").textContent = `${diffLabel} · ${inputLabel}`;
+
   const teams = gs.teams || {};
   const ul = $("lobbyTeams");
   ul.innerHTML = "";
@@ -590,7 +605,6 @@ function renderLobby(gs) {
     li.textContent = `${t.name}${you}${host}`;
     ul.appendChild(li);
   }
-  const owner = isOwner();
   const enough = Object.keys(teams).length >= 1;
   $("btnStart").classList.toggle("hidden", !(owner && enough));
   $("lobbyNote").textContent = owner
