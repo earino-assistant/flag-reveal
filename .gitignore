@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build / generated artifacts
+release.json
+
+# Editor / OS
+.DS_Store
+*.swp
+
+# Agent briefs (never committed — these are internal dispatch scratch)
+.feat-*.md

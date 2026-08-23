@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flag Reveal — the flag-guessing party game</title>
+  <meta name="description" content="Guess the country from a half-revealed flag. Phones in, first correct ring wins. No app, no accounts." />
+  <meta name="theme-color" content="#0E0E12" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Flag Reveal — the flag-guessing party game" />
+  <meta property="og:description" content="Guess the country from a half-revealed flag. Phones in, first correct ring wins." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="landing">
+  <main class="wrap landing-hero">
+    <h1 class="brand"><span class="accent">Flag</span> Reveal</h1>
+    <p class="tagline">A flag sharpens tile by tile. First to ring the right
+      country wins — earlier is worth more.</p>
+
+    <!-- Above the fold: one primary, one secondary. -->
+    <div id="ld-cta" class="ld-panel">
+      <a id="btnStart" class="btn-primary ld-cta-main" href="player.html?create=1">Start a party</a>
+      <button id="btnHaveCode" class="ld-cta-sub" type="button">Have a code? Join</button>
+    </div>
+
+    <!-- One join path. -->
+    <div id="ld-join" class="ld-panel hidden">
+      <div class="join-row">
+        <input id="ldCode" maxlength="6" placeholder="CODE" autocomplete="off"
+               autocapitalize="characters" spellcheck="false" class="code-input" />
+        <button id="btnLdJoin" class="btn-primary" type="button">Join</button>
+      </div>
+      <div id="ldErr" class="join-err"></div>
+      <button id="btnJoinBack" class="btn-ghost" type="button">← Back</button>
+    </div>
+
+    <div class="ld-links">
+      <a href="screen.html">📺 Add a TV</a>
+      <a href="howto.html">How to play</a>
+      <button id="btnPrivacy" class="link-btn" type="button">Privacy</button>
+    </div>
+  </main>
+
+  <script type="module" src="js/consent.js"></script>
+  <script type="module">
+    import { isValidRoomCode } from "./js/roomcode.js";
+    import { track, openBanner } from "./js/consent.js";
+
+    const $ = (id) => document.getElementById(id);
+    $("btnHaveCode").addEventListener("click", () => {
+      $("ld-cta").classList.add("hidden");
+      $("ld-join").classList.remove("hidden");
+      $("ldCode").focus();
+    });
+    $("btnJoinBack").addEventListener("click", () => {
+      $("ld-join").classList.add("hidden");
+      $("ld-cta").classList.remove("hidden");
+    });
+    $("ldCode").addEventListener("input", (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+    const go = () => {
+      const c = ($("ldCode").value || "").trim().toUpperCase();
+      if (!isValidRoomCode(c)) {
+        $("ldErr").textContent = "Enter a 6-letter room code.";
+        return;
+      }
+      track("front_door_join", { mode: "phone" });
+      location.href = "player.html?room=" + c;
+    };
+    $("btnLdJoin").addEventListener("click", go);
+    $("ldCode").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    $("btnStart").addEventListener("click", () => track("front_door_create", { mode: "phone" }));
+    $("btnPrivacy").addEventListener("click", openBanner);
+  </script>
+</body>
+</html>

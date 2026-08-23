@@ -1,0 +1,103 @@
+# GitHub Pages deployment. Mirrors GeoParty's proven green-means-live pattern.
+#
+# Static, no-build: this ONE workflow checks out, runs the same checks CI runs,
+# writes ONE generated file into the upload artifact — release.json — and
+# deploys. Nothing is committed per deploy; a plain checkout simply has no
+# release.json, so the dev loop is unchanged and consent.js stamps
+# release: "dev".
+#
+# ONE branch matters: main. A production deploy runs on a push to main (or a
+# manual workflow_dispatch, which always runs on main).
+#
+# INVARIANT: exactly ONE Pages deploy workflow, this file. A second workflow
+# touching the `pages` concurrency group is the dueling-deploy hazard.
+#
+# GREEN MEANS LIVE: a `verify` job polls the public root release.json after
+# deploy and fails the run unless it stamps THIS run's id and sha.
+#
+# One-time setup by the owner: Settings → Pages → Source = "GitHub Actions".
+name: Deploy to Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax-check all modules
+        run: npm run check
+      - name: Run tests
+        run: npm test
+      - name: Stamp the release
+        run: |
+          node -e '
+            const fs = require("fs");
+            const sha = process.env.GITHUB_SHA || "";
+            fs.writeFileSync("release.json", JSON.stringify({
+              commit: sha,
+              short: sha.slice(0, 7) || "dev",
+              deployed_at: new Date().toISOString(),
+              run: process.env.GITHUB_RUN_ID || "",
+              env: "pages",
+            }) + "\n");
+          '
+          cat release.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Green means live. Poll the PUBLIC root release.json until it stamps this
+  # run's id and sha; fail the run if it never does.
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions: {}
+    steps:
+      - name: Verify the public release stamp activated
+        run: |
+          url="https://earino-assistant.github.io/flag-reveal/release.json"
+          echo "Expecting run=$GITHUB_RUN_ID commit=$GITHUB_SHA at $url"
+          body=""
+          for attempt in $(seq 1 30); do
+            body=$(curl -fsSL "$url?verify=$GITHUB_RUN_ID-$attempt" || true)
+            if printf '%s' "$body" | grep -qF "\"run\":\"$GITHUB_RUN_ID\"" \
+               && printf '%s' "$body" | grep -qF "\"commit\":\"$GITHUB_SHA\""; then
+              echo "Verified: production is publicly serving run $GITHUB_RUN_ID."
+              exit 0
+            fi
+            echo "Attempt $attempt/30: stamp not live yet; sleeping 10s."
+            sleep 10
+          done
+          echo "::error::Public release stamp did not match after 30 attempts (~5 min)."
+          echo "A RED verify means the NEW deployment did not publicly activate."
+          exit 1

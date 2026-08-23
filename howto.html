@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>How to play — Flag Reveal</title>
+  <meta name="description" content="How to play Flag Reveal." />
+  <meta name="theme-color" content="#0E0E12" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="doc">
+  <main class="wrap doc-wrap">
+    <h1 class="brand"><span class="accent">Flag</span> Reveal</h1>
+    <p class="tagline">Guess the country from a half-revealed flag.</p>
+
+    <ol class="howto">
+      <li><strong>Everyone grabs a phone.</strong> One player taps
+        <em>Start a party</em> to make a room; everyone else joins with the
+        6-letter code. Optionally put a TV on the big screen at
+        <code>screen.html</code> (or tap <em>Add a TV</em>).</li>
+      <li><strong>The flag reveals in steps.</strong> A grid of tiles clears and
+        a blur sharpens across 8 steps. The earlier you recognise the country,
+        the more it's worth (1000 at step 1 down to 125 at step 8).</li>
+      <li><strong>Ring in.</strong> Type the country (or, in easy mode, tap one of
+        four choices once they unlock). The <em>first correct ring wins</em> the
+        round. Guess wrong and you're locked out for the round — but nobody sees
+        what you rang until the reveal. 😅</li>
+      <li><strong>Nobody gets it?</strong> The round <em>busts</em> after the flag
+        is fully shown — and the answer is revealed anyway.</li>
+      <li><strong>Highest total after all the flags wins the crown.</strong> The
+        winner hosts the next game.</li>
+    </ol>
+
+    <p><a class="btn-primary" href="index.html">Back to the party</a></p>
+    <p><button id="btnPrivacy" class="link-btn" type="button">Privacy</button></p>
+  </main>
+
+  <script type="module" src="js/consent.js"></script>
+  <script type="module">
+    import { openBanner } from "./js/consent.js";
+    document.getElementById("btnPrivacy").addEventListener("click", openBanner);
+  </script>
+</body>
+</html>

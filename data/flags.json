@@ -1,0 +1,2044 @@
+[
+  {
+    "iso2": "ad",
+    "name": "Andorra",
+    "aliases": [
+      "Principality of Andorra",
+      "Principat d'Andorra"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ae",
+    "name": "United Arab Emirates",
+    "aliases": [
+      "UAE",
+      "Emirates"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "af",
+    "name": "Afghanistan",
+    "aliases": [
+      "Afġānistān"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ag",
+    "name": "Antigua and Barbuda",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "al",
+    "name": "Albania",
+    "aliases": [
+      "Shqipëri",
+      "Shqipëria",
+      "Shqipnia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "am",
+    "name": "Armenia",
+    "aliases": [
+      "Hayastan",
+      "Republic of Armenia",
+      "Հայաստանի Հանրապետություն"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ao",
+    "name": "Angola",
+    "aliases": [
+      "República de Angola",
+      "ʁɛpublika de an'ɡɔla"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ar",
+    "name": "Argentina",
+    "aliases": [
+      "Argentine Republic",
+      "República Argentina"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "at",
+    "name": "Austria",
+    "aliases": [
+      "Osterreich",
+      "Oesterreich"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "au",
+    "name": "Australia",
+    "aliases": [],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "az",
+    "name": "Azerbaijan",
+    "aliases": [
+      "Republic of Azerbaijan",
+      "Azərbaycan Respublikası"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ba",
+    "name": "Bosnia and Herzegovina",
+    "aliases": [
+      "Bosnia-Herzegovina",
+      "Босна и Херцеговина"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "bb",
+    "name": "Barbados",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bd",
+    "name": "Bangladesh",
+    "aliases": [
+      "People's Republic of Bangladesh",
+      "Gônôprôjatôntri Bangladesh"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "be",
+    "name": "Belgium",
+    "aliases": [
+      "België",
+      "Belgie",
+      "Belgien",
+      "Belgique",
+      "Kingdom of Belgium",
+      "Koninkrijk België",
+      "Royaume de Belgique",
+      "Königreich Belgien"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "bf",
+    "name": "Burkina Faso",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bg",
+    "name": "Bulgaria",
+    "aliases": [
+      "Republic of Bulgaria",
+      "Република България"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "bh",
+    "name": "Bahrain",
+    "aliases": [
+      "Kingdom of Bahrain",
+      "Mamlakat al-Baḥrayn"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "bi",
+    "name": "Burundi",
+    "aliases": [
+      "Republic of Burundi",
+      "Republika y'Uburundi",
+      "République du Burundi"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bj",
+    "name": "Benin",
+    "aliases": [
+      "Republic of Benin",
+      "République du Bénin"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bm",
+    "name": "Bermuda",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "bn",
+    "name": "Brunei",
+    "aliases": [
+      "Brunei Darussalam",
+      "Nation of Brunei",
+      "the Abode of Peace"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bo",
+    "name": "Bolivia",
+    "aliases": [
+      "Buliwya",
+      "Wuliwya",
+      "Bolivia, Plurinational State of",
+      "Plurinational State of Bolivia",
+      "Estado Plurinacional de Bolivia",
+      "Buliwya Mamallaqta",
+      "Wuliwya Suyu",
+      "Tetã Volívia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "br",
+    "name": "Brazil",
+    "aliases": [
+      "Brasil",
+      "Federative Republic of Brazil",
+      "República Federativa do Brasil"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "bs",
+    "name": "Bahamas",
+    "aliases": [
+      "Commonwealth of the Bahamas"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bt",
+    "name": "Bhutan",
+    "aliases": [
+      "Kingdom of Bhutan"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "bw",
+    "name": "Botswana",
+    "aliases": [
+      "Republic of Botswana",
+      "Lefatshe la Botswana"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "by",
+    "name": "Belarus",
+    "aliases": [
+      "Bielaruś",
+      "Republic of Belarus",
+      "Белоруссия",
+      "Республика Белоруссия"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "bz",
+    "name": "Belize",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ca",
+    "name": "Canada",
+    "aliases": [],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "cd",
+    "name": "DR Congo",
+    "aliases": [
+      "Congo-Kinshasa",
+      "Congo, the Democratic Republic of the",
+      "Democratic Republic of Congo",
+      "DRC"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "cf",
+    "name": "Central African Republic",
+    "aliases": [
+      "République centrafricaine"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "cg",
+    "name": "Congo",
+    "aliases": [
+      "Congo-Brazzaville"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ch",
+    "name": "Switzerland",
+    "aliases": [
+      "Swiss Confederation",
+      "Schweiz",
+      "Suisse",
+      "Svizzera",
+      "Svizra"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "ci",
+    "name": "Ivory Coast",
+    "aliases": [
+      "Côte d'Ivoire",
+      "Cote d'Ivoire",
+      "Republic of Côte d'Ivoire",
+      "République de Côte d'Ivoire"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "cl",
+    "name": "Chile",
+    "aliases": [
+      "Republic of Chile",
+      "República de Chile"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "cm",
+    "name": "Cameroon",
+    "aliases": [
+      "Republic of Cameroon",
+      "République du Cameroun"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "cn",
+    "name": "China",
+    "aliases": [
+      "Zhōngguó",
+      "Zhongguo",
+      "Zhonghua",
+      "People's Republic of China",
+      "中华人民共和国",
+      "Zhōnghuá Rénmín Gònghéguó"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "co",
+    "name": "Colombia",
+    "aliases": [
+      "Republic of Colombia",
+      "República de Colombia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "cr",
+    "name": "Costa Rica",
+    "aliases": [
+      "Republic of Costa Rica",
+      "República de Costa Rica"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "cu",
+    "name": "Cuba",
+    "aliases": [
+      "Republic of Cuba",
+      "República de Cuba"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "cv",
+    "name": "Cape Verde",
+    "aliases": [
+      "Republic of Cabo Verde",
+      "República de Cabo Verde"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "cy",
+    "name": "Cyprus",
+    "aliases": [
+      "Kýpros",
+      "Kıbrıs",
+      "Republic of Cyprus",
+      "Κυπριακή Δημοκρατία",
+      "Kıbrıs Cumhuriyeti"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "cz",
+    "name": "Czechia",
+    "aliases": [
+      "Česká republika",
+      "Česko"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "de",
+    "name": "Germany",
+    "aliases": [
+      "Federal Republic of Germany",
+      "Bundesrepublik Deutschland"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "dj",
+    "name": "Djibouti",
+    "aliases": [
+      "Jabuuti",
+      "Gabuuti",
+      "Republic of Djibouti",
+      "République de Djibouti",
+      "Gabuutih Ummuuno",
+      "Jamhuuriyadda Jabuuti"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "dk",
+    "name": "Denmark",
+    "aliases": [
+      "Danmark",
+      "Kingdom of Denmark",
+      "Kongeriget Danmark"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "dm",
+    "name": "Dominica",
+    "aliases": [
+      "Dominique",
+      "Wai‘tu kubuli",
+      "Commonwealth of Dominica"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "do",
+    "name": "Dominican Republic",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "dz",
+    "name": "Algeria",
+    "aliases": [
+      "Dzayer",
+      "Algérie"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ec",
+    "name": "Ecuador",
+    "aliases": [
+      "Republic of Ecuador",
+      "República del Ecuador"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ee",
+    "name": "Estonia",
+    "aliases": [
+      "Eesti",
+      "Republic of Estonia",
+      "Eesti Vabariik"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "eg",
+    "name": "Egypt",
+    "aliases": [
+      "Arab Republic of Egypt"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "er",
+    "name": "Eritrea",
+    "aliases": [
+      "State of Eritrea",
+      "ሃገረ ኤርትራ",
+      "Dawlat Iritriyá",
+      "ʾErtrā",
+      "Iritriyā"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "es",
+    "name": "Spain",
+    "aliases": [
+      "Kingdom of Spain",
+      "Reino de España"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "et",
+    "name": "Ethiopia",
+    "aliases": [
+      "ʾĪtyōṗṗyā",
+      "Federal Democratic Republic of Ethiopia",
+      "የኢትዮጵያ ፌዴራላዊ ዲሞክራሲያዊ ሪፐብሊክ"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "fi",
+    "name": "Finland",
+    "aliases": [
+      "Suomi",
+      "Republic of Finland",
+      "Suomen tasavalta",
+      "Republiken Finland"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "fj",
+    "name": "Fiji",
+    "aliases": [
+      "Viti",
+      "Republic of Fiji",
+      "Matanitu ko Viti",
+      "Fijī Gaṇarājya"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "fm",
+    "name": "Micronesia",
+    "aliases": [
+      "Federated States of Micronesia",
+      "Micronesia, Federated States of"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "fo",
+    "name": "Faroe Islands",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "fr",
+    "name": "France",
+    "aliases": [
+      "French Republic",
+      "République française"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "ga",
+    "name": "Gabon",
+    "aliases": [
+      "Gabonese Republic",
+      "République Gabonaise"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "gb",
+    "name": "United Kingdom",
+    "aliases": [
+      "UK",
+      "Great Britain"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "gd",
+    "name": "Grenada",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ge",
+    "name": "Georgia",
+    "aliases": [
+      "Sakartvelo"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "gh",
+    "name": "Ghana",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "gi",
+    "name": "Gibraltar",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "gl",
+    "name": "Greenland",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "gm",
+    "name": "Gambia",
+    "aliases": [
+      "Republic of the Gambia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "gn",
+    "name": "Guinea",
+    "aliases": [
+      "Republic of Guinea",
+      "République de Guinée"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "gq",
+    "name": "Equatorial Guinea",
+    "aliases": [
+      "Republic of Equatorial Guinea",
+      "República de Guinea Ecuatorial",
+      "République de Guinée équatoriale",
+      "República da Guiné Equatorial"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "gr",
+    "name": "Greece",
+    "aliases": [
+      "Elláda",
+      "Hellenic Republic",
+      "Ελληνική Δημοκρατία"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "gt",
+    "name": "Guatemala",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "gw",
+    "name": "Guinea-Bissau",
+    "aliases": [
+      "Republic of Guinea-Bissau",
+      "República da Guiné-Bissau"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "gy",
+    "name": "Guyana",
+    "aliases": [
+      "Co-operative Republic of Guyana"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "hk",
+    "name": "Hong Kong",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "hn",
+    "name": "Honduras",
+    "aliases": [
+      "Republic of Honduras",
+      "República de Honduras"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "hr",
+    "name": "Croatia",
+    "aliases": [
+      "Hrvatska",
+      "Republic of Croatia",
+      "Republika Hrvatska"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ht",
+    "name": "Haiti",
+    "aliases": [
+      "Republic of Haiti",
+      "République d'Haïti",
+      "Repiblik Ayiti"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "hu",
+    "name": "Hungary",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "id",
+    "name": "Indonesia",
+    "aliases": [
+      "Republic of Indonesia",
+      "Republik Indonesia"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ie",
+    "name": "Ireland",
+    "aliases": [
+      "Éire",
+      "Republic of Ireland",
+      "Poblacht na hÉireann"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "il",
+    "name": "Israel",
+    "aliases": [
+      "State of Israel",
+      "Medīnat Yisrā'el"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "in",
+    "name": "India",
+    "aliases": [
+      "Bhārat",
+      "Republic of India",
+      "Bharat Ganrajya",
+      "இந்தியா"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "iq",
+    "name": "Iraq",
+    "aliases": [
+      "Republic of Iraq",
+      "Jumhūriyyat al-‘Irāq"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ir",
+    "name": "Iran",
+    "aliases": [
+      "Islamic Republic of Iran",
+      "Iran, Islamic Republic of",
+      "Jomhuri-ye Eslāmi-ye Irān"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "is",
+    "name": "Iceland",
+    "aliases": [
+      "Island",
+      "Republic of Iceland",
+      "Lýðveldið Ísland"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "it",
+    "name": "Italy",
+    "aliases": [
+      "Italian Republic",
+      "Repubblica italiana"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "jm",
+    "name": "Jamaica",
+    "aliases": [],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "jo",
+    "name": "Jordan",
+    "aliases": [
+      "Hashemite Kingdom of Jordan",
+      "al-Mamlakah al-Urdunīyah al-Hāshimīyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "jp",
+    "name": "Japan",
+    "aliases": [
+      "Nippon",
+      "Nihon"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "ke",
+    "name": "Kenya",
+    "aliases": [
+      "Republic of Kenya",
+      "Jamhuri ya Kenya"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "kg",
+    "name": "Kyrgyzstan",
+    "aliases": [
+      "Киргизия",
+      "Kyrgyz Republic",
+      "Кыргыз Республикасы",
+      "Kyrgyz Respublikasy"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "kh",
+    "name": "Cambodia",
+    "aliases": [
+      "Kingdom of Cambodia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ki",
+    "name": "Kiribati",
+    "aliases": [
+      "Republic of Kiribati",
+      "Ribaberiki Kiribati"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "km",
+    "name": "Comoros",
+    "aliases": [
+      "Union of the Comoros",
+      "Union des Comores",
+      "Udzima wa Komori",
+      "al-Ittiḥād al-Qumurī"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "kn",
+    "name": "Saint Kitts and Nevis",
+    "aliases": [
+      "Federation of Saint Christopher and Nevis"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "kp",
+    "name": "North Korea",
+    "aliases": [
+      "Democratic People's Republic of Korea",
+      "DPRK",
+      "조선민주주의인민공화국",
+      "Chosŏn Minjujuŭi Inmin Konghwaguk",
+      "Korea, Democratic People's Republic of",
+      "북한",
+      "북조선"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "kr",
+    "name": "South Korea",
+    "aliases": [
+      "Korea, Republic of",
+      "Republic of Korea",
+      "남한",
+      "남조선"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "kw",
+    "name": "Kuwait",
+    "aliases": [
+      "State of Kuwait",
+      "Dawlat al-Kuwait"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "kz",
+    "name": "Kazakhstan",
+    "aliases": [
+      "Qazaqstan",
+      "Казахстан",
+      "Republic of Kazakhstan",
+      "Қазақстан Республикасы",
+      "Qazaqstan Respublïkası",
+      "Республика Казахстан",
+      "Respublika Kazakhstan"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "la",
+    "name": "Laos",
+    "aliases": [
+      "Lao",
+      "Lao People's Democratic Republic",
+      "Sathalanalat Paxathipatai Paxaxon Lao"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "lb",
+    "name": "Lebanon",
+    "aliases": [
+      "Lebanese Republic",
+      "Al-Jumhūrīyah Al-Libnānīyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "lc",
+    "name": "Saint Lucia",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "li",
+    "name": "Liechtenstein",
+    "aliases": [
+      "Principality of Liechtenstein",
+      "Fürstentum Liechtenstein"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "lk",
+    "name": "Sri Lanka",
+    "aliases": [
+      "ilaṅkai",
+      "Democratic Socialist Republic of Sri Lanka"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "lr",
+    "name": "Liberia",
+    "aliases": [
+      "Republic of Liberia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ls",
+    "name": "Lesotho",
+    "aliases": [
+      "Kingdom of Lesotho",
+      "Muso oa Lesotho"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "lt",
+    "name": "Lithuania",
+    "aliases": [
+      "Republic of Lithuania",
+      "Lietuvos Respublika"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "lu",
+    "name": "Luxembourg",
+    "aliases": [
+      "Grand Duchy of Luxembourg",
+      "Grand-Duché de Luxembourg",
+      "Großherzogtum Luxemburg",
+      "Groussherzogtum Lëtzebuerg"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "lv",
+    "name": "Latvia",
+    "aliases": [
+      "Republic of Latvia",
+      "Latvijas Republika"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ly",
+    "name": "Libya",
+    "aliases": [
+      "State of Libya",
+      "Dawlat Libya"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ma",
+    "name": "Morocco",
+    "aliases": [
+      "Kingdom of Morocco",
+      "Al-Mamlakah al-Maġribiyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mc",
+    "name": "Monaco",
+    "aliases": [
+      "Principality of Monaco",
+      "Principauté de Monaco"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "md",
+    "name": "Moldova",
+    "aliases": [
+      "Moldova, Republic of",
+      "Republic of Moldova",
+      "Republica Moldova"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "me",
+    "name": "Montenegro",
+    "aliases": [
+      "Crna Gora"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mg",
+    "name": "Madagascar",
+    "aliases": [
+      "Republic of Madagascar",
+      "Repoblikan'i Madagasikara",
+      "République de Madagascar"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mh",
+    "name": "Marshall Islands",
+    "aliases": [
+      "Republic of the Marshall Islands",
+      "Aolepān Aorōkin M̧ajeļ"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "mk",
+    "name": "North Macedonia",
+    "aliases": [
+      "The former Yugoslav Republic of Macedonia",
+      "Republic of North Macedonia",
+      "Macedonia, The Former Yugoslav Republic of",
+      "Република Северна Македонија",
+      "Macedonia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ml",
+    "name": "Mali",
+    "aliases": [
+      "Republic of Mali",
+      "République du Mali"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "mm",
+    "name": "Myanmar",
+    "aliases": [
+      "Burma",
+      "Republic of the Union of Myanmar",
+      "Pyidaunzu Thanmăda Myăma Nainngandaw"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mn",
+    "name": "Mongolia",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mr",
+    "name": "Mauritania",
+    "aliases": [
+      "Islamic Republic of Mauritania",
+      "al-Jumhūriyyah al-ʾIslāmiyyah al-Mūrītāniyyah"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "mt",
+    "name": "Malta",
+    "aliases": [
+      "Republic of Malta",
+      "Repubblika ta' Malta"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mu",
+    "name": "Mauritius",
+    "aliases": [
+      "Republic of Mauritius",
+      "République de Maurice"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mv",
+    "name": "Maldives",
+    "aliases": [
+      "Maldive Islands",
+      "Republic of the Maldives",
+      "Dhivehi Raajjeyge Jumhooriyya"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "mw",
+    "name": "Malawi",
+    "aliases": [
+      "Republic of Malawi"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "mx",
+    "name": "Mexico",
+    "aliases": [
+      "Mexicanos",
+      "United Mexican States",
+      "Estados Unidos Mexicanos"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "my",
+    "name": "Malaysia",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "mz",
+    "name": "Mozambique",
+    "aliases": [
+      "Republic of Mozambique",
+      "República de Moçambique"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "na",
+    "name": "Namibia",
+    "aliases": [
+      "Namibië",
+      "Republic of Namibia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ne",
+    "name": "Niger",
+    "aliases": [
+      "Nijar"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ng",
+    "name": "Nigeria",
+    "aliases": [
+      "Nijeriya",
+      "Naíjíríà",
+      "Federal Republic of Nigeria"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "ni",
+    "name": "Nicaragua",
+    "aliases": [
+      "Republic of Nicaragua",
+      "República de Nicaragua"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "nl",
+    "name": "Netherlands",
+    "aliases": [
+      "Holland",
+      "Nederland",
+      "The Netherlands"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "no",
+    "name": "Norway",
+    "aliases": [
+      "Norge",
+      "Noreg",
+      "Kingdom of Norway",
+      "Kongeriket Norge",
+      "Kongeriket Noreg"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "np",
+    "name": "Nepal",
+    "aliases": [
+      "Federal Democratic Republic of Nepal",
+      "Loktāntrik Ganatantra Nepāl"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "nr",
+    "name": "Nauru",
+    "aliases": [
+      "Naoero",
+      "Pleasant Island",
+      "Republic of Nauru",
+      "Ripublik Naoero"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "nz",
+    "name": "New Zealand",
+    "aliases": [
+      "Aotearoa"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "om",
+    "name": "Oman",
+    "aliases": [
+      "Sultanate of Oman",
+      "Salṭanat ʻUmān"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pa",
+    "name": "Panama",
+    "aliases": [
+      "Republic of Panama",
+      "República de Panamá"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pe",
+    "name": "Peru",
+    "aliases": [
+      "Republic of Peru",
+      "República del Perú"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pg",
+    "name": "Papua New Guinea",
+    "aliases": [
+      "Independent State of Papua New Guinea",
+      "Independen Stet bilong Papua Niugini"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ph",
+    "name": "Philippines",
+    "aliases": [
+      "Republic of the Philippines",
+      "Repúblika ng Pilipinas"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pk",
+    "name": "Pakistan",
+    "aliases": [
+      "Pākistān",
+      "Islamic Republic of Pakistan",
+      "Islāmī Jumhūriya'eh Pākistān"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pl",
+    "name": "Poland",
+    "aliases": [
+      "Republic of Poland",
+      "Rzeczpospolita Polska"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "pr",
+    "name": "Puerto Rico",
+    "aliases": [],
+    "tier": "world",
+    "eligible": false
+  },
+  {
+    "iso2": "ps",
+    "name": "Palestine",
+    "aliases": [
+      "Palestine, State of",
+      "State of Palestine",
+      "Dawlat Filasṭin"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "pt",
+    "name": "Portugal",
+    "aliases": [
+      "Portuguesa",
+      "Portuguese Republic",
+      "República Portuguesa"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "pw",
+    "name": "Palau",
+    "aliases": [
+      "Republic of Palau",
+      "Beluu er a Belau"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "py",
+    "name": "Paraguay",
+    "aliases": [
+      "Republic of Paraguay",
+      "República del Paraguay",
+      "Tetã Paraguái"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "qa",
+    "name": "Qatar",
+    "aliases": [
+      "State of Qatar",
+      "Dawlat Qaṭar"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ro",
+    "name": "Romania",
+    "aliases": [
+      "Rumania",
+      "Roumania",
+      "România"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "rs",
+    "name": "Serbia",
+    "aliases": [
+      "Srbija",
+      "Republika Srbija",
+      "Србија",
+      "Република Србија",
+      "Republic of Serbia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ru",
+    "name": "Russia",
+    "aliases": [
+      "Russian Federation",
+      "Российская Федерация"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "rw",
+    "name": "Rwanda",
+    "aliases": [
+      "Republic of Rwanda",
+      "Repubulika y'u Rwanda",
+      "République du Rwanda"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sa",
+    "name": "Saudi Arabia",
+    "aliases": [
+      "Saudi",
+      "Kingdom of Saudi Arabia",
+      "Al-Mamlakah al-‘Arabiyyah as-Su‘ūdiyyah"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "sb",
+    "name": "Solomon Islands",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "sc",
+    "name": "Seychelles",
+    "aliases": [
+      "Republic of Seychelles",
+      "Repiblik Sesel",
+      "République des Seychelles"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "sd",
+    "name": "Sudan",
+    "aliases": [
+      "Republic of the Sudan",
+      "Jumhūrīyat as-Sūdān"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "se",
+    "name": "Sweden",
+    "aliases": [
+      "Kingdom of Sweden",
+      "Konungariket Sverige"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "sg",
+    "name": "Singapore",
+    "aliases": [
+      "Singapura",
+      "Republik Singapura",
+      "新加坡共和国"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "si",
+    "name": "Slovenia",
+    "aliases": [
+      "Republic of Slovenia",
+      "Republika Slovenija"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sk",
+    "name": "Slovakia",
+    "aliases": [
+      "Slovak Republic",
+      "Slovenská republika"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sl",
+    "name": "Sierra Leone",
+    "aliases": [
+      "Republic of Sierra Leone"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sm",
+    "name": "San Marino",
+    "aliases": [
+      "Republic of San Marino",
+      "Repubblica di San Marino"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "sn",
+    "name": "Senegal",
+    "aliases": [
+      "Republic of Senegal",
+      "République du Sénégal"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "so",
+    "name": "Somalia",
+    "aliases": [
+      "aṣ-Ṣūmāl",
+      "Federal Republic of Somalia",
+      "Jamhuuriyadda Federaalka Soomaaliya",
+      "Jumhūriyyat aṣ-Ṣūmāl al-Fiderāliyya"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sr",
+    "name": "Suriname",
+    "aliases": [
+      "Sarnam",
+      "Sranangron",
+      "Republic of Suriname",
+      "Republiek Suriname"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ss",
+    "name": "South Sudan",
+    "aliases": [],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "st",
+    "name": "São Tomé and Príncipe",
+    "aliases": [
+      "Democratic Republic of São Tomé and Príncipe",
+      "Sao Tome and Principe",
+      "República Democrática de São Tomé e Príncipe"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "sv",
+    "name": "El Salvador",
+    "aliases": [
+      "Republic of El Salvador",
+      "República de El Salvador"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sy",
+    "name": "Syria",
+    "aliases": [
+      "Syrian Arab Republic",
+      "Al-Jumhūrīyah Al-ʻArabīyah As-Sūrīyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "sz",
+    "name": "Eswatini",
+    "aliases": [
+      "Swaziland",
+      "weSwatini",
+      "Swatini",
+      "Ngwane",
+      "Kingdom of Eswatini",
+      "Umbuso weSwatini"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "td",
+    "name": "Chad",
+    "aliases": [
+      "Tchad",
+      "Republic of Chad",
+      "République du Tchad"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "tg",
+    "name": "Togo",
+    "aliases": [
+      "Togolese",
+      "Togolese Republic",
+      "République Togolaise"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "th",
+    "name": "Thailand",
+    "aliases": [
+      "Prathet",
+      "Thai",
+      "Kingdom of Thailand",
+      "ราชอาณาจักรไทย",
+      "Ratcha Anachak Thai"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "tj",
+    "name": "Tajikistan",
+    "aliases": [
+      "Toçikiston",
+      "Republic of Tajikistan",
+      "Ҷумҳурии Тоҷикистон",
+      "Çumhuriyi Toçikiston"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "tl",
+    "name": "Timor-Leste",
+    "aliases": [
+      "East Timor",
+      "Timor",
+      "Democratic Republic of Timor-Leste",
+      "República Democrática de Timor-Leste",
+      "Repúblika Demokrátika Timór-Leste",
+      "Timór Lorosa'e",
+      "Timor Lorosae"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "tm",
+    "name": "Turkmenistan",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "tn",
+    "name": "Tunisia",
+    "aliases": [
+      "Republic of Tunisia",
+      "al-Jumhūriyyah at-Tūnisiyyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "to",
+    "name": "Tonga",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "tr",
+    "name": "Türkiye",
+    "aliases": [
+      "Turkiye",
+      "Republic of Turkey",
+      "Türkiye Cumhuriyeti"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "tt",
+    "name": "Trinidad and Tobago",
+    "aliases": [
+      "Republic of Trinidad and Tobago"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "tv",
+    "name": "Tuvalu",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "tz",
+    "name": "Tanzania",
+    "aliases": [
+      "Tanzania, United Republic of",
+      "United Republic of Tanzania",
+      "Jamhuri ya Muungano wa Tanzania"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "ua",
+    "name": "Ukraine",
+    "aliases": [
+      "Ukrayina"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "ug",
+    "name": "Uganda",
+    "aliases": [
+      "Republic of Uganda",
+      "Jamhuri ya Uganda"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "us",
+    "name": "United States",
+    "aliases": [
+      "USA",
+      "United States of America"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "uy",
+    "name": "Uruguay",
+    "aliases": [
+      "Oriental Republic of Uruguay",
+      "República Oriental del Uruguay"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "uz",
+    "name": "Uzbekistan",
+    "aliases": [
+      "Republic of Uzbekistan",
+      "O‘zbekiston Respublikasi",
+      "Ўзбекистон Республикаси"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "va",
+    "name": "Vatican City",
+    "aliases": [
+      "Holy See (Vatican City State)",
+      "Vatican City State",
+      "Vatican",
+      "Stato della Città del Vaticano"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "vc",
+    "name": "Saint Vincent and the Grenadines",
+    "aliases": [],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ve",
+    "name": "Venezuela",
+    "aliases": [
+      "Bolivarian Republic of Venezuela",
+      "Venezuela, Bolivarian Republic of",
+      "República Bolivariana de Venezuela"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "vn",
+    "name": "Vietnam",
+    "aliases": [
+      "Socialist Republic of Vietnam",
+      "Cộng hòa Xã hội chủ nghĩa Việt Nam",
+      "Viet Nam"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "vu",
+    "name": "Vanuatu",
+    "aliases": [
+      "Republic of Vanuatu",
+      "Ripablik blong Vanuatu",
+      "République de Vanuatu"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ws",
+    "name": "Samoa",
+    "aliases": [
+      "Independent State of Samoa",
+      "Malo Saʻoloto Tutoʻatasi o Sāmoa"
+    ],
+    "tier": "expert",
+    "eligible": true
+  },
+  {
+    "iso2": "ye",
+    "name": "Yemen",
+    "aliases": [
+      "Yemeni Republic",
+      "al-Jumhūriyyah al-Yamaniyyah"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "za",
+    "name": "South Africa",
+    "aliases": [
+      "RSA",
+      "Suid-Afrika",
+      "Republic of South Africa"
+    ],
+    "tier": "easy",
+    "eligible": true
+  },
+  {
+    "iso2": "zm",
+    "name": "Zambia",
+    "aliases": [
+      "Republic of Zambia"
+    ],
+    "tier": "world",
+    "eligible": true
+  },
+  {
+    "iso2": "zw",
+    "name": "Zimbabwe",
+    "aliases": [
+      "Republic of Zimbabwe"
+    ],
+    "tier": "world",
+    "eligible": true
+  }
+]

@@ -1,0 +1,28 @@
+Flag Reveal Proprietary License
+
+Copyright © 2026 Eduardo Ariño de la Rubia. All Rights Reserved.
+
+Flag Reveal, including its source code, assets, documentation, data, and
+associated materials (the "Software"), is proprietary software. It is not open
+source.
+
+No permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense, sell, host, provide access to, create derivative works from, or
+otherwise exploit the Software, in whole or in part, except under a separate
+written license signed by Eduardo Ariño de la Rubia.
+
+You may view the Software solely as made available through its public
+repository or deployed service. Viewing does not grant any license or other
+right to use the Software.
+
+Third-party components, services, and dependencies included in or used by the
+Software remain subject to their own applicable license terms. This license
+applies only to the original Flag Reveal materials owned by Eduardo Ariño de la
+Rubia. In particular, the bundled country dataset and flag images are
+distributed under their own terms as documented in `data/ATTRIBUTION.md`.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
