@@ -49,6 +49,12 @@
           <option value="typeahead" selected>Typeahead (type the country)</option>
           <option value="choice">Choice (tap 1 of 4 — for kids)</option>
         </select>
+        <label class="field-label" for="createPace">Round pace</label>
+        <select id="createPace">
+          <option value="chill">Chill — slow reveal, relaxed</option>
+          <option value="classic" selected>Classic — the standard pace</option>
+          <option value="fast">Fast — quick reveal, tense</option>
+        </select>
         <button id="btnCreate" class="btn-primary">Create room</button>
         <div id="createErr" class="join-err"></div>
       </div>
@@ -67,6 +73,10 @@
         <p class="eyebrow">Room code — share it to join</p>
         <div class="room-code-block">
           <div id="lobbyCode" class="room-code-huge" data-ph-mask>······</div>
+          <div class="join-qr">
+            <canvas id="lobbyJoinQr" class="qr-canvas" aria-hidden="true"></canvas>
+            <span class="join-qr-cap">Scan to join</span>
+          </div>
         </div>
       </div>
 
@@ -87,8 +97,11 @@
           <p class="tv-connect-title">Play on the TV</p>
           <div id="lobbyTvCode" class="tv-connect-code" data-ph-mask>······</div>
           <p class="tv-connect-line">Open <span class="tv-connect-url">screen.html</span>
-            on the TV, enter this code.</p>
+            on the TV, enter this code — or scan onto a spare phone.</p>
           <p class="tv-connect-ok">TV connected — eyes up on the big screen.</p>
+        </div>
+        <div class="tv-connect-qr">
+          <canvas id="lobbyTvQr" class="qr-canvas" aria-hidden="true"></canvas>
         </div>
       </div>
 
@@ -156,6 +169,9 @@
       <h1 class="brand">Game over!</h1>
       <div id="goWinner" class="reveal-headline" data-ph-mask>—</div>
       <ul id="goBoard" class="totals-list" data-ph-mask></ul>
+      <div class="go-share-row">
+        <button id="btnShareParty" class="btn-ghost">Share result 📋</button>
+      </div>
       <div class="action-bar">
         <button id="btnNewGame" class="btn-ghost">New game</button>
         <button id="btnPlayAgain" class="btn-primary hidden">Play again (same crew)</button>

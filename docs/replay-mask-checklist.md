@@ -24,6 +24,11 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#resumeCode` — room code in the resume banner → `data-ph-mask`.
 - `#lobbyCode` — the big room code → `data-ph-mask`.
 - `#lobbyTvCode` — room code shown as the hero of the "Play on the TV" callout → `data-ph-mask`.
+- `#lobbyJoinQr`, `#lobbyTvQr` — QR **canvases** (join / TV-connect). A QR is a
+  rendered image, not selectable text, so `maskTextSelector` does not apply and
+  `data-ph-mask` is unnecessary; `captureCanvas: false` (session_recording)
+  already means canvases are never captured into the replay. Left unmasked by
+  design — no text leak.
 - `#lobbyTeams` — team-name list → `data-ph-mask`.
 - `#buzzInput` — typed country guess → `data-ph-mask` (+ `maskAllInputs`).
 - `#buzzSuggest` — typeahead rows reflect the typed query → `data-ph-mask`.
@@ -33,6 +38,22 @@ it carries no personal data), and country names shown at reveal are not identify
 
 ### `screen.html` (TV)
 - `#tvCode` — the room code on the big screen → `data-ph-mask`.
+- `#tvJoinQrCanvas` — the couch-join QR (canvas). Not text; `captureCanvas:
+  false` covers it. No `data-ph-mask` needed.
+
+### `daily.html` (solo Daily Challenge)
+- The Daily is single-device and solo — **no team names, no room codes** are
+  ever rendered. The day number (`#dNum`/`#dDoneScore`), the score, the streak
+  (`#dStreak`/`#dDoneStreak`) and the emoji grid (`#dDoneEmoji`) are all
+  non-identifying aggregates. `#dInput` (typed country guess) is covered by
+  `maskAllInputs`; `#toast` is masked for parity with the other pages.
+  `#dSuggest` reflects the typed query → `data-ph-mask`.
+- The progressive flag itself is the game, carries no personal data, and is not
+  masked (same rule as the party pages).
+
+### `index.html` Daily CTA
+- `#ldDailyStreak` renders a scores-only streak badge (`🔥N` / `done ✓`) — no
+  room code, no team name, nothing to mask.
 - `#tvBoard` — standings with team names → `data-ph-mask`.
 - `#tvBeats` — wrong-ring beats with team names → `data-ph-mask`.
 - `#tvResult` / winner `<strong>` — team name rendered inline is wrapped in a

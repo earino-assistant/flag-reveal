@@ -118,8 +118,30 @@ export const EVENT_SCHEMA = Object.freeze({
   front_door_create: { mode: "string" },
   // A team claimed a slot in the lobby.
   team_joined: { mode: "string", team_count: "int" },
-  // The TV attached (screen.html). via ∈ "typed" | "link".
+  // The TV attached (screen.html). via ∈ "typed" | "link" | "qr".
   screen_joined: { mode: "string", via: "string" },
+
+  // Daily Challenge (solo, single-device). Aggregates only — the day number is
+  // a public counter (Daily #N), never a date-of-play identifier, and no flag
+  // ISO or country name ever rides here.
+  daily_started: { dayNumber: "int" },
+  daily_completed: {
+    dayNumber: "int",
+    score: "int",
+    correct: "int", // rounds named out of DAILY_ROUNDS
+    streak: "int",
+  },
+
+  // A finished result copied/shared. method ∈ "share" | "copy". Never the emoji
+  // grid text, never a country name — only the aggregate score/streak.
+  share_daily: {
+    dayNumber: "int",
+    score: "int",
+    rounds: "int",
+    streak: "int",
+    method: "string",
+  },
+  share_party: { mode: "string", points: "int", method: "string" },
 
   // flag_ring — one per ring, emitted by the RINGING phone (SPEC §12). Dedup
   // downstream on (roundKey, team, correct) to reconstruct ringCount. team is a

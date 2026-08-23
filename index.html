@@ -18,9 +18,13 @@
     <p class="tagline">A flag sharpens tile by tile. First to ring the right
       country wins — earlier is worth more.</p>
 
-    <!-- Above the fold: one primary, one secondary. -->
+    <!-- Above the fold: one primary, a Daily solo lane, one join. -->
     <div id="ld-cta" class="ld-panel">
       <a id="btnStart" class="btn-primary ld-cta-main" href="player.html?create=1">Start a party</a>
+      <a id="btnDaily" class="ld-cta-sub ld-cta-daily" href="daily.html">
+        <span>🚩 Play today's Daily</span>
+        <span id="ldDailyStreak" class="ld-daily-streak hidden"></span>
+      </a>
       <button id="btnHaveCode" class="ld-cta-sub" type="button">Have a code? Join</button>
     </div>
 
@@ -46,8 +50,26 @@
   <script type="module">
     import { isValidRoomCode } from "./js/roomcode.js";
     import { track, openBanner } from "./js/consent.js";
+    import { dailyKey, loadDailyResult, loadLastResult } from "./js/daily.js";
 
     const $ = (id) => document.getElementById(id);
+
+    // Tease a live Daily streak (and "done today ✓") on the landing CTA — a
+    // scores-only badge, no room code, no team name (nothing to mask).
+    try {
+      const store = window.localStorage;
+      const todayKey = dailyKey(new Date());
+      const doneToday = loadDailyResult(store, todayKey);
+      const last = loadLastResult(store);
+      const badge = $("ldDailyStreak");
+      if (doneToday) {
+        badge.textContent = (doneToday.streak || 0) >= 2 ? `done ✓ · 🔥${doneToday.streak}` : "done ✓";
+        badge.classList.remove("hidden");
+      } else if (last && (last.streak || 0) >= 2) {
+        badge.textContent = `🔥${last.streak}`;
+        badge.classList.remove("hidden");
+      }
+    } catch { /* private mode — no badge */ }
     $("btnHaveCode").addEventListener("click", () => {
       $("ld-cta").classList.add("hidden");
       $("ld-join").classList.remove("hidden");

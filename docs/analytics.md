@@ -71,6 +71,22 @@ count of distinct `flag_ring` events sharing a `roundKey`, **de-duplicated on
   reveal tuned so wins land mid-reveal, not at step 1 or only at step 8?
 - **Input mode effect:** contested-ring rate and winning step split by `inputMode`.
 
+## Daily Challenge + share events (v0.2)
+
+All aggregate-only, schema-gated identically. The emoji grid, the flag ISO, and
+country names are **never** sent — only the day counter (a public "Daily #N",
+not a date-of-play) and the score/streak.
+
+| event | props | notes |
+|---|---|---|
+| `daily_started` | `dayNumber:int` | a solo Daily run began |
+| `daily_completed` | `dayNumber:int`, `score:int`, `correct:int`, `streak:int` | run finished; `correct` = flags named of `DAILY_ROUNDS` |
+| `share_daily` | `dayNumber:int`, `score:int`, `rounds:int`, `streak:int`, `method:string` | Daily result copied/shared; `method` ∈ `share` \| `copy` |
+| `share_party` | `mode:string`, `points:int`, `method:string` | game-over result copied/shared |
+
+`screen_joined.via` gains a third value: `qr` (the TV was reached by scanning
+the lobby's TV-connect QR), alongside `typed` and `link`.
+
 ## Other events
 
 `front_door_join`, `front_door_create`, `team_joined`, `screen_joined`,

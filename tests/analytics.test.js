@@ -60,6 +60,51 @@ test("an unknown event is dropped (null)", () => {
   assert.equal(sanitizeEvent("totally_made_up", { x: 1 }), null);
 });
 
+test("the new v0.2 events exist (daily + share)", () => {
+  for (const e of ["daily_started", "daily_completed", "share_daily", "share_party"]) {
+    assert.ok(EVENT_SCHEMA[e], `${e} must be in the schema`);
+  }
+  assert.equal(EVENT_SCHEMA.share_daily.dayNumber, "int");
+  assert.equal(EVENT_SCHEMA.share_party.points, "int");
+});
+
+test("share_daily keeps aggregates, never the emoji grid / a country name", () => {
+  const clean = sanitizeProps(EVENT_SCHEMA.share_daily, {
+    dayNumber: 12,
+    score: 3125,
+    rounds: 4,
+    streak: 3,
+    method: "copy",
+    // hostile extras a careless caller might pass:
+    grid: "🟩🟨🟥",
+    countryName: "France",
+    answerIso: "fr",
+  });
+  assert.deepEqual(clean, {
+    dayNumber: 12,
+    score: 3125,
+    rounds: 4,
+    streak: 3,
+    method: "copy",
+  });
+  assert.ok(!("grid" in clean) && !("countryName" in clean) && !("answerIso" in clean));
+});
+
+test("share_party carries only mode/points/method", () => {
+  const clean = sanitizeProps(EVENT_SCHEMA.share_party, {
+    mode: "phone",
+    points: 4200,
+    method: "share",
+    winner: "The Cartographers",
+  });
+  assert.deepEqual(clean, { mode: "phone", points: 4200, method: "share" });
+});
+
+test("screen_joined accepts via=qr", () => {
+  const clean = sanitizeProps(EVENT_SCHEMA.screen_joined, { mode: "tv", via: "qr" });
+  assert.equal(clean.via, "qr");
+});
+
 test("no coordinate / ISO / country / name / room / guess / answer keys survive", () => {
   // Even if a caller stuffs a payload with forbidden keys, only allowlisted
   // aggregate properties survive. We add the forbidden keys to a schema-shaped

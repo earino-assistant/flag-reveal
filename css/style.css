@@ -591,3 +591,152 @@ body.tv { overflow: hidden; }
   .flag-tile, .flag-img, button { transition: none; }
   #revealFlag.flag-canvas.full, .tv-reveal.flag-canvas.full { animation: none; }
 }
+
+/* ============================ v0.2 additions ============================ */
+
+/* ---- QR joins (lobby + TV connect) ------------------------------------
+ * drawQr paints a fixed-resolution white QR canvas; CSS caps the DISPLAYED
+ * size so the code stays a quiet affordance. The white quiet-zone is baked
+ * into the canvas, so a subtle rounded frame is all we add. */
+.qr-canvas {
+  display: block;
+  width: 128px;
+  height: 128px;
+  border-radius: 10px;
+  background: #fff;
+  image-rendering: pixelated; /* crisp modules when scaled down */
+}
+.join-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.85rem auto 0.1rem;
+}
+.join-qr .qr-canvas { width: 116px; height: 116px; }
+.join-qr-cap {
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+/* The TV-connect callout QR: a third column beside the code + line. */
+.tv-connect { grid-template-columns: auto 1fr auto; }
+.tv-connect-qr {
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+.tv-connect-qr .qr-canvas { width: 84px; height: 84px; border-radius: 8px; }
+.tv-connect[data-role="guest"] .tv-connect-qr .qr-canvas { width: 70px; height: 70px; }
+/* Once the TV is live, the connect QR (like the code) gives way to the "ok". */
+.tv-connect[data-state="connected"] .tv-connect-qr { display: none; }
+
+/* The TV lobby's own couch-join QR (big — read across the room). */
+.tv-join-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+.qr-tv { width: min(38vh, 300px); height: min(38vh, 300px); border-radius: 14px; }
+.tv-join-qr-cap { color: var(--muted); font-size: 1.15rem; text-align: center; margin: 0; }
+
+/* ---- Game-over share row ---- */
+.go-share-row { display: flex; justify-content: center; margin: 0.4rem 0 0.2rem; }
+
+/* ---- Landing Daily CTA ---- */
+.ld-cta-daily {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  text-decoration: none;
+}
+.ld-cta-daily:hover { text-decoration: none; }
+.ld-daily-streak {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: rgba(255, 207, 63, 0.12);
+  border: 1px solid rgba(255, 207, 63, 0.3);
+  border-radius: 999px;
+  padding: 0.1em 0.6em;
+}
+
+/* ============================ Daily Challenge page ============================ */
+.daily-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.2rem 1rem 1.3rem;
+  text-align: center;
+  box-shadow: var(--shadow-1);
+  margin: 0.6rem 0 1.2rem;
+}
+.daily-card-label {
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin: 0 0 0.2rem;
+}
+.daily-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.8rem, 13vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.daily-num.accent { color: var(--accent); }
+.daily-date { color: var(--muted); margin-top: 0.35rem; font-size: 0.95rem; }
+.daily-streak {
+  margin-top: 0.7rem;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.daily-rules { color: var(--muted); line-height: 1.55; max-width: 40ch; margin: 0 auto 1rem; }
+.daily-rules strong { color: var(--fg); }
+.daily-emoji {
+  font-size: 2rem;
+  letter-spacing: 0.18em;
+  margin-top: 0.7rem;
+  line-height: 1;
+}
+.daily-note { color: var(--muted); text-align: center; margin: 1.1rem 0 0.6rem; }
+.daily-links { justify-content: center; margin-top: 0.8rem; }
+
+/* The reveal "Total so far" row (daily). */
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 0.7em 0.95em;
+  margin: 0.4rem 0 0.6rem;
+}
+.total-label { color: var(--muted); font-weight: 600; }
+.total-val {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A stacked (non-fixed) action bar, used on the Daily done screen. */
+.action-bar-stack {
+  position: static;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  border: 0;
+  display: flex;
+  justify-content: center;
+  margin: 0.4rem 0;
+}

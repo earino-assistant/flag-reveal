@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Flag Reveal — Daily Challenge</title>
+  <meta name="description" content="Five flags, the same for everyone today. One run per day — name each country before it sharpens." />
+  <meta name="theme-color" content="#0E0E12" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Flag Reveal — Daily Challenge" />
+  <meta property="og:description" content="Five flags, the same for everyone today. One run per day." />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="player">
+  <div id="toast" class="toast hidden" data-ph-mask></div>
+
+  <!-- ============================ INTRO ============================ -->
+  <section id="d-intro" class="phase-screen">
+    <div class="wrap">
+      <h1 class="brand"><span class="accent">Flag</span> Reveal</h1>
+      <p class="eyebrow">Daily Challenge</p>
+
+      <div class="daily-card">
+        <p class="daily-card-label">Today</p>
+        <div id="dNum" class="daily-num">#—</div>
+        <div id="dDate" class="daily-date"></div>
+        <div id="dStreak" class="daily-streak hidden"></div>
+      </div>
+
+      <p class="daily-rules">
+        Five flags — the <strong>same five for everyone</strong> today.
+        One run per day. Name each country before it sharpens; earlier is
+        worth more.
+      </p>
+
+      <div class="action-bar">
+        <a class="btn-ghost" href="index.html">← Home</a>
+        <button id="btnDailyStart" class="btn-primary">Play today's Daily</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ ROUND ============================ -->
+  <section id="d-round" class="phase-screen hidden">
+    <div class="wrap">
+      <div class="round-head">
+        <span id="dRoundHead" class="hud-item">Flag 1 / 5</span>
+        <span id="dScoreHead" class="hud-item muted-note">0 pts</span>
+      </div>
+
+      <div id="dReveal" class="reveal-holder"></div>
+
+      <div class="buzzer">
+        <div class="typeahead">
+          <input id="dInput" data-ph-mask placeholder="Name the country…"
+                 autocomplete="off" autocapitalize="words" spellcheck="false" />
+          <ul id="dSuggest" class="suggest hidden" data-ph-mask></ul>
+        </div>
+        <p class="buzz-hint">Type the country — the sooner you nail it, the more it scores.</p>
+      </div>
+
+      <div id="dStatus" class="round-status"></div>
+    </div>
+  </section>
+
+  <!-- ============================ REVEAL ============================ -->
+  <section id="d-reveal" class="phase-screen hidden">
+    <div class="wrap">
+      <div id="dRevealHead" class="reveal-round">Flag 1</div>
+      <div id="dRevealFlag" class="reveal-holder"></div>
+      <div id="dRevealAnswer" class="reveal-headline">—</div>
+      <div id="dRevealResult" class="reveal-result">—</div>
+      <div class="total-row">
+        <span class="total-label">Total so far</span>
+        <span id="dRevealTotal" class="total-val">0</span>
+      </div>
+      <div class="action-bar">
+        <button id="btnDNext" class="btn-primary">Next flag</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ DONE ============================ -->
+  <section id="d-done" class="phase-screen hidden">
+    <div class="wrap">
+      <h1 class="brand" id="dDoneTitle">Daily done!</h1>
+      <div class="daily-card">
+        <p class="daily-card-label">Your score</p>
+        <div id="dDoneScore" class="daily-num accent">—</div>
+        <div id="dDoneEmoji" class="daily-emoji"></div>
+        <div id="dDoneStreak" class="daily-streak hidden"></div>
+      </div>
+
+      <div class="action-bar action-bar-stack">
+        <button id="btnDShare" class="btn-primary">Share result 📋</button>
+      </div>
+
+      <p class="daily-note">
+        Fresh five tomorrow — or <a href="player.html?create=1">start a party</a>
+        with friends.
+      </p>
+      <div class="ld-links daily-links">
+        <a href="index.html">Home</a>
+        <a href="howto.html">How to play</a>
+        <button id="btnPrivacy" class="link-btn" type="button">Privacy</button>
+      </div>
+    </div>
+  </section>
+
+  <script type="module" src="js/consent.js"></script>
+  <script type="module" src="js/daily-ui.js"></script>
+</body>
+</html>

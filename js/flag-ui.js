@@ -44,6 +44,21 @@ import { FLAGS, byIso2 } from "./flags-data.js";
 import { makeRoomCode, isValidRoomCode, deviceId } from "./roomcode.js";
 import { GAME_DEFAULTS, BUNDLED_VERSIONS } from "../config.js";
 import { track, openBanner } from "./consent.js";
+import { drawQr } from "./qr.js";
+import { partyShareText, withUtm } from "./share.js";
+import { shareText } from "./share-ui.js";
+
+// Round-pace presets (host choice at room creation). The pure engine reads
+// cfg.stepMs (reveal cadence + the owner bust gate) and cfg.graceMs (grace +
+// the fallback deadline slack), so a pace is nothing but a locked (stepMs,
+// graceMs) pair persisted into the room's settings. `label` drives the lobby
+// note; the engine never sees it.
+const PACE = {
+  chill: { label: "Chill", stepMs: 2500, graceMs: 4000 },
+  classic: { label: "Classic", stepMs: 1500, graceMs: 3000 },
+  fast: { label: "Fast", stepMs: 900, graceMs: 2000 },
+};
+const paceOf = (id) => PACE[id] || PACE.classic;
 
 // ---------------------------------------------------------------------------
 // State
@@ -131,6 +146,7 @@ function cfgFromRoom(r) {
     choiceUnlockStep: s.choiceUnlockStep || d.choiceUnlockStep,
     gridN: s.gridN || d.gridN,
     revealAspect: s.revealAspect || d.revealAspect,
+    pace: s.pace || "classic",
     gameSeed: r ? r.gameSeed : null,
     pool: FLAGS,
     now: 0,
@@ -167,6 +183,34 @@ function toast(msg) {
 }
 function setStatus(msg) {
   $("roundStatus").textContent = msg || "";
+}
+
+// Subtle "ring pop" on your own correct ring (the reveal flag already pulses via
+// CSS). Best-effort WebAudio, silenced for prefers-reduced-motion users.
+const reduceMotion =
+  typeof matchMedia === "function" &&
+  matchMedia("(prefers-reduced-motion: reduce)").matches;
+let audioCtx = null;
+let poppedRound = null;
+function ringPop() {
+  if (reduceMotion) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(540, now);
+    osc.frequency.exponentialRampToValueAtTime(900, now + 0.09);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.24);
+  } catch {
+    /* audio blocked — no-op */
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -394,12 +438,16 @@ function emitRing({ correct, contested, atStep, points }, roundNumber) {
 async function createRoom() {
   const difficulty = $("createDifficulty").value;
   const inputMode = $("createInput").value;
+  const paceId = ($("createPace") && $("createPace").value) || "classic";
+  const pace = paceOf(paceId);
   myName = ($("homeName").value || "").trim() || "Player 1";
   const d = GAME_DEFAULTS;
   const settings = {
     roundCount: d.roundCount,
     target: d.target,
-    stepMs: d.stepMs,
+    stepMs: pace.stepMs,
+    graceMs: pace.graceMs,
+    pace: paceId,
     gridN: d.gridN,
     revealAspect: d.revealAspect,
     base: d.BASE,
@@ -589,11 +637,20 @@ function renderLobby(gs) {
     tv.dataset.state = screenLive() ? "connected" : "waiting";
   }
 
+  // QR joins (GeoParty parity). A phone scanning the join QR lands on
+  // player.html?room=CODE (auto-join); scanning the TV QR lands a spare phone
+  // on screen.html?room=CODE (the passive TV), tagged via=qr for attribution.
+  // Drawn once per code — drawQr paints a fixed-resolution canvas; CSS scales
+  // the display size down to the quiet lobby affordance.
+  drawQrOnce("lobbyJoinQr", "join", pageUrl("player.html?room=" + code));
+  drawQrOnce("lobbyTvQr", "tv", pageUrl("screen.html?room=" + code + "&via=qr"));
+
   // The mode note now summarises how the game is set up (a Configure detail),
   // not where the flag renders — the callout above owns the TV story.
   const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
   const inputLabel = cfg.inputMode === "choice" ? "Tap-to-choose" : "Type the country";
-  $("lobbyMode").textContent = `${diffLabel} · ${inputLabel}`;
+  const paceLabel = paceOf(cfg.pace).label;
+  $("lobbyMode").textContent = `${paceLabel} · ${diffLabel} · ${inputLabel}`;
 
   const teams = gs.teams || {};
   const ul = $("lobbyTeams");
@@ -792,6 +849,11 @@ function renderRevealScreen(gs) {
       ? `🎉 You got it at step ${oc.atStep} — +${pts}!`
       : `${wt ? wt.name : oc.team} rang it at step ${oc.atStep} — +${pts}.`;
     resultEl.className = "reveal-result " + (mine ? "good" : "");
+    // Your own win: a single subtle pop, once per round.
+    if (mine && poppedRound !== r.number) {
+      poppedRound = r.number;
+      ringPop();
+    }
   } else {
     resultEl.textContent = `Nobody got it — it was ${answer ? answer.name : ""}! 🙈`;
     resultEl.className = "reveal-result bad";
@@ -886,6 +948,23 @@ function renderGameOver(gs) {
   $("btnPlayAgain").classList.toggle("hidden", !iWon);
 }
 
+// Share the finished game as a clipboard brag. The winning team name is
+// user-entered flair (never a country); the analytics event stays aggregate.
+async function sharePartyResult() {
+  const gs = room.gameState || {};
+  const teams = gs.teams || {};
+  const winner = gameWinner(teams, cfg);
+  const wt = teams[winner];
+  const points = (wt && wt.total) || 0;
+  const url = withUtm(pageUrl("player.html"), "party");
+  const text = partyShareText({ winner: wt ? wt.name : null, points, url });
+  await shareText(text, {
+    event: "share_party",
+    props: { mode: modeStr(), points },
+    toast,
+  });
+}
+
 async function playAgain() {
   const gs = room.gameState || {};
   const teams = gs.teams || {};
@@ -921,6 +1000,20 @@ function poolSize() {
   return FLAGS.filter(
     (f) => f.eligible !== false && (diff === "world" || f.tier === diff)
   ).length;
+}
+// Absolute URL for a same-origin page (what a scanned QR must encode).
+function pageUrl(rel) {
+  return new URL(rel, location.href).href;
+}
+// Paint a QR into a canvas once per (element, payload) — re-rendering the lobby
+// every snapshot must not repaint an unchanged code.
+function drawQrOnce(id, tag, text) {
+  const c = $(id);
+  if (!c) return;
+  const stamp = tag + "|" + text;
+  if (c._qr === stamp) return;
+  drawQr(c, text);
+  c._qr = stamp;
 }
 function escapeHtml(s) {
   return String(s == null ? "" : s).replace(/[&<>"]/g, (ch) => ({
@@ -984,6 +1077,7 @@ function wire() {
   });
 
   // Game over
+  $("btnShareParty").addEventListener("click", sharePartyResult);
   $("btnPlayAgain").addEventListener("click", playAgain);
   $("btnNewGame").addEventListener("click", () => {
     clearSession();

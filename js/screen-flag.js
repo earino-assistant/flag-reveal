@@ -20,6 +20,7 @@ import { FLAGS, byIso2 } from "./flags-data.js";
 import { isValidRoomCode } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
 import { track } from "./consent.js";
+import { drawQr } from "./qr.js";
 
 const $ = (id) => document.getElementById(id);
 let code = null;
@@ -44,6 +45,9 @@ function connect(c, via) {
   $("tvCode").textContent = code;
   $("s-join").classList.add("hidden");
   $("s-display").classList.remove("hidden");
+  // The couch-join QR: a phone scanning it lands on player.html?room=CODE.
+  const qc = $("tvJoinQrCanvas");
+  if (qc) drawQr(qc, new URL("player.html?room=" + code, location.href).href);
   track("screen_joined", { mode: "tv", via: via || "typed" });
 
   // The ONLY thing the TV ever writes: its heartbeat (§6). Every 4s.
@@ -67,6 +71,9 @@ function render(room) {
   const teams = gs.teams || {};
 
   renderBoard($("tvBoard"), teams, phase === "gameOver" ? gameWinner(teams, cfg) : null);
+  // The join QR belongs to the lobby only — hidden the moment play starts.
+  const qrWrap = $("tvJoinQr");
+  if (qrWrap) qrWrap.classList.toggle("hidden", phase !== "lobby");
 
   if (phase === "lobby") {
     $("tvHeader").textContent = "Lobby — join on your phone";
@@ -199,7 +206,9 @@ function wire() {
 
   const params = new URLSearchParams(location.search);
   const urlRoom = (params.get("room") || "").toUpperCase();
-  if (isValidRoomCode(urlRoom)) connect(urlRoom, "link");
+  // A QR-scanned arrival carries ?via=qr; a hand-shared link is "link".
+  const via = params.get("via") === "qr" ? "qr" : "link";
+  if (isValidRoomCode(urlRoom)) connect(urlRoom, via);
 }
 
 window.addEventListener("beforeunload", () => {
