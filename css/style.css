@@ -490,6 +490,11 @@ input:focus, select:focus {
   padding: 0.7rem; font-size: 0.85rem; color: var(--muted);
   pointer-events: none;
 }
+/* When a fixed action bar is present, lift the footer fully above it so the
+   two can never overlap (both are bottom-anchored). The bar is ~72px tall;
+   a 4.8rem offset parks the footer's whole box above it. */
+.phase-screen + .action-bar ~ .app-foot,
+body:has(.action-bar:not(.hidden)) .app-foot { bottom: 4.8rem; }
 .app-foot a, .app-foot .link-btn { pointer-events: auto; color: var(--muted); }
 
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
