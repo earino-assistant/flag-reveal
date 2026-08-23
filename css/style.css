@@ -275,12 +275,16 @@ input:focus, select:focus {
  * The lobby's hero affordance: "set this up on the big screen for the best
  * reveal." Prominent for the host, a quiet hint for other phones, and a calm
  * success state once a TV is actually live. Never reads as an error. */
+/* Tight, code-forward card: glyph · title · the room code as hero · one quiet
+ * line. Host vs guest and waiting vs connected differ in color + scale, not in
+ * word count. */
 .tv-connect {
-  display: flex;
-  gap: 0.95rem;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 0.9rem;
+  align-items: center;
   border-radius: var(--radius);
-  padding: 1.05rem 1.1rem;
+  padding: 0.85rem 1rem;
   margin: 0.4rem 0 0.2rem;
   background:
     linear-gradient(180deg, rgba(255, 207, 63, 0.12), rgba(255, 207, 63, 0.04));
@@ -288,58 +292,42 @@ input:focus, select:focus {
   box-shadow: var(--shadow-1);
 }
 .tv-connect-glyph {
-  flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
+  grid-row: 1 / span 2;
+  align-self: start;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border-radius: 12px;
   background: rgba(255, 207, 63, 0.16);
   color: var(--accent);
 }
-.tv-connect-glyph svg { width: 26px; height: 26px; display: block; }
-.tv-connect-body { min-width: 0; flex: 1; }
+.tv-connect-glyph svg { width: 25px; height: 25px; display: block; }
+.tv-connect-body { min-width: 0; }
 .tv-connect-title {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.12rem;
-  letter-spacing: -0.01em;
-  margin: 0.05rem 0 0.25rem;
-}
-.tv-connect-copy { color: var(--muted); margin: 0 0 0.7rem; font-size: 0.95rem; line-height: 1.45; }
-.tv-connect-steps {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  counter-reset: tvstep;
-}
-.tv-connect-steps li {
-  position: relative;
-  padding-left: 2rem;
-  min-height: 1.5rem;
-  color: var(--fg);
-  font-size: 0.96rem;
-  line-height: 1.4;
-}
-.tv-connect-steps li::before {
-  counter-increment: tvstep;
-  content: counter(tvstep);
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 1.4rem;
-  height: 1.4rem;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 207, 63, 0.16);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--accent);
+  margin: 0 0 0.1rem;
+}
+/* The hero: the room code, large and high-contrast, immediately copy-able. */
+.tv-connect-code {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 2rem;
+  line-height: 1.02;
+  letter-spacing: 0.16em;
+  color: var(--fg);
+  margin: 0;
+}
+.tv-connect-line {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin: 0.28rem 0 0;
 }
 .tv-connect-url {
   font-family: var(--font-display);
@@ -348,46 +336,34 @@ input:focus, select:focus {
   background: rgba(77, 214, 255, 0.1);
   border: 1px solid rgba(77, 214, 255, 0.25);
   border-radius: 6px;
-  padding: 0.06em 0.4em;
+  padding: 0.02em 0.36em;
   white-space: nowrap;
 }
-.tv-connect-code {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: 0.18em;
-  color: var(--accent);
-}
+.tv-connect-ok { display: none; color: var(--muted); font-size: 0.9rem; margin: 0.28rem 0 0; }
 
-/* Guest phones get a compact, unobtrusive version — a nudge, not a job. */
+/* Guest phones: quieter and more compact — same code, less shout. */
 .tv-connect[data-role="guest"] {
   background: rgba(255, 255, 255, 0.03);
   border-color: var(--line);
-  padding: 0.8rem 0.95rem;
-  align-items: center;
+  padding: 0.7rem 0.9rem;
 }
 .tv-connect[data-role="guest"] .tv-connect-glyph {
   width: 38px; height: 38px; background: rgba(255, 255, 255, 0.05); color: var(--muted);
 }
 .tv-connect[data-role="guest"] .tv-connect-glyph svg { width: 21px; height: 21px; }
-.tv-connect[data-role="guest"] .tv-connect-title { font-size: 0.98rem; margin: 0 0 0.15rem; }
-.tv-connect[data-role="guest"] .tv-connect-steps,
-.tv-connect[data-role="guest"] .tv-connect-copy { display: none; }
-.tv-connect[data-role="guest"] .tv-connect-hint { display: block; }
-.tv-connect-hint { display: none; color: var(--muted); font-size: 0.92rem; margin: 0; }
+.tv-connect[data-role="guest"] .tv-connect-title { color: var(--muted); }
+.tv-connect[data-role="guest"] .tv-connect-code { font-size: 1.5rem; }
 
-/* Connected: calm confirmation, cyan (not yellow "todo", not red "error"). */
+/* Connected: calm cyan confirmation — the code + instruction give way to it. */
 .tv-connect[data-state="connected"] {
   background: linear-gradient(180deg, rgba(77, 214, 255, 0.12), rgba(77, 214, 255, 0.03));
   border-color: rgba(77, 214, 255, 0.34);
-  align-items: center;
 }
 .tv-connect[data-state="connected"] .tv-connect-glyph { background: rgba(77, 214, 255, 0.16); color: var(--accent-2); }
-.tv-connect[data-state="connected"] .tv-connect-steps,
-.tv-connect[data-state="connected"] .tv-connect-copy,
-.tv-connect[data-state="connected"] .tv-connect-hint { display: none; }
-.tv-connect[data-state="connected"] .tv-connect-ok { display: block; }
-.tv-connect-ok { display: none; color: var(--muted); font-size: 0.95rem; margin: 0; }
-.tv-connect-ok strong { color: var(--accent-2); }
+.tv-connect[data-state="connected"] .tv-connect-title { color: var(--accent-2); }
+.tv-connect[data-state="connected"] .tv-connect-code,
+.tv-connect[data-state="connected"] .tv-connect-line { display: none; }
+.tv-connect[data-state="connected"] .tv-connect-ok { display: block; color: var(--accent-2); }
 
 .action-bar {
   position: fixed;

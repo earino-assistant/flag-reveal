@@ -23,7 +23,7 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#homeName` — team-name input (also covered by `maskAllInputs`) → `data-ph-mask`.
 - `#resumeCode` — room code in the resume banner → `data-ph-mask`.
 - `#lobbyCode` — the big room code → `data-ph-mask`.
-- `#lobbyTvCode` — room code echoed inside the "Connect to the TV" callout → `data-ph-mask`.
+- `#lobbyTvCode` — room code shown as the hero of the "Play on the TV" callout → `data-ph-mask`.
 - `#lobbyTeams` — team-name list → `data-ph-mask`.
 - `#buzzInput` — typed country guess → `data-ph-mask` (+ `maskAllInputs`).
 - `#buzzSuggest` — typeahead rows reflect the typed query → `data-ph-mask`.

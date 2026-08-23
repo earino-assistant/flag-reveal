@@ -576,12 +576,15 @@ function renderLobby(gs) {
   $("lobbyCode").textContent = code;
   const owner = isOwner();
 
-  // TV-connect callout: prominent, actionable card for the host; a quiet hint
-  // for other phones; a calm confirmation once a TV is actually live. The code
-  // is echoed into a masked element so replay never captures it.
+  // TV-connect callout: a code-forward card for the host; a quieter version for
+  // other phones; a calm confirmation once a TV is live. The code is echoed into
+  // a masked element so replay never captures it. Populate the code element
+  // unconditionally (not gated on the wrapper) so it always mirrors lobbyCode
+  // and can never fall back to its placeholder dots.
+  const tvCode = $("lobbyTvCode");
+  if (tvCode) tvCode.textContent = code;
   const tv = $("lobbyTv");
   if (tv) {
-    $("lobbyTvCode").textContent = code;
     tv.dataset.role = owner ? "host" : "guest";
     tv.dataset.state = screenLive() ? "connected" : "waiting";
   }

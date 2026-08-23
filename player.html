@@ -70,9 +70,11 @@
         </div>
       </div>
 
-      <!-- Owner-directed feature: remind the host to put the reveal on a TV.
-           JS (renderLobby) sets data-role (host|guest) and data-state
-           (waiting|connected); CSS switches the layout between them. -->
+      <!-- Owner-directed feature: put the reveal on a TV. JS (renderLobby) sets
+           data-role (host|guest) and data-state (waiting|connected); CSS shifts
+           color + scale between them — the words stay the same. The code is a
+           first-class element, always populated by JS (never nested in a
+           state-toggled container) so it can't fall back to placeholder dots. -->
       <div id="lobbyTv" class="tv-connect" data-role="host" data-state="waiting">
         <span class="tv-connect-glyph" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -82,17 +84,11 @@
           </svg>
         </span>
         <div class="tv-connect-body">
-          <p class="tv-connect-title">Connect to the TV</p>
-          <p class="tv-connect-copy">The reveal is best on the big screen, so the
-            whole couch can watch the flag sharpen. Set it up in two steps:</p>
-          <ol class="tv-connect-steps">
-            <li>On the TV, open <span class="tv-connect-url">screen.html</span></li>
-            <li>Enter this room code:
-              <strong id="lobbyTvCode" class="tv-connect-code" data-ph-mask>······</strong></li>
-          </ol>
-          <p class="tv-connect-hint">Playing on a TV? Open
-            <span class="tv-connect-url">screen.html</span> there and enter the code above.</p>
-          <p class="tv-connect-ok"><strong>TV connected</strong> — eyes up on the big screen.</p>
+          <p class="tv-connect-title">Play on the TV</p>
+          <div id="lobbyTvCode" class="tv-connect-code" data-ph-mask>······</div>
+          <p class="tv-connect-line">Open <span class="tv-connect-url">screen.html</span>
+            on the TV, enter this code.</p>
+          <p class="tv-connect-ok">TV connected — eyes up on the big screen.</p>
         </div>
       </div>
 
