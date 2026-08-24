@@ -15,7 +15,7 @@ import {
   onConnectionChange,
 } from "./firebase.js";
 import { renderReveal } from "./reveal-render.js";
-import { gameWinner, shouldFollowRoom } from "./flag.js";
+import { gameWinner, shouldFollowRoom, celebrationSpec } from "./flag.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, screenQuery } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
@@ -31,6 +31,11 @@ let unsubRoom = null;
 // (A → B → A would otherwise re-subscribe forever). SPEC-v3.1 §1530 mandates
 // this "verbatim" from the GeoParty kernel. Reset on manual entry and URL boot.
 let followedCodes = new Set();
+// The game-over celebration fires at-most-once per game-over entry — render()
+// re-runs on every heartbeat/snapshot, but the burst must not re-fire. Reset
+// whenever the phase leaves gameOver (next game / lobby) so a fresh game can
+// celebrate again.
+let celebrated = false;
 
 function cfgFromRoom(room) {
   const s = (room && room.settings) || {};
@@ -210,6 +215,10 @@ function render(room) {
   const qrWrap = $("tvJoinQr");
   if (qrWrap) qrWrap.classList.toggle("hidden", phase !== "lobby");
 
+  // Tear down the game-over celebration the moment we leave that phase (a fresh
+  // game / lobby), so the next winner's burst can fire again (§once-only).
+  if (phase !== "gameOver" && celebrated) endCelebration();
+
   if (phase === "lobby") {
     // Echo the room code into the big QR caption so it's legible across the
     // room (the top-left .tv-room label is too small at 10 feet). Masked for
@@ -240,6 +249,7 @@ function render(room) {
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "Start a new game on the host's phone.";
+    if (wt && winner && !celebrated) celebrate(winner);
     return;
   }
 
@@ -284,6 +294,56 @@ function render(room) {
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "Ring in on your phone!";
   }
+}
+
+// The game-over win moment — "your color takes the room" (crib: GeoParty,
+// references/win-celebration-ui.md). A fast, non-blocking enhancement: flood the
+// winner's team color behind the "👑 name wins" headline, fire a confetti burst
+// in that color, then settle (~1.4s, CSS). Pure client render of the ALREADY
+// captured winner — no write, no analytics (the win is instrumented elsewhere).
+// The tier/color/burst-size mapping is the unit-tested celebrationSpec; the DOM
+// + confetti below are UI-only glue. Reduced motion is handled entirely in CSS
+// (bloom to its resting frame, .tv-confetti display:none) so this stays
+// branch-free — we still build the nodes, CSS just hides them.
+function celebrate(winnerSlot) {
+  const disp = $("s-display");
+  const spec = celebrationSpec({ won: true, teamSlot: winnerSlot });
+  if (spec.tier === "none") return;
+  celebrated = true;
+  disp.style.setProperty("--win", spec.winVar);
+  disp.classList.add("celebrate");
+
+  const wrap = $("tvConfetti");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  // Gold-flecked around the win color so a champion (gold) still reads distinct
+  // from the field, and a team color gets a little sparkle. Index-driven spread
+  // (no RNG) keeps the burst full-width and stable across re-renders.
+  const colors = [spec.winVar, spec.winVar, "var(--accent)", "var(--fg)"];
+  const n = spec.confettiCount;
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("span");
+    s.style.setProperty("--x", Math.round((i / n) * 100) + "%");
+    s.style.setProperty("--dx", Math.round((((i * 53) % 100) - 50) * spec.spread) + "vw");
+    s.style.setProperty("--rot", 360 + ((i * 97) % 540) + "deg");
+    s.style.setProperty("--delay", (i % 8) * 40 + "ms");
+    s.style.setProperty("--c", colors[i % colors.length]);
+    frag.appendChild(s);
+  }
+  wrap.appendChild(frag);
+}
+
+// Tear the celebration down so the next game's winner can fire it afresh.
+function endCelebration() {
+  celebrated = false;
+  const disp = $("s-display");
+  if (disp) {
+    disp.classList.remove("celebrate");
+    disp.style.removeProperty("--win");
+  }
+  const wrap = $("tvConfetti");
+  if (wrap) wrap.innerHTML = "";
 }
 
 function renderBoard(ul, teams, winner) {

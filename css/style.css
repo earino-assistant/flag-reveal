@@ -688,9 +688,84 @@ body.tv { overflow: hidden; }
 /* ---- Confetti (cheap) ---- */
 .confetti { height: 0; }
 
+/* ---- Game-over celebration — "your color takes the room" ------------------
+ * Cribbed from GeoParty (references/win-celebration-ui.md). A FAST, NON-BLOCKING
+ * enhancement of the TV game-over screen (no modal, buttons/nav stay live): the
+ * winner's color floods in behind the "👑 name wins" headline, the headline
+ * punches with a colored glow, a confetti burst falls in that color, then it
+ * settles (~1.4s) into a calm resting glow. `--win` is the single color knob
+ * (screen-flag.js sets it per-winner via celebrationSpec); a champion goes gold
+ * (var(--accent)). Color is never the sole signal — the headline text carries
+ * the meaning. Both layers are aria-hidden decoration. */
+
+/* Bloom: a radial wash of the winner's color, BEHIND the content (z-index 0). */
+.tv-bloom {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(58% 55% at 50% 44%, var(--win, transparent), transparent 70%);
+}
+/* Confetti wrap: ABOVE the content (z-index 2). PITFALL (GeoParty): a burst at
+   z-index 0 falls behind the leaderboard and reads as broken. */
+.tv-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* During the celebration, lift the results content above the bloom: the bloom is
+   a positioned z-index:0 layer, so the (non-positioned) grid items would
+   otherwise paint under it. Confetti still sits above everything. */
+#s-display.celebrate .tv-head,
+#s-display.celebrate .tv-main,
+#s-display.celebrate .tv-side,
+#s-display.celebrate .tv-busts { position: relative; z-index: 1; }
+
+#s-display.celebrate .tv-bloom { animation: tv-bloom-in 1.4s ease-out forwards; }
+@keyframes tv-bloom-in {
+  0%   { opacity: 0; }
+  22%  { opacity: 0.9; }
+  100% { opacity: 0.4; } /* resting glow */
+}
+
+/* Headline punch: the "👑 name wins" line glows in the win color, then eases. */
+#s-display.celebrate .tv-result strong { color: var(--win, var(--accent)); }
+#s-display.celebrate .tv-result { animation: tv-headline-punch 1.4s ease-out; }
+@keyframes tv-headline-punch {
+  0%   { transform: scale(0.92); text-shadow: none; }
+  30%  { transform: scale(1.06); text-shadow: 0 0 30px var(--win, var(--accent)); }
+  100% { transform: scale(1); text-shadow: 0 0 12px var(--win, var(--accent)); }
+}
+
+/* Confetti pieces — cheap DOM spans; screen-flag.js sets --x/--dx/--rot/--delay/--c. */
+.tv-confetti span {
+  position: absolute;
+  top: -8%;
+  left: var(--x, 50%);
+  width: 0.7rem;
+  height: 1rem;
+  background: var(--c, var(--win, var(--accent)));
+  border-radius: 1px;
+  opacity: 0;
+  animation: tv-confetti-fall 1.4s var(--delay, 0s) ease-in forwards;
+}
+@keyframes tv-confetti-fall {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  12%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), 108vh) rotate(var(--rot, 540deg)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .flag-tile, .flag-img, button { transition: none; }
   #revealFlag.flag-canvas.full, .tv-reveal.flag-canvas.full { animation: none; }
+  /* Collapse the celebration to its final static frame: bloom at resting
+     opacity, headline static, NO confetti. */
+  #s-display.celebrate .tv-bloom { animation: none; opacity: 0.4; }
+  #s-display.celebrate .tv-result { animation: none; }
+  .tv-confetti { display: none; }
 }
 
 /* ============================ v0.2 additions ============================ */

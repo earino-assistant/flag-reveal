@@ -590,6 +590,28 @@ export function shouldFollowRoom(room, currentCode, followedCodes) {
 }
 
 // ---------------------------------------------------------------------------
+// 12b. celebrationSpec — the game-over win moment (cribbed from GeoParty's
+// "Your Color Takes the Room", references/win-celebration-ui.md).
+// ---------------------------------------------------------------------------
+// Pure: maps a decided winner to the celebration's tier / color / burst size so
+// the TV render (screen-flag.js) is thin glue. No DOM, no write — the win is
+// already captured, so this adds NO analytics event. The winner's team slot
+// drives a color takeover (`--win` → var(--team-N)); a `champion` goes gold
+// (var(--accent)), louder, keeping the crown. An unknown/invalid slot falls
+// back to gold rather than an undefined color. Color is never the sole signal —
+// the caller still renders "👑 name wins" text (accessibility).
+export function celebrationSpec({ won = false, champion = false, teamSlot = null } = {}) {
+  if (!won) {
+    return { tier: "none", winVar: null, confettiCount: 0, spread: 0, crown: false };
+  }
+  const m = /^t([1-4])$/.exec(teamSlot || "");
+  if (champion || !m) {
+    return { tier: "champion", winVar: "var(--accent)", confettiCount: 90, spread: 1, crown: true };
+  }
+  return { tier: "win", winVar: `var(--team-${m[1]})`, confettiCount: 64, spread: 0.8, crown: true };
+}
+
+// ---------------------------------------------------------------------------
 // 13. versionCompatible — refuse to derive on a dataset/rules skew (§8.1).
 // ---------------------------------------------------------------------------
 export function versionCompatible(room, bundled) {

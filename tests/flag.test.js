@@ -19,6 +19,7 @@ import {
   advanceState,
   roundConduct,
   gameWinner,
+  celebrationSpec,
   carryStandings,
   shouldFollowRoom,
   versionCompatible,
@@ -490,6 +491,41 @@ test("gameWinner: tie on total and rounds → lowest slot id", () => {
 
 test("gameWinner: empty → null", () => {
   assert.equal(gameWinner({}), null);
+});
+
+// celebrationSpec — the game-over win moment (pure mapping; the DOM/CSS/confetti
+// glue in screen-flag.js is UI-only and not unit-tested).
+test("celebrationSpec: no win → inert (no burst, no color)", () => {
+  const s = celebrationSpec({ won: false });
+  assert.equal(s.tier, "none");
+  assert.equal(s.winVar, null);
+  assert.equal(s.confettiCount, 0);
+  assert.equal(s.crown, false);
+});
+
+test("celebrationSpec: team win → that slot's color takeover + burst", () => {
+  const s = celebrationSpec({ won: true, teamSlot: "t3" });
+  assert.equal(s.tier, "win");
+  assert.equal(s.winVar, "var(--team-3)");
+  assert.ok(s.confettiCount > 0);
+  assert.equal(s.crown, true);
+});
+
+test("celebrationSpec: champion → gold, louder than a plain win", () => {
+  const win = celebrationSpec({ won: true, teamSlot: "t1" });
+  const champ = celebrationSpec({ won: true, teamSlot: "t1", champion: true });
+  assert.equal(champ.tier, "champion");
+  assert.equal(champ.winVar, "var(--accent)");
+  assert.ok(champ.confettiCount > win.confettiCount);
+  assert.equal(champ.crown, true);
+});
+
+test("celebrationSpec: unknown/invalid slot → falls back to gold, never undefined", () => {
+  for (const bad of [null, "", "t5", "t0", "tX", "team-2"]) {
+    const s = celebrationSpec({ won: true, teamSlot: bad });
+    assert.equal(s.winVar, "var(--accent)");
+    assert.equal(s.tier, "champion");
+  }
 });
 
 test("carryStandings: zeroes totals by default, sets hostTeam, preserves identity", () => {
