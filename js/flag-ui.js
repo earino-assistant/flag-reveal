@@ -851,7 +851,7 @@ function renderRevealScreen(gs) {
     const mine = oc.team === myTeam;
     resultEl.textContent = mine
       ? `🎉 You got it at step ${oc.atStep} — +${pts}!`
-      : `${wt ? wt.name : oc.team} rang it at step ${oc.atStep} — +${pts}.`;
+      : `${wt ? wt.name : oc.team} got it at step ${oc.atStep} — +${pts}!`;
     resultEl.className = "reveal-result " + (mine ? "good" : "");
     // Your own win: a single subtle pop, once per round.
     if (mine && poppedRound !== r.number) {
@@ -859,22 +859,36 @@ function renderRevealScreen(gs) {
       ringPop();
     }
   } else {
-    resultEl.textContent = `Nobody got it — it was ${answer ? answer.name : ""}! 🙈`;
+    resultEl.textContent = `Nobody got it! 🙈`;
     resultEl.className = "reveal-result bad";
   }
 
   renderBoard($("revealBoard"), teams);
   renderBeats($("revealBeats"), r.results || {}, teams);
 
-  // Owner controls + auto-advance note.
+  // Owner controls + auto-advance note. The pause button stays visible for the
+  // owner throughout the reveal, showing a pressed state once paused.
   const owner = isOwner();
   $("btnNext").classList.toggle("hidden", !owner);
-  $("btnHold").classList.toggle("hidden", !owner || r.autoAdvanceAt == null);
-  if (r.autoAdvanceAt == null) {
-    $("revealNote").textContent = owner ? "Held. Tap Next when ready." : "Host is holding the reveal…";
+  const holdBtn = $("btnHold");
+  holdBtn.classList.toggle("hidden", !owner);
+  const paused = r.autoAdvanceAt == null;
+  holdBtn.setAttribute("aria-pressed", paused ? "true" : "false");
+  holdBtn.classList.toggle("is-active", paused);
+  const note = $("revealNote");
+  if (paused) {
+    // No countdown to fold into the button once paused.
+    $("btnNext").textContent = "Next round";
+    note.textContent = owner
+      ? "Paused — take your time. Tap Next round when ready."
+      : "Host paused the next round…";
+    note.classList.remove("hidden");
   } else {
+    // Owner: countdown lives in the button label (no duplicate note).
     const left = Math.max(0, Math.ceil((r.autoAdvanceAt - serverNow()) / 1000));
-    $("revealNote").textContent = `Next round in ${left}s…`;
+    $("btnNext").textContent = `Next round · ${left}s`;
+    note.textContent = owner ? "" : `Next round in ${left}s…`;
+    note.classList.toggle("hidden", owner);
   }
 }
 
@@ -929,9 +943,9 @@ function renderBeats(box, results, teams) {
       const wrong = byIso2(res.wrongIso);
       const div = document.createElement("div");
       div.className = "beat";
-      div.textContent = `😅 ${t ? t.name : tN} rang ${
+      div.textContent = `😅 ${t ? t.name : tN} guessed ${
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      } at step ${res.wrongStep}`;
+      } at step ${res.wrongStep} — out this round.`;
       box.appendChild(div);
     }
   }
@@ -1112,11 +1126,13 @@ function wire() {
 setInterval(() => {
   if (room && room.gameState && room.gameState.phase === "reveal") {
     const r = room.gameState.round;
-    if (r && r.autoAdvanceAt != null) {
+    if (r && r.autoAdvanceAt != null && !$("p-reveal").classList.contains("hidden")) {
       const left = Math.max(0, Math.ceil((r.autoAdvanceAt - serverNow()) / 1000));
-      const note = $("revealNote");
-      if (note && !$("p-reveal").classList.contains("hidden")) {
-        note.textContent = `Next round in ${left}s…`;
+      // Owner's countdown rides in the button label; guests see the note.
+      if (isOwner()) {
+        $("btnNext").textContent = `Next round · ${left}s`;
+      } else {
+        $("revealNote").textContent = `Next round in ${left}s…`;
       }
     }
     runConduct(); // ensure a dead-owner fallback still fires on a quiet feed

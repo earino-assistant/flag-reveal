@@ -359,6 +359,27 @@ input:focus, select:focus {
 .action-bar .btn-primary { flex: 1; }
 .action-bar .btn-ghost { flex: 0 0 auto; }
 
+/* Reveal dock: pins the auto-advance note directly above the action bar so the
+ * countdown/CTA and the eye land in one place. The nested action bar drops its
+ * own fixed positioning; the dock owns the pin and the background fade. */
+.reveal-dock {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  max-width: var(--maxw); margin: 0 auto;
+  background: linear-gradient(to top, var(--bg) 62%, transparent);
+}
+.reveal-dock #revealNote { margin: 0.4rem 0 0; }
+.reveal-dock .action-bar {
+  position: static;
+  max-width: none; margin: 0;
+  background: none;
+}
+/* Pressed pause button: accent border signals the timer is held. */
+.btn-ghost.is-active {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
 /* ---- Round (an Operate surface: recognise, then ring) ---- */
 .round-head {
   display: flex;
@@ -559,6 +580,7 @@ body.tv { overflow: hidden; }
 .tv-answer { font-size: clamp(2.1rem, 5vw, 3.6rem); font-weight: 800; font-family: var(--font-display); letter-spacing: -0.02em; margin-top: 1.1rem; text-align: center; }
 .tv-result { font-size: 1.6rem; margin-top: 0.55rem; text-align: center; color: var(--muted); }
 .tv-result strong { color: var(--accent); }
+.tv-comingup { font-size: 1.2rem; margin-top: 0.5rem; text-align: center; color: var(--accent-2); }
 .tv-side { grid-area: side; overflow-y: auto; }
 .side-title { color: var(--faint); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 0 0 0.6rem; }
 .tv-board .team-row { font-size: 1.3rem; padding: 0.8em 1em; }

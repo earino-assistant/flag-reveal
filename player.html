@@ -163,10 +163,12 @@
       <div id="revealResult" class="reveal-result">—</div>
       <ul id="revealBoard" class="totals-list reveal-board" data-ph-mask></ul>
       <div id="revealBeats" class="reveal-beats" data-ph-mask></div>
-      <div id="revealNote" class="waiting-note advance-note"></div>
-      <div class="action-bar">
-        <button id="btnHold" class="btn-ghost hidden">✋ Hold</button>
-        <button id="btnNext" class="btn-primary hidden">Next round</button>
+      <div class="reveal-dock">
+        <div id="revealNote" class="waiting-note advance-note"></div>
+        <div class="action-bar">
+          <button id="btnHold" class="btn-ghost hidden" aria-pressed="false">✋ Pause timer</button>
+          <button id="btnNext" class="btn-primary hidden">Next round</button>
+        </div>
       </div>
     </div>
   </section>

@@ -122,6 +122,7 @@ function render(room) {
     $("tvHeader").textContent = "Lobby — join on your phone";
     $("tvAnswer").classList.add("hidden");
     $("tvResult").textContent = "";
+    $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvReveal").innerHTML = "";
     const n = Object.keys(teams).length;
@@ -140,6 +141,7 @@ function render(room) {
     $("tvResult").innerHTML = wt
       ? `👑 <strong data-ph-mask>${escapeHtml(wt.name)}</strong> wins — ${wt.total || 0} pts!`
       : "Game over";
+    $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "Start a new game on the host's phone.";
     return;
@@ -170,15 +172,19 @@ function render(room) {
       const pts = (r.results && r.results[oc.team] && r.results[oc.team].points) || 0;
       $("tvResult").innerHTML = `<strong data-ph-mask>${escapeHtml(
         wt ? wt.name : oc.team
-      )}</strong> rang it at step ${oc.atStep} — +${pts}!`;
+      )}</strong> got it at step ${oc.atStep} — +${pts}!`;
     } else {
       $("tvResult").textContent = `Nobody got it! 🙈`;
     }
     renderBeats($("tvBeats"), r.results || {}, teams);
-    $("tvNote").textContent = "Next round coming up…";
+    // Coming-up line rides in the main column under the result, where all eyes
+    // are; tvNote is reserved for lobby/idle states.
+    $("tvComingUp").textContent = "Next round coming up…";
+    $("tvNote").textContent = "";
   } else {
     $("tvAnswer").classList.add("hidden");
     $("tvResult").textContent = "";
+    $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "Ring in on your phone!";
   }
@@ -209,9 +215,9 @@ function renderBeats(box, results, teams) {
       const wrong = byIso2(res.wrongIso);
       const div = document.createElement("div");
       div.className = "beat";
-      div.innerHTML = `😅 <span data-ph-mask>${escapeHtml(t ? t.name : tN)}</span> rang ${escapeHtml(
+      div.innerHTML = `😅 <span data-ph-mask>${escapeHtml(t ? t.name : tN)}</span> guessed ${escapeHtml(
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      )} at step ${res.wrongStep}`;
+      )} at step ${res.wrongStep} — out this round.`;
       box.appendChild(div);
     }
   }
