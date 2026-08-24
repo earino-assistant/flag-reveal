@@ -41,6 +41,10 @@ the banner copy becomes a false claim — fix the mask, not the copy.
 - `#lobbyTeams` — team-name list → `data-ph-mask`.
 - `#buzzInput` — typed country guess → `data-ph-mask` (+ `maskAllInputs`).
 - `#buzzSuggest` — typeahead rows reflect the typed query → `data-ph-mask`.
+- `#revealResult` — reveal outcome line; `renderRevealScreen` (flag-ui.js) writes
+  a rival's team name here ("<team> got it at step N") → `data-ph-mask` (mirrors
+  the TV twin, whose `#tvResult` masks the same line via a `data-ph-mask` span in
+  `js/screen-flag.js`).
 - `#revealBoard` — standings with team names → `data-ph-mask`.
 - `#revealBeats` — wrong-ring comedy beats carry team names → `data-ph-mask`.
 - `#goWinner`, `#goBoard` — winner + standings team names → `data-ph-mask`.

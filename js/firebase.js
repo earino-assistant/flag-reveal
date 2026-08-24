@@ -27,6 +27,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 import { firebaseConfig } from "../config.js";
 import { resolveOutcome, advanceState } from "./flag.js";
+import { makeRoomCode, isRoomStale } from "./roomcode.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
@@ -57,6 +58,29 @@ export function updateRoom(code, patch) {
 
 export function deleteRoom(code) {
   return remove(roomRef(code));
+}
+
+// Collision-safe room creation. `makeRoomCode()` never checks existence, and the
+// security rules (database.rules.json) let a write land on any room that doesn't
+// exist OR is younger than the 24h TTL — so a naive `set()` can SILENTLY
+// overwrite a live game on a code collision, while a `set()` onto a >24h stale
+// room is DENIED (surfacing as a dead-end "couldn't create the room"). This
+// claims a code safely: on a live collision it retries a fresh code; on a stale
+// collision it lazy-deletes the dead room first (delete IS permitted by the
+// rules) then writes. Returns the claimed code, or null if every attempt hit a
+// live room (astronomically unlikely at 24⁶ ≈ 191M codes). Not one of the three
+// gameState arbitration transactions — it composes plain read/delete/set on the
+// room ROOT and never touches phase.
+export async function claimRoomCode(state, { tries = 5, now = Date.now() } = {}) {
+  for (let i = 0; i < tries; i++) {
+    const code = makeRoomCode();
+    const existing = await readRoom(code);
+    if (existing && !isRoomStale(existing, now)) continue; // live room — new code
+    if (existing) await deleteRoom(code); // stale — reclaim its code (rules allow)
+    await writeRoom(code, state);
+    return code;
+  }
+  return null;
 }
 
 // Subscribe to full room state. Returns an unsubscribe function.

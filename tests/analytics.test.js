@@ -11,6 +11,8 @@ import {
   EVENT_SCHEMA,
   sanitizeProps,
   sanitizeEvent,
+  scrubUrl,
+  sanitizeBeforeSend,
   createAnalytics,
   getConsent,
   setConsent,
@@ -49,6 +51,82 @@ test("PostHog points at Flag Reveal's own project, not shared GeoParty", () => {
     "https://eu.i.posthog.com",
     "must stay on the EU instance"
   );
+});
+
+// ---------------------------------------------------------------------------
+// URL privacy backstop (scrubUrl / sanitizeBeforeSend / URL_PROPS). These are
+// the last line of defense against a route-identifying URL riding on a captured
+// event — room codes/day numbers/ids in the path or query must never leave the
+// device. before_send wires sanitizeBeforeSend into every outgoing event.
+// ---------------------------------------------------------------------------
+
+test("scrubUrl: drops the query string and the fragment", () => {
+  assert.equal(
+    scrubUrl("https://x.github.io/flag-reveal/player.html?room=ABCDEF"),
+    "https://x.github.io/flag-reveal/player.html"
+  );
+  assert.equal(
+    scrubUrl("https://x.github.io/daily.html#day=42"),
+    "https://x.github.io/daily.html"
+  );
+  assert.equal(
+    scrubUrl("https://x.github.io/p.html?room=ABCDEF#qr"),
+    "https://x.github.io/p.html"
+  );
+});
+
+test("scrubUrl: collapses long digit runs (ids) in the surviving path", () => {
+  assert.equal(
+    scrubUrl("https://x.github.io/game/1998273/reveal"),
+    "https://x.github.io/game/…/reveal"
+  );
+  // Runs of <4 digits are left alone (not id-shaped).
+  assert.equal(scrubUrl("https://x.github.io/r3/step"), "https://x.github.io/r3/step");
+});
+
+test("scrubUrl: passes non-strings straight through", () => {
+  assert.equal(scrubUrl(undefined), undefined);
+  assert.equal(scrubUrl(null), null);
+  assert.equal(scrubUrl(42), 42);
+});
+
+test("sanitizeBeforeSend: scrubs every URL-shaped property", () => {
+  const event = {
+    event: "$pageview",
+    properties: {
+      $current_url: "https://x.github.io/player.html?room=ABCDEF",
+      $pathname: "/game/1998273",
+      $referrer: "https://x.github.io/index.html#day=42",
+      $initial_current_url: "https://x.github.io/p.html?room=ZZZZZZ",
+      $session_entry_url: "https://x.github.io/daily.html?d=5",
+      mode: "phone", // a non-URL prop is untouched
+    },
+  };
+  const out = sanitizeBeforeSend(event);
+  assert.equal(out.properties.$current_url, "https://x.github.io/player.html");
+  assert.equal(out.properties.$pathname, "/game/…");
+  assert.equal(out.properties.$referrer, "https://x.github.io/index.html");
+  assert.equal(out.properties.$initial_current_url, "https://x.github.io/p.html");
+  assert.equal(out.properties.$session_entry_url, "https://x.github.io/daily.html");
+  assert.equal(out.properties.mode, "phone");
+});
+
+test("sanitizeBeforeSend: never returns null and tolerates a propertiless event", () => {
+  // Dropping is the schema's job (sanitizeEvent), never before_send's — a null
+  // here would silently drop EVERY event.
+  const bare = { event: "$pageview" };
+  assert.equal(sanitizeBeforeSend(bare), bare);
+  assert.equal(sanitizeBeforeSend(null), null);
+});
+
+test("sanitizeBeforeSend: leaves a non-string URL prop untouched", () => {
+  const event = { event: "x", properties: { $current_url: 12345 } };
+  const out = sanitizeBeforeSend(event);
+  assert.equal(out.properties.$current_url, 12345);
+});
+
+test("POSTHOG_INIT_OPTIONS wires sanitizeBeforeSend as before_send", () => {
+  assert.equal(POSTHOG_INIT_OPTIONS.before_send, sanitizeBeforeSend);
 });
 
 test("the two flag events exist with the expected shape", () => {

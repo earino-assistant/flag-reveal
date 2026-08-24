@@ -18,9 +18,9 @@
 //     sent from the client (the transaction reads it from the snapshot).
 
 import {
-  writeRoom,
   updateRoom,
   subscribeRoom,
+  claimRoomCode,
   claimTeamSlot,
   resolveRound,
   advanceRound,
@@ -45,7 +45,7 @@ import { ringEmission, revealEmission } from "./flag-analytics.js";
 import { escapeHtml, toast, suggestFor, pop } from "./ui-common.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2 } from "./flags-data.js";
-import { makeRoomCode, isValidRoomCode, deviceId } from "./roomcode.js";
+import { isValidRoomCode, deviceId } from "./roomcode.js";
 import { GAME_DEFAULTS, BUNDLED_VERSIONS } from "../config.js";
 import { track, openBanner } from "./consent.js";
 import { drawQr } from "./qr.js";
@@ -420,7 +420,6 @@ async function createRoom() {
     difficulty,
     inputMode,
   };
-  const c = makeRoomCode();
   const state = {
     createdAt: Date.now(),
     mode: "flag",
@@ -431,8 +430,12 @@ async function createRoom() {
     hostTeam: "t1",
     gameState: { phase: "lobby", teams: {} },
   };
+  // claimRoomCode never overwrites a live room: a collision retries a fresh code
+  // (and lazy-reclaims a >24h stale one), so this can't clobber someone's game.
+  let c;
   try {
-    await writeRoom(c, state);
+    c = await claimRoomCode(state);
+    if (!c) throw new Error("no free room code");
     const ok = await claimTeamSlot(c, "t1", { name: myName, deviceId: dev, total: 0 });
     if (!ok) throw new Error("could not claim host slot");
   } catch {
@@ -997,7 +1000,6 @@ async function playAgain() {
     ...seasonCfg,
     winnerOnly: true,
   });
-  const c2 = makeRoomCode();
   const state = {
     createdAt: Date.now(),
     mode: "flag",
@@ -1009,7 +1011,10 @@ async function playAgain() {
     gameState: { phase: "lobby", teams: newTeams },
   };
   try {
-    await writeRoom(c2, state);
+    // Same collision-safe claim as createRoom — the rematch never clobbers a
+    // live room that happens to share the freshly-minted code.
+    const c2 = await claimRoomCode(state);
+    if (!c2) throw new Error("no free room code");
     await updateRoom(code, { nextRoom: c2 }); // subscribers follow the pointer
     track("next_game", { mode: modeStr() });
     location.href = "player.html?room=" + c2;
