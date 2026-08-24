@@ -24,6 +24,9 @@ import {
   shouldFollowRoom,
   versionCompatible,
   hash,
+  eligiblePool,
+  effectiveRoundCount,
+  winAttemptOutcome,
 } from "../js/flag.js";
 
 // A small fixture pool covering tiers, aliases, diacritics, the "Congo"
@@ -632,4 +635,91 @@ test("versionCompatible: both dataset and rules versions must match", () => {
   assert.equal(versionCompatible({ datasetVersion: "1.0.1", rulesVersion: "3.1" }, bundled), false);
   assert.equal(versionCompatible({ datasetVersion: "1.0.0", rulesVersion: "3.0" }, bundled), false);
   assert.equal(versionCompatible(null, bundled), false);
+});
+
+// ---------------------------------------------------------------------------
+// eligiblePool (now exported) + effectiveRoundCount — the round-budget clamp
+// that used to be copy-pasted across flag.js/flag-ui.js/screen-flag.js.
+// ---------------------------------------------------------------------------
+test("eligiblePool: world = every eligible entry (ineligible dropped)", () => {
+  const world = eligiblePool(POOL, "world");
+  assert.equal(world.length, WORLD_SIZE);
+  assert.ok(!world.some((e) => e.iso2 === "XX")); // explicit eligible:false excluded
+});
+
+test("eligiblePool: easy/expert filter to the tier; unknown → mixed pool", () => {
+  assert.deepEqual(
+    eligiblePool(POOL, "easy").map((e) => e.iso2).sort(),
+    ["BR", "US"]
+  );
+  assert.deepEqual(
+    eligiblePool(POOL, "expert").map((e) => e.iso2).sort(),
+    ["RO", "TD"]
+  );
+  // Unknown difficulty falls back to the full mixed pool (documented behavior).
+  assert.equal(eligiblePool(POOL, "nonsense").length, WORLD_SIZE);
+});
+
+test("eligiblePool: a missing `eligible` flag counts as eligible", () => {
+  const pool = [{ iso2: "AA", name: "A", tier: "world" }]; // no eligible key
+  assert.equal(eligiblePool(pool, "world").length, 1);
+});
+
+test("effectiveRoundCount: clamps roundCount to the eligible pool size", () => {
+  // 9 eligible world flags; asking for 20 clamps to 9.
+  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 20 }, POOL), 9);
+  // Asking for fewer than the pool is honored.
+  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 5 }, POOL), 5);
+  // Easy tier has 2 flags; a bigger request clamps to 2.
+  assert.equal(effectiveRoundCount({ difficulty: "easy", roundCount: 5 }, POOL), 2);
+});
+
+test("effectiveRoundCount: absent roundCount defaults to the whole pool", () => {
+  assert.equal(effectiveRoundCount({ difficulty: "world" }, POOL), WORLD_SIZE);
+  assert.equal(effectiveRoundCount({ difficulty: "expert" }, POOL), 2);
+});
+
+test("effectiveRoundCount: matches gameFlags' own clamp (no phone/TV drift)", () => {
+  // The whole point of exporting this: the sequence length and "Round N / M"
+  // must agree. gameFlags clamps internally the same way.
+  const cfg = { difficulty: "world", roundCount: 100 };
+  const seq = gameFlags("seed-x", effectiveRoundCount(cfg, POOL), "world", POOL);
+  assert.equal(seq.length, effectiveRoundCount(cfg, POOL));
+  assert.equal(seq.length, WORLD_SIZE);
+});
+
+// ---------------------------------------------------------------------------
+// winAttemptOutcome — the §4.2 win-abort taxonomy as a pure classifier.
+// Every branch mirrors a case doWinAttempt handled inline before extraction.
+// ---------------------------------------------------------------------------
+test("winAttemptOutcome: null snapshot (empty cache) → retry (case a)", () => {
+  assert.equal(winAttemptOutcome(null, 3, "t1"), "retry");
+});
+
+test("winAttemptOutcome: still live, same round, unresolved → retry (a/b/c)", () => {
+  const gs = { phase: "roundActive", round: { number: 3 } }; // outcome absent
+  assert.equal(winAttemptOutcome(gs, 3, "t1"), "retry");
+});
+
+test("winAttemptOutcome: my own win already committed → won (case e)", () => {
+  const gs = { phase: "reveal", round: { number: 3, outcome: { kind: "win", team: "t1" } } };
+  assert.equal(winAttemptOutcome(gs, 3, "t1"), "won");
+});
+
+test("winAttemptOutcome: a rival's win serialized first → lost (case d)", () => {
+  const gs = { phase: "reveal", round: { number: 3, outcome: { kind: "win", team: "t2" } } };
+  assert.equal(winAttemptOutcome(gs, 3, "t1"), "lost");
+});
+
+test("winAttemptOutcome: the round busted → bust (case f)", () => {
+  const gs = { phase: "reveal", round: { number: 3, outcome: { kind: "bust" } } };
+  assert.equal(winAttemptOutcome(gs, 3, "t1"), "bust");
+});
+
+test("winAttemptOutcome: round genuinely advanced past me → over (case g)", () => {
+  // The snapshot has moved on to round 4 (unresolved) — not my round, not retry.
+  const gs = { phase: "roundActive", round: { number: 4 } };
+  assert.equal(winAttemptOutcome(gs, 3, "t1"), "over");
+  // Or advanced to gameOver with no round at all.
+  assert.equal(winAttemptOutcome({ phase: "gameOver" }, 3, "t1"), "over");
 });

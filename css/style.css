@@ -328,6 +328,27 @@ input:focus, select:focus {
 .tv-connect-line strong { color: var(--fg); font-weight: 700; }
 .tv-connect-ok { display: none; color: var(--muted); font-size: 0.9rem; margin: 0.28rem 0 0; }
 
+/* "Share the TV link" — a compact affordance under the instruction line: copies
+   screen.html?room=CODE so the host can send it to a TV that can't scan the QR.
+   Hidden once a TV is live (the instruction line gives way to the confirmation). */
+.tv-connect-share {
+  margin: 0.55rem 0 0;
+  min-height: 0;
+  padding: 0.36rem 0.72rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(255, 207, 63, 0.14);
+  border: 1px solid rgba(255, 207, 63, 0.34);
+  border-radius: var(--radius-sm);
+}
+.tv-connect-share:hover { background: rgba(255, 207, 63, 0.22); border-color: rgba(255, 207, 63, 0.5); }
+.tv-connect[data-role="guest"] .tv-connect-share {
+  color: var(--muted); background: rgba(255, 255, 255, 0.05); border-color: var(--line);
+}
+.tv-connect[data-role="guest"] .tv-connect-share:hover { color: var(--fg); }
+.tv-connect[data-state="connected"] .tv-connect-share { display: none; }
+
 /* Guest phones: quieter and more compact — same code, less shout. */
 .tv-connect[data-role="guest"] {
   background: rgba(255, 255, 255, 0.03);

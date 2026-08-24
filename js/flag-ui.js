@@ -35,10 +35,14 @@ import {
   chooseOptions,
   choiceUnlocked,
   buildAnswerIndex,
-  normalizeName,
   hash,
   versionCompatible,
+  eligiblePool,
+  effectiveRoundCount,
+  winAttemptOutcome,
 } from "./flag.js";
+import { ringEmission, revealEmission } from "./flag-analytics.js";
+import { escapeHtml, toast, suggestFor, pop } from "./ui-common.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2 } from "./flags-data.js";
 import { makeRoomCode, isValidRoomCode, deviceId } from "./roomcode.js";
@@ -93,13 +97,10 @@ const emittedRounds = new Set(); // roundKey → flag_round emitted
 const ringed = new Set(); // `${roundKey}:${correct}` → flag_ring emitted
 let committedOutcome = null; // {number, kind} when MY transaction committed
 
-// Typeahead source
+// Typeahead source. The NAME_INDEX + suggestFor ranking now lives in
+// ui-common.js (shared, identical to the Daily's); NAMES is the free-text alias
+// list kept on life support for §1.6.
 const NAMES = FLAGS.map((f) => ({ iso2: f.iso2, name: f.name }));
-const NAME_INDEX = FLAGS.map((f) => ({
-  iso2: f.iso2,
-  name: f.name,
-  keys: [f.name, ...(f.aliases || [])].map(normalizeName),
-}));
 void buildAnswerIndex; // index built lazily where the free-text mode would use it
 
 const LS_SESSION = "flagreveal_session";
@@ -173,45 +174,13 @@ const SCREENS = ["p-home", "p-lobby", "p-round", "p-reveal", "p-gameover"];
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle("hidden", s !== id);
 }
-let toastTimer = null;
-function toast(msg) {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.remove("hidden");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add("hidden"), 2600);
-}
 function setStatus(msg) {
   $("roundStatus").textContent = msg || "";
 }
 
-// Subtle "ring pop" on your own correct ring (the reveal flag already pulses via
-// CSS). Best-effort WebAudio, silenced for prefers-reduced-motion users.
-const reduceMotion =
-  typeof matchMedia === "function" &&
-  matchMedia("(prefers-reduced-motion: reduce)").matches;
-let audioCtx = null;
+// Your own correct ring gets a single subtle WebAudio pop (ui-common.pop, the
+// phone's 540→900 Hz variant), once per round — poppedRound guards the repeat.
 let poppedRound = null;
-function ringPop() {
-  if (reduceMotion) return;
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(540, now);
-    osc.frequency.exponentialRampToValueAtTime(900, now + 0.09);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.24);
-  } catch {
-    /* audio blocked — no-op */
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Session persistence
@@ -377,24 +346,16 @@ function doWinAttempt(roundNumber, displayedStep) {
         winState = { roundNumber, phase: "won" };
         return; // the reveal (and emission) render when the snapshot flips
       }
-      // Aborted — branch the full taxonomy (§4.2) on the LATEST snapshot.
+      // Aborted — classify the §4.2 taxonomy against the LATEST snapshot (pure).
       const gs = room && room.gameState;
-      const r = gs && gs.round;
-      const oc = r && r.outcome;
-      if (
-        !gs ||
-        (gs.phase === "roundActive" && r && r.number === roundNumber && oc == null)
-      ) {
+      const outcome = winAttemptOutcome(gs, roundNumber, myTeam);
+      if (outcome === "retry") {
         retryWin(roundNumber, displayedStep); // a/b/c benign → retry
-        return;
-      }
-      if (oc && oc.kind === "win" && oc.team === myTeam) {
+      } else if (outcome === "won") {
         // e: my commit landed but the ack was lost — you won.
         committedOutcome = committedOutcome || { number: roundNumber, kind: "win" };
         winState = { roundNumber, phase: "won" };
-        return;
-      }
-      if (oc && oc.kind === "win") {
+      } else if (outcome === "lost") {
         // d: rival beat me — a correct-but-losing (contested) ring.
         winState = { roundNumber, phase: "lost" };
         emitRing(
@@ -402,34 +363,31 @@ function doWinAttempt(roundNumber, displayedStep) {
           roundNumber
         );
         setStatus("So close — someone rang first! 😤");
-        return;
-      }
-      if (oc && oc.kind === "bust") {
+      } else if (outcome === "bust") {
         winState = { roundNumber, phase: "bust" };
-        setStatus("Round busted before it landed.");
-        return;
+        setStatus("Time ran out just before your ring landed.");
+      } else {
+        winState = { roundNumber, phase: "over" }; // g: genuinely advanced
       }
-      winState = { roundNumber, phase: "over" }; // g: genuinely advanced
     })
     .catch(() => retryWin(roundNumber, displayedStep));
 }
 
 function emitRing({ correct, contested, atStep, points }, roundNumber) {
-  const rk = roundKey(roundNumber);
-  const k = rk + ":" + (correct ? 1 : 0);
-  if (ringed.has(k)) return;
-  ringed.add(k);
-  track("flag_ring", {
-    mode: modeStr(),
-    team: myTeam,
-    atStep,
-    correct,
-    points,
-    contested,
-    difficulty: cfg.difficulty,
-    inputMode: cfg.inputMode,
-    roundKey: rk,
-  });
+  const decision = ringEmission(
+    {
+      ringed,
+      mode: modeStr(),
+      team: myTeam,
+      difficulty: cfg.difficulty,
+      inputMode: cfg.inputMode,
+      roundKey: roundKey(roundNumber),
+    },
+    { correct, contested, atStep, points }
+  );
+  if (!decision.emit) return;
+  ringed.add(decision.key);
+  track("flag_ring", decision.props);
 }
 
 // ---------------------------------------------------------------------------
@@ -498,7 +456,8 @@ async function tryClaim() {
   if (!wantJoin || myTeam || !room) return;
   const gs = room.gameState || {};
   if (!versionCompatible(room, BUNDLED_VERSIONS)) {
-    $("joinErr").textContent = "Update your app to join this game.";
+    $("joinErr").textContent =
+      "This room runs a newer version — refresh this page, then join again.";
     wantJoin = false;
     return;
   }
@@ -529,7 +488,7 @@ async function tryClaim() {
     }
   }
   if (!myTeam) {
-    $("joinErr").textContent = "Room is full (4 players max).";
+    $("joinErr").textContent = "Room is full (4 teams max).";
     wantJoin = false;
   }
 }
@@ -569,7 +528,7 @@ function onSnapshot(snap) {
   room = snap;
   if (!room) {
     // Room vanished (or never existed).
-    if (wantJoin) $("joinErr").textContent = "No such room.";
+    if (wantJoin) $("joinErr").textContent = "Room not found — check the code.";
     return;
   }
   cfg = cfgFromRoom(room);
@@ -651,8 +610,8 @@ function renderLobby(gs) {
   const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
   const inputLabel = cfg.inputMode === "choice" ? "tap to answer" : "type to answer";
   const paceLabel = paceOf(cfg.pace).label;
-  const pool = poolSize();
-  const roundCount = pool > 0 ? Math.min(cfg.roundCount, pool) : cfg.roundCount;
+  const pool = eligiblePool(FLAGS, cfg.difficulty).length;
+  const roundCount = pool > 0 ? effectiveRoundCount(cfg, FLAGS) : cfg.roundCount;
   // Each token labelled so the muted line reads as prose, not three bare words.
   $("lobbyMode").textContent = `${paceLabel} pace · ${diffLabel} flags · ${inputLabel} · ${roundCount} rounds`;
 
@@ -665,7 +624,7 @@ function renderLobby(gs) {
     const li = document.createElement("li");
     li.className = "team-row team-" + tN.slice(1);
     const you = tN === myTeam ? " (you)" : "";
-    const host = room.hostTeam === tN ? " 👑" : "";
+    const host = room.hostTeam === tN ? " · host" : "";
     li.textContent = `${t.name}${you}${host}`;
     ul.appendChild(li);
   }
@@ -698,10 +657,23 @@ function prepRound(gs) {
   if (mine && mine.lockedRound === r.number) myLockRound = r.number;
 }
 
+// The last round? effRounds 0 means the pool is unknown — never claim "final".
+function isFinalRound(r) {
+  const effRounds = effectiveRoundCount(cfg, FLAGS);
+  return effRounds > 0 && r && r.number >= effRounds;
+}
+
+// Reveal "advance" button label — the final round leads to scores, not a round.
+function nextRoundLabel(r, left) {
+  const final = isFinalRound(r);
+  if (left == null) return final ? "See final scores" : "Next round";
+  return final ? `See final scores · ${left}s` : `Next round · ${left}s`;
+}
+
 function renderRound(gs) {
   const r = gs.round;
   if (!r) return;
-  const effRounds = Math.min(cfg.roundCount, poolSize());
+  const effRounds = effectiveRoundCount(cfg, FLAGS);
   $("roundHeader").textContent = `Round ${r.number}${effRounds ? " / " + effRounds : ""}`;
   $("roundMode").textContent = screenLive() ? "📺 on the TV" : "📱 on your phone";
 
@@ -763,27 +735,9 @@ function renderChoices(r, locked) {
 }
 
 // ---------------------------------------------------------------------------
-// Typeahead
+// Typeahead — suggestFor (the ranking) is shared in ui-common.js; renderSuggest
+// / hideSuggest stay here (they bind this page's elements + commit path).
 // ---------------------------------------------------------------------------
-function suggestFor(query) {
-  const q = normalizeName(query);
-  if (!q) return [];
-  const starts = [];
-  const contains = [];
-  for (const e of NAME_INDEX) {
-    let rank = 2;
-    for (const k of e.keys) {
-      if (k.startsWith(q)) {
-        rank = Math.min(rank, 0);
-        break;
-      }
-      if (k.includes(q)) rank = Math.min(rank, 1);
-    }
-    if (rank === 0) starts.push(e);
-    else if (rank === 1) contains.push(e);
-  }
-  return starts.concat(contains).slice(0, 6);
-}
 function renderSuggest(query) {
   const gs = room && room.gameState;
   const r = gs && gs.round;
@@ -850,13 +804,13 @@ function renderRevealScreen(gs) {
     const pts = (r.results && r.results[oc.team] && r.results[oc.team].points) || 0;
     const mine = oc.team === myTeam;
     resultEl.textContent = mine
-      ? `🎉 You got it at step ${oc.atStep} — +${pts}!`
-      : `${wt ? wt.name : oc.team} got it at step ${oc.atStep} — +${pts}!`;
+      ? `🎉 You got it at step ${oc.atStep} of ${cfg.steps} — +${pts}!`
+      : `${wt ? wt.name : oc.team} got it at step ${oc.atStep} of ${cfg.steps} — +${pts}!`;
     resultEl.className = "reveal-result " + (mine ? "good" : "");
     // Your own win: a single subtle pop, once per round.
     if (mine && poppedRound !== r.number) {
       poppedRound = r.number;
-      ringPop();
+      pop(540, 900);
     }
   } else {
     resultEl.textContent = `Nobody got it! 🙈`;
@@ -888,7 +842,7 @@ function renderRevealScreen(gs) {
   const note = $("revealNote");
   if (paused) {
     // No countdown to fold into the button once paused.
-    $("btnNext").textContent = "Next round";
+    $("btnNext").textContent = nextRoundLabel(r, null);
     note.textContent = owner
       ? "Paused — take your time. Tap Next round when ready."
       : "Host paused the next round…";
@@ -896,7 +850,7 @@ function renderRevealScreen(gs) {
   } else {
     // Owner: countdown lives in the button label (no duplicate note).
     const left = Math.max(0, Math.ceil((r.autoAdvanceAt - serverNow()) / 1000));
-    $("btnNext").textContent = `Next round · ${left}s`;
+    $("btnNext").textContent = nextRoundLabel(r, left);
     note.textContent = owner ? "" : `Next round in ${left}s…`;
     note.classList.toggle("hidden", owner);
   }
@@ -904,29 +858,24 @@ function renderRevealScreen(gs) {
 
 function emitRevealAnalytics(gs, r, oc) {
   const rk = roundKey(r.number);
-  // The winner's own correct ring.
-  if (oc.kind === "win" && oc.team === myTeam) {
-    const pts = (r.results && r.results[myTeam] && r.results[myTeam].points) || 0;
-    emitRing({ correct: true, contested: false, atStep: oc.atStep, points: pts }, r.number);
-  }
-  // flag_round — only the phone whose transaction committed, at most once.
-  if (committedOutcome && committedOutcome.number === r.number && !emittedRounds.has(rk)) {
-    emittedRounds.add(rk);
-    const results = r.results || {};
-    let ringCount = 0;
-    for (const t of Object.keys(results)) {
-      if (results[t] && (results[t].correct || results[t].rangOut)) ringCount++;
-    }
-    track("flag_round", {
+  const decision = revealEmission(
+    {
+      myTeam,
       mode: modeStr(),
-      outcome: oc.kind === "win" ? "won" : "busted",
-      winningStep: oc.kind === "win" ? oc.atStep : null,
-      ringCount,
       difficulty: cfg.difficulty,
       inputMode: cfg.inputMode,
-      roundNumber: r.number,
       roundKey: rk,
-    });
+      emittedRounds,
+      committedOutcome,
+    },
+    { roundNumber: r.number, outcome: oc, results: r.results || {} }
+  );
+  // The winner's own correct ring (flows through emitRing's own dedup).
+  if (decision.ownRing) emitRing(decision.ownRing, r.number);
+  // flag_round — only the phone whose transaction committed, at most once.
+  if (decision.round && decision.round.emit) {
+    emittedRounds.add(rk);
+    track("flag_round", decision.round.props);
   }
 }
 
@@ -962,7 +911,7 @@ function renderBeats(box, results, teams) {
       div.className = "beat";
       div.textContent = `😅 ${t ? t.name : tN} guessed ${
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      } at step ${res.wrongStep} — out this round.`;
+      } at step ${res.wrongStep} of ${cfg.steps} — out this round.`;
       box.appendChild(div);
     }
   }
@@ -981,6 +930,19 @@ function renderGameOver(gs) {
     : "—";
   renderBoard($("goBoard"), teams);
   $("btnPlayAgain").classList.toggle("hidden", !iWon);
+
+  // Guest guidance: only the winner's phone shows "Play again", so a non-winner
+  // is left with "New game" (which leaves the auto-follow loop). Name what
+  // happens next instead of a dead end. The winner's (user-entered) team name
+  // renders here, so the note carries data-ph-mask (see player.html).
+  const guestNote = $("goGuestNote");
+  if (guestNote) {
+    const showNote = !iWon && wt;
+    guestNote.textContent = showNote
+      ? `👑 ${wt.name} can start the next game — stay here to follow along.`
+      : "";
+    guestNote.classList.toggle("hidden", !showNote);
+  }
 }
 
 // Share the finished game as a clipboard brag. The winning team name is
@@ -998,6 +960,21 @@ async function sharePartyResult() {
     props: { mode: modeStr(), points },
     toast,
   });
+}
+
+// Copy the TV join URL (screen.html?room=CODE) so the host can send it to the
+// TV — a real TV can't scan the lobby QR. The code rides in the URL that only
+// ever reaches the clipboard, never a rendered surface, so nothing here needs
+// masking. No analytics: this is a lobby setup helper, not a growth-loop share
+// (keeping share_party's counts to actual result shares).
+async function shareTvLink() {
+  const url = pageUrl("screen.html?room=" + code);
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("TV link copied 📋");
+  } catch {
+    toast(url); // clipboard blocked: at least show the link to send by hand
+  }
 }
 
 async function playAgain() {
@@ -1039,12 +1016,6 @@ async function playAgain() {
 // ---------------------------------------------------------------------------
 // Small utils
 // ---------------------------------------------------------------------------
-function poolSize() {
-  const diff = cfg.difficulty;
-  return FLAGS.filter(
-    (f) => f.eligible !== false && (diff === "world" || f.tier === diff)
-  ).length;
-}
 // Absolute URL for a same-origin page (what a scanned QR must encode).
 function pageUrl(rel) {
   return new URL(rel, location.href).href;
@@ -1058,14 +1029,6 @@ function drawQrOnce(id, tag, text) {
   if (c._qr === stamp) return;
   drawQr(c, text);
   c._qr = stamp;
-}
-function escapeHtml(s) {
-  return String(s == null ? "" : s).replace(/[&<>"]/g, (ch) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-  }[ch]));
 }
 
 // ---------------------------------------------------------------------------
@@ -1090,9 +1053,10 @@ function wire() {
   });
 
   $("btnLeave").addEventListener("click", leaveRoom);
+  $("btnShareTvLink").addEventListener("click", shareTvLink);
   $("btnStart").addEventListener("click", () => {
     cancelOwnerTimers();
-    advanceRound(code, 0, cfgNow()).catch(() => toast("Couldn't start."));
+    advanceRound(code, 0, cfgNow()).catch(() => toast("Couldn't start — try again."));
   });
 
   // Buzzer typeahead
@@ -1156,7 +1120,7 @@ setInterval(() => {
       const left = Math.max(0, Math.ceil((r.autoAdvanceAt - serverNow()) / 1000));
       // Owner's countdown rides in the button label; guests see the note.
       if (isOwner()) {
-        $("btnNext").textContent = `Next round · ${left}s`;
+        $("btnNext").textContent = nextRoundLabel(r, left);
       } else {
         $("revealNote").textContent = `Next round in ${left}s…`;
       }

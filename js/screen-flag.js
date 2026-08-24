@@ -15,7 +15,13 @@ import {
   onConnectionChange,
 } from "./firebase.js";
 import { renderReveal } from "./reveal-render.js";
-import { gameWinner, shouldFollowRoom, celebrationSpec } from "./flag.js";
+import {
+  gameWinner,
+  shouldFollowRoom,
+  celebrationSpec,
+  effectiveRoundCount,
+} from "./flag.js";
+import { escapeHtml } from "./ui-common.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, screenQuery } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
@@ -232,7 +238,7 @@ function render(room) {
     $("tvReveal").innerHTML = "";
     const n = Object.keys(teams).length;
     $("tvNote").textContent = n
-      ? `${n} player${n === 1 ? "" : "s"} in.`
+      ? `${n} team${n === 1 ? "" : "s"} in.`
       : "Enter the room code on your phone to join.";
     return;
   }
@@ -248,13 +254,13 @@ function render(room) {
       : "Game over";
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
-    $("tvNote").textContent = "Start a new game on the host's phone.";
+    $("tvNote").textContent = "👑 The winner's phone starts the next game.";
     if (wt && winner && !celebrated) celebrate(winner);
     return;
   }
 
   if (!r) return;
-  const effRounds = Math.min(cfg.roundCount, poolSize(cfg.difficulty));
+  const effRounds = effectiveRoundCount(cfg, FLAGS);
   $("tvHeader").textContent = `Round ${r.number}${effRounds ? " / " + effRounds : ""}`;
 
   const reveal = phase === "reveal";
@@ -278,11 +284,11 @@ function render(room) {
       const pts = (r.results && r.results[oc.team] && r.results[oc.team].points) || 0;
       $("tvResult").innerHTML = `<strong data-ph-mask>${escapeHtml(
         wt ? wt.name : oc.team
-      )}</strong> got it at step ${oc.atStep} — +${pts}!`;
+      )}</strong> got it at step ${oc.atStep} of ${cfg.steps} — +${pts}!`;
     } else {
       $("tvResult").textContent = `Nobody got it! 🙈`;
     }
-    renderBeats($("tvBeats"), r.results || {}, teams);
+    renderBeats($("tvBeats"), r.results || {}, teams, cfg.steps);
     // Coming-up line rides in the main column under the result, where all eyes
     // are; tvNote is reserved for lobby/idle states.
     $("tvComingUp").textContent = "Next round coming up…";
@@ -362,7 +368,7 @@ function renderBoard(ul, teams, winner) {
   }
 }
 
-function renderBeats(box, results, teams) {
+function renderBeats(box, results, teams, steps) {
   box.innerHTML = "";
   for (const tN of Object.keys(results)) {
     const res = results[tN];
@@ -379,24 +385,10 @@ function renderBeats(box, results, teams) {
         t ? t.name : tN
       )}</span> guessed ${escapeHtml(
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      )} at step ${res.wrongStep} — out this round.</span>`;
+      )} at step ${res.wrongStep} of ${steps} — out this round.</span>`;
       box.appendChild(div);
     }
   }
-}
-
-function poolSize(difficulty) {
-  return FLAGS.filter(
-    (f) => f.eligible !== false && (difficulty === "world" || f.tier === difficulty)
-  ).length;
-}
-function escapeHtml(s) {
-  return String(s == null ? "" : s).replace(/[&<>"]/g, (ch) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-  }[ch]));
 }
 
 // ---------------------------------------------------------------------------
