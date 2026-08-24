@@ -103,19 +103,20 @@
         </span>
         <div class="tv-connect-body">
           <p class="tv-connect-title">Play on the TV</p>
-          <div id="lobbyTvCode" class="tv-connect-code" data-ph-mask>······</div>
-          <p class="tv-connect-line">Open <span class="tv-connect-url">screen.html</span>
-            on the TV, enter this code — or scan onto a spare phone.</p>
+          <p class="tv-connect-line">On the TV, open the game and tap
+            <strong>Add a TV</strong>, then enter this room's code — or scan
+            onto a spare phone.</p>
           <p class="tv-connect-ok">TV connected — eyes up on the big screen.</p>
         </div>
         <div class="tv-connect-qr">
           <canvas id="lobbyTvQr" class="qr-canvas" aria-hidden="true"></canvas>
+          <span class="join-qr-cap">TV / spare screen</span>
         </div>
       </div>
 
+      <p id="lobbyMode" class="muted-note lobby-mode"></p>
       <p class="section-label">Who's in</p>
       <ul id="lobbyTeams" class="totals-list" data-ph-mask></ul>
-      <p id="lobbyMode" class="muted-note"></p>
       <div id="lobbyNote" class="waiting-note"></div>
 
       <div class="action-bar">

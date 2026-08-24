@@ -629,12 +629,9 @@ function renderLobby(gs) {
   const owner = isOwner();
 
   // TV-connect callout: a code-forward card for the host; a quieter version for
-  // other phones; a calm confirmation once a TV is live. The code is echoed into
-  // a masked element so replay never captures it. Populate the code element
-  // unconditionally (not gated on the wrapper) so it always mirrors lobbyCode
-  // and can never fall back to its placeholder dots.
-  const tvCode = $("lobbyTvCode");
-  if (tvCode) tvCode.textContent = code;
+  // other phones; a calm confirmation once a TV is live. The card no longer
+  // echoes the room code (it's the hero right above); it points at the "Add a
+  // TV" affordance + a scannable QR instead.
   const tv = $("lobbyTv");
   if (tv) {
     tv.dataset.role = owner ? "host" : "guest";
@@ -652,11 +649,12 @@ function renderLobby(gs) {
   // The mode note now summarises how the game is set up (a Configure detail),
   // not where the flag renders — the callout above owns the TV story.
   const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
-  const inputLabel = cfg.inputMode === "choice" ? "Tap-to-choose" : "Type the country";
+  const inputLabel = cfg.inputMode === "choice" ? "tap to answer" : "type to answer";
   const paceLabel = paceOf(cfg.pace).label;
   const pool = poolSize();
   const roundCount = pool > 0 ? Math.min(cfg.roundCount, pool) : cfg.roundCount;
-  $("lobbyMode").textContent = `${paceLabel} · ${diffLabel} · ${inputLabel} · ${roundCount} rounds`;
+  // Each token labelled so the muted line reads as prose, not three bare words.
+  $("lobbyMode").textContent = `${paceLabel} pace · ${diffLabel} flags · ${inputLabel} · ${roundCount} rounds`;
 
   const teams = gs.teams || {};
   const ul = $("lobbyTeams");

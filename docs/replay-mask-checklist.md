@@ -23,7 +23,6 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#homeName` — team-name input (also covered by `maskAllInputs`) → `data-ph-mask`.
 - `#resumeCode` — room code in the resume banner → `data-ph-mask`.
 - `#lobbyCode` — the big room code → `data-ph-mask`.
-- `#lobbyTvCode` — room code shown as the hero of the "Play on the TV" callout → `data-ph-mask`.
 - `#lobbyJoinQr`, `#lobbyTvQr` — QR **canvases** (join / TV-connect). A QR is a
   rendered image, not selectable text, so `maskTextSelector` does not apply and
   `data-ph-mask` is unnecessary; `captureCanvas: false` (session_recording)
@@ -38,6 +37,7 @@ it carries no personal data), and country names shown at reveal are not identify
 
 ### `screen.html` (TV)
 - `#tvCode` — the room code on the big screen → `data-ph-mask`.
+- `#tvJoinCode` — room code echoed into the big join-QR caption → `data-ph-mask`.
 - `#tvJoinQrCanvas` — the couch-join QR (canvas). Not text; `captureCanvas:
   false` covers it. No `data-ph-mask` needed.
 

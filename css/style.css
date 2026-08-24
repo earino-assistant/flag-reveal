@@ -242,6 +242,10 @@ input:focus, select:focus {
   line-height: 1;
 }
 
+/* The lobby's setup summary now leads the "Who's in" block; give it room to
+   breathe below the TV-connect card above it. */
+.lobby-mode { margin: 1.1rem 0 0; }
+
 .section-label {
   color: var(--faint);
   text-transform: uppercase;
@@ -313,32 +317,13 @@ input:focus, select:focus {
   color: var(--accent);
   margin: 0 0 0.1rem;
 }
-/* The hero: the room code, large and high-contrast, immediately copy-able. */
-.tv-connect-code {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 2rem;
-  line-height: 1.02;
-  letter-spacing: 0.16em;
-  color: var(--fg);
-  margin: 0;
-}
 .tv-connect-line {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.4;
   margin: 0.28rem 0 0;
 }
-.tv-connect-url {
-  font-family: var(--font-display);
-  font-weight: 700;
-  color: var(--accent-2);
-  background: rgba(77, 214, 255, 0.1);
-  border: 1px solid rgba(77, 214, 255, 0.25);
-  border-radius: 6px;
-  padding: 0.02em 0.36em;
-  white-space: nowrap;
-}
+.tv-connect-line strong { color: var(--fg); font-weight: 700; }
 .tv-connect-ok { display: none; color: var(--muted); font-size: 0.9rem; margin: 0.28rem 0 0; }
 
 /* Guest phones: quieter and more compact — same code, less shout. */
@@ -352,16 +337,14 @@ input:focus, select:focus {
 }
 .tv-connect[data-role="guest"] .tv-connect-glyph svg { width: 21px; height: 21px; }
 .tv-connect[data-role="guest"] .tv-connect-title { color: var(--muted); }
-.tv-connect[data-role="guest"] .tv-connect-code { font-size: 1.5rem; }
 
-/* Connected: calm cyan confirmation — the code + instruction give way to it. */
+/* Connected: calm cyan confirmation — the instruction line gives way to it. */
 .tv-connect[data-state="connected"] {
   background: linear-gradient(180deg, rgba(77, 214, 255, 0.12), rgba(77, 214, 255, 0.03));
   border-color: rgba(77, 214, 255, 0.34);
 }
 .tv-connect[data-state="connected"] .tv-connect-glyph { background: rgba(77, 214, 255, 0.16); color: var(--accent-2); }
 .tv-connect[data-state="connected"] .tv-connect-title { color: var(--accent-2); }
-.tv-connect[data-state="connected"] .tv-connect-code,
 .tv-connect[data-state="connected"] .tv-connect-line { display: none; }
 .tv-connect[data-state="connected"] .tv-connect-ok { display: block; color: var(--accent-2); }
 
@@ -490,11 +473,12 @@ input:focus, select:focus {
   padding: 0.7rem; font-size: 0.85rem; color: var(--muted);
   pointer-events: none;
 }
-/* When a fixed action bar is present, lift the footer fully above it so the
-   two can never overlap (both are bottom-anchored). The bar is ~72px tall;
-   a 4.8rem offset parks the footer's whole box above it. */
-.phase-screen + .action-bar ~ .app-foot,
-body:has(.action-bar:not(.hidden)) .app-foot { bottom: 4.8rem; }
+/* The player pages can surface a fixed action bar (lobby, reveal, game over);
+   the bar is ~72px tall and, like the footer, is bottom-anchored, so they
+   overlap. Lift the footer's whole box unconditionally above the bar on player
+   pages — a single robust rule that doesn't depend on the bar's DOM position
+   or a fragile :has() match. */
+body.player .app-foot { bottom: 4.8rem; }
 .app-foot a, .app-foot .link-btn { pointer-events: auto; color: var(--muted); }
 
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
@@ -626,15 +610,25 @@ body.tv { overflow: hidden; }
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
-/* The TV-connect callout QR: a third column beside the code + line. */
+/* The TV-connect callout QR: a third column beside the title + line, captioned
+   so it reads as a distinct job from the join QR up in the hero. */
 .tv-connect { grid-template-columns: auto 1fr auto; }
 .tv-connect-qr {
   grid-row: 1 / span 2;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
 }
-.tv-connect-qr .qr-canvas { width: 84px; height: 84px; border-radius: 8px; }
+/* Gold-tinted frame ties the square to the card's border — different job, same
+   family, so a guest never confuses it with the join QR. */
+.tv-connect-qr .qr-canvas {
+  width: 84px; height: 84px; border-radius: 8px;
+  border: 2px solid rgba(255, 207, 63, 0.45);
+}
 .tv-connect[data-role="guest"] .tv-connect-qr .qr-canvas { width: 70px; height: 70px; }
-/* Once the TV is live, the connect QR (like the code) gives way to the "ok". */
+/* Once the TV is live, the connect QR gives way to the "ok" confirmation. */
 .tv-connect[data-state="connected"] .tv-connect-qr { display: none; }
 
 /* The TV lobby's own couch-join QR (big — read across the room). */
@@ -647,6 +641,16 @@ body.tv { overflow: hidden; }
 }
 .qr-tv { width: min(38vh, 300px); height: min(38vh, 300px); border-radius: 14px; }
 .tv-join-qr-cap { color: var(--muted); font-size: 1.15rem; text-align: center; margin: 0; }
+/* The room code, sized to read across the room — the small top-left label
+   can't be seen at couch distance. */
+.tv-join-code {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.5rem;
+  letter-spacing: 0.16em;
+  vertical-align: middle;
+}
 
 /* ---- Game-over share row ---- */
 .go-share-row { display: flex; justify-content: center; margin: 0.4rem 0 0.2rem; }

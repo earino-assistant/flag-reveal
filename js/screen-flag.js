@@ -115,6 +115,10 @@ function render(room) {
   if (qrWrap) qrWrap.classList.toggle("hidden", phase !== "lobby");
 
   if (phase === "lobby") {
+    // Echo the room code into the big QR caption so it's legible across the
+    // room (the top-left .tv-room label is too small at 10 feet). Masked for
+    // session replay.
+    $("tvJoinCode").textContent = code;
     $("tvHeader").textContent = "Lobby — join on your phone";
     $("tvAnswer").classList.add("hidden");
     $("tvResult").textContent = "";
