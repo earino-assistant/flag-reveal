@@ -672,15 +672,25 @@ body.tv { overflow: hidden; }
 /* ---- Game-over share row ---- */
 .go-share-row { display: flex; justify-content: center; margin: 0.4rem 0 0.2rem; }
 
-/* ---- Landing Daily CTA ---- */
-.ld-cta-daily {
+/* ---- Landing Daily card (GeoParty .ld-daily pattern) ---- */
+.ld-daily {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
+  gap: 12px;
+  max-width: 420px;
+  margin: 14px auto 0;
+  padding: 13px 16px;
+  background: rgba(28, 28, 34, 0.75);
+  border: 1px solid var(--panel-2);
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 0.98rem;
+  line-height: 1.35;
   text-decoration: none;
 }
-.ld-cta-daily:hover { text-decoration: none; }
+.ld-daily:hover { border-color: var(--accent); text-decoration: none; }
+.ld-daily .art { font-size: 1.5rem; }
+.ld-daily strong { color: var(--accent); }
 .ld-daily-streak {
   font-size: 0.82rem;
   font-weight: 800;
