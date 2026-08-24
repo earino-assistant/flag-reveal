@@ -1,0 +1,14 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$roomCode": {
+        ".read": true,
+        ".write": "!data.exists() || data.child('createdAt').val() > (now - 86400000) || newData.val() == null",
+        ".validate": "$roomCode.matches(/^[A-HJ-NP-Z]{6}$/)",
+        "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 300000" }
+      }
+    }
+  }
+}
