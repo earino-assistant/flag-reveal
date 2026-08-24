@@ -18,6 +18,20 @@ export function isValidRoomCode(code) {
   return /^[A-HJ-NP-Z]{6}$/.test(String(code || "").toUpperCase());
 }
 
+// TV attach paths whose attribution survives a URL rewrite (mirrors GeoParty's
+// tvlink.js TV_VIAS): a QR scan or a shared link. "typed" and "follow" are not
+// propagated — a refreshed follow re-attributes as a link-style rejoin, exactly
+// as GeoParty does.
+export const TV_VIAS = ["qr", "link"];
+
+// screenQuery(code, via) → the screen-URL query string that rejoins `code` on
+// reload, carrying a propagatable `via` tag. Pure (no DOM): screen-flag.js feeds
+// it to history.replaceState so a TV that slept/refreshed rejoins the same room.
+// Always begins "?room="; a non-propagatable/garbage via yields no via param.
+export function screenQuery(code, via) {
+  return `?room=${code}` + (TV_VIAS.includes(via) ? `&via=${via}` : "");
+}
+
 // A stable per-browser device id, minted once and persisted. Identifies a
 // player's phone across refreshes so `claimTeamSlot`/resume can recognise the
 // same device (spec §1.1/§5). Never sent to analytics (it matches BANNED_KEY_RE).

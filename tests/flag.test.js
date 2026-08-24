@@ -20,6 +20,7 @@ import {
   roundConduct,
   gameWinner,
   carryStandings,
+  shouldFollowRoom,
   versionCompatible,
   hash,
 } from "../js/flag.js";
@@ -510,6 +511,74 @@ test("carryStandings: carries totals for a season when cfg.carry", () => {
   const { teams: out } = carryStandings(teams, "t1", { carry: true });
   assert.equal(out.t1.total, 100);
   assert.equal(out.t2.total, 50);
+});
+
+test("carryStandings: winnerOnly carries only the winner slot (F6)", () => {
+  const teams = {
+    t1: { name: "A", deviceId: "d1", total: 900, reachedTotalAt: 3 },
+    t2: { name: "B", deviceId: "d2", total: 100 },
+    t3: { name: "C", deviceId: "d3", total: 50 },
+  };
+  const { teams: out, hostTeam } = carryStandings(teams, "t1", { winnerOnly: true });
+  assert.equal(hostTeam, "t1");
+  assert.deepEqual(Object.keys(out), ["t1"]);
+  assert.equal(out.t1.total, 0); // fresh game → zeroed
+  assert.equal(out.t1.reachedTotalAt, undefined);
+  assert.equal(out.t1.deviceId, "d1"); // deviceId preserved for resume
+  assert.equal(out.t1.name, "A");
+});
+
+test("carryStandings: season overrides winnerOnly — full roster, totals kept", () => {
+  // A season's whole point is persisting every team's running total, so dropping
+  // non-winner slots would silently lose returning devices' totals: carry wins.
+  const teams = { t1: { total: 100 }, t2: { total: 50 }, t3: { total: 200 } };
+  const { teams: out } = carryStandings(teams, "t1", {
+    carry: true,
+    winnerOnly: true,
+  });
+  assert.deepEqual(Object.keys(out).sort(), ["t1", "t2", "t3"]);
+  assert.equal(out.t1.total, 100);
+  assert.equal(out.t2.total, 50);
+  assert.equal(out.t3.total, 200);
+});
+
+// ---------------------------------------------------------------------------
+// shouldFollowRoom (TV/subscriber nextRoom follow chain, F3 / SPEC §1530)
+// ---------------------------------------------------------------------------
+const overRoom = (nextRoom) => ({
+  gameState: { phase: "gameOver" },
+  nextRoom,
+});
+
+test("shouldFollowRoom: follows a valid unvisited pointer on gameOver", () => {
+  assert.equal(shouldFollowRoom(overRoom("BCDFGH"), "AAAAAA", new Set()), "BCDFGH");
+});
+
+test("shouldFollowRoom: ignores nextRoom === current room", () => {
+  assert.equal(shouldFollowRoom(overRoom("AAAAAA"), "AAAAAA", new Set()), null);
+});
+
+test("shouldFollowRoom: ignores an invalid nextRoom code", () => {
+  assert.equal(shouldFollowRoom(overRoom("bad"), "AAAAAA", new Set()), null);
+  assert.equal(shouldFollowRoom(overRoom(undefined), "AAAAAA", new Set()), null);
+});
+
+test("shouldFollowRoom: cycle guard — a visited code is never re-followed", () => {
+  // A → B → A: with {A, B} already visited, B's pointer back to A returns null.
+  const followed = new Set(["AAAAAA", "BCDFGH"]);
+  assert.equal(shouldFollowRoom(overRoom("AAAAAA"), "BCDFGH", followed), null);
+});
+
+test("shouldFollowRoom: gameOver gate — no follow in lobby/roundActive", () => {
+  const room = { gameState: { phase: "lobby" }, nextRoom: "BCDFGH" };
+  assert.equal(shouldFollowRoom(room, "AAAAAA", new Set()), null);
+  room.gameState.phase = "roundActive";
+  assert.equal(shouldFollowRoom(room, "AAAAAA", new Set()), null);
+});
+
+test("shouldFollowRoom: null/absent room → null", () => {
+  assert.equal(shouldFollowRoom(null, "AAAAAA", new Set()), null);
+  assert.equal(shouldFollowRoom({}, "AAAAAA", new Set()), null);
 });
 
 // ---------------------------------------------------------------------------

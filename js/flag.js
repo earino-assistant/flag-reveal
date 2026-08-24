@@ -12,6 +12,8 @@
 // each phone runs. The Firebase glue (js/firebase.js, built separately) wraps
 // these in `runTransaction(..., {applyLocally:false})`; it owns no logic.
 
+import { isValidRoomCode } from "./roomcode.js";
+
 // ---------------------------------------------------------------------------
 // Constants (spec defaults; every real caller passes a locked `cfg`, §8.1).
 // ---------------------------------------------------------------------------
@@ -538,10 +540,22 @@ export function gameWinner(teams, cfg = {}) {
 // a fresh game by default (or carries them for a "season" via cfg.carry, §7).
 // Preserves name/deviceId; sets hostTeam = winnerTeam (winner becomes the reveal
 // owner next game).
+//
+// cfg.winnerOnly (owner-approved amendment to SPEC-v3.1 ~§1356, which specifies
+// full-carry — see docs/tv-stability-analysis.md "F6 amendment"): carry ONLY the
+// winner's slot into the fresh game. Every other guest re-claims by deviceId via
+// the auto-follow + `tryClaim` resume path, so a phone that isn't open at game
+// over no longer leaves a ghost slot the TV counts as a live player. winnerOnly
+// is deliberately IGNORED in season mode (cfg.carry): a season's whole point is
+// persisting every team's running total across games, and dropping non-winner
+// slots would silently lose returning devices' totals — so season keeps the full
+// roster (totals intact) and only the fresh-game path prunes to the winner.
 export function carryStandings(teams, winnerTeam, cfg = {}) {
   const carry = cfg.carry === true;
+  const winnerOnly = cfg.winnerOnly === true && !carry;
   const out = {};
   for (const id of Object.keys(teams || {})) {
+    if (winnerOnly && id !== winnerTeam) continue;
     const t = teams[id] || {};
     const next = { ...t };
     if (carry) {
@@ -553,6 +567,26 @@ export function carryStandings(teams, winnerTeam, cfg = {}) {
     out[id] = next;
   }
   return { teams: out, hostTeam: winnerTeam };
+}
+
+// shouldFollowRoom(room, currentCode, followedCodes) → the next room code to
+// follow, or null. A finished (gameOver) room that grows a valid `nextRoom`
+// pointer steers every subscriber — the TV included — into the fresh room's
+// lobby. Pure: the caller owns the `followedCodes` Set and the re-subscribe.
+// Guards mirror GeoParty's follow chain (SPEC-v3.1 "nextRoom + followedCodes
+// chain — Verbatim", §1530): the room exists, its phase is gameOver, the pointer
+// is a valid code, it isn't the current room, and it hasn't been visited (cycle
+// guard). The gameOver gate keeps a TV from chasing a pointer written into a
+// still-live room.
+export function shouldFollowRoom(room, currentCode, followedCodes) {
+  if (!room) return null;
+  const gs = room.gameState || {};
+  if (gs.phase !== "gameOver") return null;
+  const next = room.nextRoom;
+  if (!isValidRoomCode(next)) return null;
+  if (next === currentCode) return null;
+  if (followedCodes && followedCodes.has(next)) return null;
+  return next;
 }
 
 // ---------------------------------------------------------------------------

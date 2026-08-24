@@ -1,6 +1,8 @@
 # TV stability analysis — porting GeoParty's screen polish to Flag Party
 
-**Status:** diagnosis + fix spec only. No source changes. 2026-08-24.
+**Status:** F1–F5 + F6 Option 1 IMPLEMENTED 2026-08-24 (see the "F6 amendment"
+section for the spec divergence). Original diagnosis + fix spec below preserved
+as authored. F7 remains optional/unimplemented.
 **Scope:** the two owner-reported TV bugs; side-by-side read of
 `/opt/data/geoparty/js/screen-ui.js` (reference, works) vs
 `js/screen-flag.js` (regressed), plus the phone glue (`js/flag-ui.js`) and
@@ -313,6 +315,35 @@ Recommendation: option 1, gated on the owner confirming the repro shows two
 slots in the DB. Note SPEC-v3.1 (~line 1356) currently *specifies* the
 full-carry, so whichever option lands must amend the spec, not silently
 diverge from it.
+
+### F6 amendment — winner-only carry (owner-approved, implemented 2026-08-24)
+
+**Status: LANDED (F6 Option 1).** The owner confirmed the ghost-slot repro and
+approved Option 1. Implementation:
+
+- `carryStandings(teams, winnerTeam, cfg)` (`js/flag.js`) gains a
+  `cfg.winnerOnly` knob. When set (and *not* a season), it carries **only the
+  winner's slot** into the fresh room — `deviceId` preserved, `total` zeroed,
+  `reachedTotalAt` dropped. Every other guest re-claims by `deviceId` through the
+  existing auto-follow + `tryClaim` resume (sub-second for any phone still open),
+  so a phone that isn't on the game-over screen at handoff no longer leaves a
+  ghost slot the TV counts as a live player.
+- `playAgain` (`js/flag-ui.js`) now calls `carryStandings(teams, winner,
+  { winnerOnly: true })` (merging `{ carry: true }` when `room.settings.carry` is
+  set for a season).
+- **Season interaction (resolved):** `winnerOnly` is deliberately **ignored**
+  when `cfg.carry` is true. A season's entire purpose is persisting every team's
+  running total across games; pruning non-winner slots would silently lose
+  returning devices' totals. So season mode keeps the full roster (totals intact)
+  and only the fresh-game path prunes to the winner. Unit-tested both ways
+  (`tests/flag.test.js`: winner-only carry, and season-overrides-winnerOnly).
+
+**Spec divergence recorded:** SPEC-v3.1 (~§1356) specifies the full-carry
+(`carryStandings(teams, winnerTeam)` carrying *every* slot). This amendment makes
+the fresh-game path winner-only. The spec's full-carry behavior is preserved
+exactly for the season path (`cfg.carry`). This note is the authoritative record
+of the owner-approved amendment so the spec is not silently contradicted; the
+SPEC-v3.1 §1356 prose should be annotated to point here on its next revision.
 
 ### F7 — persistent room code on the phone (optional polish, phone path)
 

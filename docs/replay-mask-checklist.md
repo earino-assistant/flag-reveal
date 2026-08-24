@@ -40,6 +40,15 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#tvJoinCode` — room code echoed into the big join-QR caption → `data-ph-mask`.
 - `#tvJoinQrCanvas` — the couch-join QR (canvas). Not text; `captureCanvas:
   false` covers it. No `data-ph-mask` needed.
+- **TV-stability audit (F1–F5, 2026-08-24):** the TV-stability fixes introduced
+  no new team-name or room-code text surface. F1's `history.replaceState(…,
+  screenQuery(code, via))` writes the room code into `location` (the browser
+  URL), not into a captured DOM text node — session replay records DOM, not the
+  address bar, and PostHog URL scrubbing is a separate concern; no mask applies.
+  F2's `resetDisplay` header ("Joining the next game…") and the F4
+  not-found/closed strings written to `#sErr` are generic status copy with no
+  identifiers. `#tvCode`/`#tvJoinCode` (already `data-ph-mask`ed above) remain
+  the only room-code text surfaces on the TV.
 
 ### `daily.html` (solo Daily Challenge)
 - The Daily is single-device and solo — **no team names, no room codes** are
