@@ -268,6 +268,8 @@ input:focus, select:focus {
   font-weight: 600;
 }
 .team-row .score { color: var(--accent); font-variant-numeric: tabular-nums; font-family: var(--font-display); }
+.team-row .delta { color: var(--good); font-size: 0.8em; margin-left: 0.35em; font-variant-numeric: tabular-nums; }
+.team-row .delta.zero { opacity: 0.4; }
 .team-1 { border-left-color: var(--team-1); }
 .team-2 { border-left-color: var(--team-2); }
 .team-3 { border-left-color: var(--team-3); }

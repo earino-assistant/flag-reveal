@@ -863,7 +863,17 @@ function renderRevealScreen(gs) {
     resultEl.className = "reveal-result bad";
   }
 
-  renderBoard($("revealBoard"), teams);
+  const board = $("revealBoard");
+  if (Object.keys(teams).length === 1) {
+    // Solo: a one-row board answers "what changed?" poorly. Borrow the Daily's
+    // "Total so far — N" treatment, which already reads as running-context.
+    const tN = Object.keys(teams)[0];
+    board.innerHTML =
+      `<div class="total-row"><span class="total-label">Total so far</span>` +
+      `<span class="total-val">${teams[tN].total || 0}</span></div>`;
+  } else {
+    renderBoard(board, teams, r.results || {});
+  }
   renderBeats($("revealBeats"), r.results || {}, teams);
 
   // Owner controls + auto-advance note. The pause button stays visible for the
@@ -920,7 +930,9 @@ function emitRevealAnalytics(gs, r, oc) {
   }
 }
 
-function renderBoard(ul, teams) {
+// `results` (optional, reveal only) is this round's per-team scoring; when
+// present each row gets a delta chip so the board shows what just changed.
+function renderBoard(ul, teams, results) {
   ul.innerHTML = "";
   const rows = Object.keys(teams)
     .map((tN) => ({ tN, ...teams[tN] }))
@@ -929,7 +941,12 @@ function renderBoard(ul, teams) {
     const li = document.createElement("li");
     li.className = "team-row team-" + row.tN.slice(1);
     const you = row.tN === myTeam ? " (you)" : "";
-    li.innerHTML = `<span>${escapeHtml(row.name)}${you}</span><span class="score">${row.total || 0}</span>`;
+    let delta = "";
+    if (results) {
+      const pts = (results[row.tN] && results[row.tN].points) || 0;
+      delta = ` <span class="delta${pts ? "" : " zero"}">+${pts}</span>`;
+    }
+    li.innerHTML = `<span>${escapeHtml(row.name)}${you}</span><span class="score">${row.total || 0}${delta}</span>`;
     ul.appendChild(li);
   }
 }
