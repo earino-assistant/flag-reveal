@@ -490,20 +490,6 @@ input:focus, select:focus {
   padding: 0.75em 1.15em; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-pop); max-width: 90vw;
 }
-.app-foot {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex; gap: 1.4rem; justify-content: center;
-  padding: 0.7rem; font-size: 0.85rem; color: var(--muted);
-  pointer-events: none;
-}
-/* The player pages can surface a fixed action bar (lobby, reveal, game over);
-   the bar is ~72px tall and, like the footer, is bottom-anchored, so they
-   overlap. Lift the footer's whole box unconditionally above the bar on player
-   pages — a single robust rule that doesn't depend on the bar's DOM position
-   or a fragile :has() match. */
-body.player .app-foot { bottom: 4.8rem; }
-.app-foot a, .app-foot .link-btn { pointer-events: auto; color: var(--muted); }
-
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
 .landing-hero { max-width: var(--maxw); padding-top: 11vh; }
 .landing-hero .brand { font-size: clamp(2.6rem, 11vw, 4rem); }
