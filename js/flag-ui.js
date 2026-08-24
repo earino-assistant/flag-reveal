@@ -981,6 +981,19 @@ function renderGameOver(gs) {
     : "—";
   renderBoard($("goBoard"), teams);
   $("btnPlayAgain").classList.toggle("hidden", !iWon);
+
+  // Guest guidance: only the winner's phone shows "Play again", so a non-winner
+  // is left with "New game" (which leaves the auto-follow loop). Name what
+  // happens next instead of a dead end. The winner's (user-entered) team name
+  // renders here, so the note carries data-ph-mask (see player.html).
+  const guestNote = $("goGuestNote");
+  if (guestNote) {
+    const showNote = !iWon && wt;
+    guestNote.textContent = showNote
+      ? `👑 ${wt.name} can start the next game — stay here to follow along.`
+      : "";
+    guestNote.classList.toggle("hidden", !showNote);
+  }
 }
 
 // Share the finished game as a clipboard brag. The winning team name is
@@ -998,6 +1011,21 @@ async function sharePartyResult() {
     props: { mode: modeStr(), points },
     toast,
   });
+}
+
+// Copy the TV join URL (screen.html?room=CODE) so the host can send it to the
+// TV — a real TV can't scan the lobby QR. The code rides in the URL that only
+// ever reaches the clipboard, never a rendered surface, so nothing here needs
+// masking. No analytics: this is a lobby setup helper, not a growth-loop share
+// (keeping share_party's counts to actual result shares).
+async function shareTvLink() {
+  const url = pageUrl("screen.html?room=" + code);
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("TV link copied 📋");
+  } catch {
+    toast(url); // clipboard blocked: at least show the link to send by hand
+  }
 }
 
 async function playAgain() {
@@ -1090,6 +1118,7 @@ function wire() {
   });
 
   $("btnLeave").addEventListener("click", leaveRoom);
+  $("btnShareTvLink").addEventListener("click", shareTvLink);
   $("btnStart").addEventListener("click", () => {
     cancelOwnerTimers();
     advanceRound(code, 0, cfgNow()).catch(() => toast("Couldn't start."));

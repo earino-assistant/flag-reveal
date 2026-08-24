@@ -115,6 +115,7 @@
           <p class="tv-connect-line">On the TV, open the game and tap
             <strong>Add a TV</strong>, then enter this room's code — or scan
             onto a spare phone.</p>
+          <button id="btnShareTvLink" class="tv-connect-share" type="button">Share the TV link 📋</button>
           <p class="tv-connect-ok">TV connected — eyes up on the big screen.</p>
         </div>
         <div class="tv-connect-qr">
@@ -190,8 +191,9 @@
       <div id="goWinner" class="reveal-headline" data-ph-mask>—</div>
       <ul id="goBoard" class="totals-list" data-ph-mask></ul>
       <div class="go-share-row">
-        <button id="btnShareParty" class="btn-ghost">Share result 📋</button>
+        <button id="btnShareParty" class="btn-primary">Share result 📋</button>
       </div>
+      <p id="goGuestNote" class="waiting-note hidden" data-ph-mask></p>
       <div class="action-bar">
         <button id="btnNewGame" class="btn-ghost">New game</button>
         <button id="btnPlayAgain" class="btn-primary hidden">Play again (same crew)</button>

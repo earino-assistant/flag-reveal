@@ -34,6 +34,12 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#revealBoard` — standings with team names → `data-ph-mask`.
 - `#revealBeats` — wrong-ring comedy beats carry team names → `data-ph-mask`.
 - `#goWinner`, `#goBoard` — winner + standings team names → `data-ph-mask`.
+- `#goGuestNote` — the non-winner game-over note names the winning **team** ("👑
+  {winner} can start the next game…") → `data-ph-mask`.
+- `#btnShareTvLink` — the "Share the TV link" lobby button copies
+  `screen.html?room=CODE` to the clipboard; the room code rides only in the URL
+  written to the clipboard, never into a rendered text node, so the button's
+  static label is not a masked surface. (No `data-ph-mask` needed.)
 
 ### `screen.html` (TV)
 - `#tvCode` — the room code on the big screen → `data-ph-mask`.
