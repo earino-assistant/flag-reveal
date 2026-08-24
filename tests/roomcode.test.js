@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { isValidRoomCode, screenQuery, TV_VIAS } from "../js/roomcode.js";
+import { isValidRoomCode, screenQuery, TV_VIAS, emitsScreenJoined } from "../js/roomcode.js";
 
 test("isValidRoomCode: six letters, no I/O, case-insensitive", () => {
   assert.equal(isValidRoomCode("ABCDEF"), true);
@@ -42,4 +42,18 @@ test("screenQuery: output always begins ?room=", () => {
 
 test("TV_VIAS: exactly the propagatable tags", () => {
   assert.deepEqual([...TV_VIAS].sort(), ["link", "qr"]);
+});
+
+// emitsScreenJoined — the follow-exclusion rule for the screen_joined attach
+// event (P0.1). A `follow` re-connect is the same TV session carrying into the
+// next game, not a new attach, so it must NOT be instrumented; every initial
+// join path (typed | link | qr) must.
+test("emitsScreenJoined: follow is NOT a new attach", () => {
+  assert.equal(emitsScreenJoined("follow"), false);
+});
+
+test("emitsScreenJoined: typed/link/qr are real attaches", () => {
+  assert.equal(emitsScreenJoined("typed"), true);
+  assert.equal(emitsScreenJoined("link"), true);
+  assert.equal(emitsScreenJoined("qr"), true);
 });

@@ -206,6 +206,11 @@ export function buildMetrics(windows) {
         countIf(event='share_daily')
         from events where ${W30}`,
     },
+    share_party_30d: {
+      label: "Party share (30d)",
+      sql: `select count() from events where ${W30}
+        and event='share_party'`,
+    },
     tv_attach_14d: {
       label: "TV attach by via (14d)",
       sql: `select properties.via, count() from events where ${W14}

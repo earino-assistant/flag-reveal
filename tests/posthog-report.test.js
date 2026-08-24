@@ -8,7 +8,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildDigest, fmtStack } from "../tools/posthog_report.mjs";
-import { buildWindows, resolveAsof } from "../tools/posthog_metrics.mjs";
+import { buildWindows, resolveAsof, buildMetrics } from "../tools/posthog_metrics.mjs";
 
 // A fully-populated, all-ok bag we can selectively break in each test.
 function fullBag() {
@@ -26,6 +26,7 @@ function fullBag() {
       ring_health_14d: { label: "Ring", rows: [[52, 36, 4.2, 4.0, 7, 88]] },
       round_outcome_14d: { label: "Outcome", rows: [[30, 10, 5.1, 40]] },
       daily_30d: { label: "Daily", rows: [[12, 7, 3]] },
+      share_party_30d: { label: "Party share", rows: [[9]] },
       tv_attach_14d: { label: "TV", rows: [["qr", 5], ["link", 3], ["typed", 1]] },
       exceptions_14d: { label: "Exc", rows: [['["a","b","boom"]', false, 3, 1]] },
       consent_30d: { label: "Consent", rows: [[40, 5]] },
@@ -153,6 +154,29 @@ test("header prints asof and the resolved window bounds", () => {
   assert.match(out, /as of 2026-08-24/);
   assert.match(out, /30d 2026-07-25→2026-08-24/);
   assert.match(out, /14d 2026-08-10→2026-08-24/);
+});
+
+// --- Party share (P0.3): share_party must be pulled AND rendered ---
+test("buildMetrics: the metrics pull includes a share_party query", () => {
+  const metrics = buildMetrics(buildWindows("2026-08-24"));
+  assert.ok(metrics.share_party_30d, "share_party_30d KPI is missing from the pull");
+  assert.match(metrics.share_party_30d.sql, /event='share_party'/);
+});
+
+test("party share section renders the count, not a missing line", () => {
+  const out = buildDigest(fullBag(), null);
+  const section = out.slice(out.indexOf("Party share (30d)"));
+  assert.match(out, /Party share \(30d\):/);
+  assert.match(section, /game-over results shared: \*\*9\*\*/);
+});
+
+test("failed share_party query renders NO DATA, not a healthy zero", () => {
+  const bag = fullBag();
+  bag.metrics.share_party_30d = { label: "Party share", error: true };
+  const out = buildDigest(bag, null);
+  const section = out.slice(out.indexOf("Party share (30d)"));
+  assert.match(section, /NO DATA/);
+  assert.doesNotMatch(section, /shared: \*\*0\*\*/);
 });
 
 /* ---------------- window-builder (reproducibility) ---------------- */

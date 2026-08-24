@@ -75,5 +75,6 @@ Any screen rendering a team name or room code needs `data-ph-mask`. Update
   cached**).
 - Flags are **vendored** into `assets/flags/*.svg` (never hot-linked from a
   CDN). Dataset in `data/flags.json`; licensing in `data/ATTRIBUTION.md`.
-- The Firebase project is shared with GeoParty (`geoparty-9ffe7`). Public
-  client keys live in `config.js` by design; never add secret/server keys.
+- Flag Party has its OWN Firebase project (`flagreveal`, europe-west1 RTDB) —
+  fully isolated from GeoParty's `geoparty-9ffe7`. Public client keys live in
+  `config.js` by design; never add secret/server keys.

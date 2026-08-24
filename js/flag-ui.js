@@ -481,7 +481,12 @@ async function tryClaim() {
         saveSession();
         track("team_joined", {
           mode: modeStr(),
-          team_count: Object.keys(room.gameState.teams || {}).length,
+          // `room` is the PRE-claim snapshot, so it doesn't include the slot we
+          // just won — +1 counts the joiner themselves (the claim transaction
+          // succeeded above). It's a best-effort local count: if a rival claimed
+          // another slot in the same tick it can lag by one, but it never omits
+          // the joiner, which is the point of a "team_count" on their own join.
+          team_count: Object.keys(room.gameState.teams || {}).length + 1,
         });
         return;
       }

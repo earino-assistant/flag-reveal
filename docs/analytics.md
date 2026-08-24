@@ -87,6 +87,14 @@ not a date-of-play) and the score/streak.
 `screen_joined.via` gains a third value: `qr` (the TV was reached by scanning
 the lobby's TV-connect QR), alongside `typed` and `link`.
 
+`screen_joined` is emitted **only after the code resolves to a real room** (the
+`sawState`/F4 gate), so a mistyped TV code never lands an attach. When a TV
+auto-follows a finished room's `nextRoom` pointer into the next game it
+re-connects with `via="follow"` — that is the **same physical TV session
+continuing**, not a new attach, so `follow` is deliberately **NOT** emitted as a
+`screen_joined`. `via` is therefore always one of `typed | link | qr` in
+PostHog; `follow` exists only in the client re-connect path.
+
 ## Other events
 
 `front_door_join`, `front_door_create`, `team_joined`, `screen_joined`,
@@ -138,6 +146,7 @@ newest earlier dated file, rotated only after a fully-ok run.
 | `ring_health_14d` | 14d | the core mechanic: `flag_ring` correct vs wrong, avg/median `atStep`, contested count |
 | `round_outcome_14d` | 14d | `flag_round` won vs busted, avg `winningStep` |
 | `daily_30d` | 30d | `daily_started` → `daily_completed` → `share_daily` |
+| `share_party_30d` | 30d | `share_party` count — the flagship-mode virality signal |
 | `tv_attach_14d` | 14d | `screen_joined` by `via` (typed \| link \| qr) |
 | `exceptions_14d` | 14d | `$exception` by `$exception_functions` + `$exception_handled` |
 | `consent_30d` | 30d | `consent_given` vs `consent_denied` |

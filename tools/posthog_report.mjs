@@ -242,6 +242,17 @@ function buildDigest(metrics, prev) {
   }
   lines.push("");
 
+  // --- Party share (the flagship-mode virality signal) ---
+  lines.push("**Party share (30d):**");
+  if (failed(c.share_party_30d)) {
+    lines.push(`- ${NO_DATA}`);
+  } else {
+    const sp = rowMap(c.share_party_30d.rows);
+    const shared = sp[0] ?? 0;
+    lines.push(`- game-over results shared: **${shared}**`);
+  }
+  lines.push("");
+
   // --- Consent ---
   lines.push("**Consent (30d):**");
   if (failed(c.consent_30d)) {

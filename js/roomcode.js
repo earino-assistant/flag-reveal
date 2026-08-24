@@ -24,6 +24,15 @@ export function isValidRoomCode(code) {
 // as GeoParty does.
 export const TV_VIAS = ["qr", "link"];
 
+// Does this attach `via` count as a NEW TV attach for analytics? A `follow`
+// re-connect (a finished room steering the TV into its `nextRoom`) is the SAME
+// physical TV session carrying into the next game, not a new attach, so it is
+// NOT instrumented as a `screen_joined` — only the initial join (typed | link |
+// qr) is. Pure predicate so the follow-exclusion rule is unit-testable.
+export function emitsScreenJoined(via) {
+  return via !== "follow";
+}
+
 // screenQuery(code, via) → the screen-URL query string that rejoins `code` on
 // reload, carrying a propagatable `via` tag. Pure (no DOM): screen-flag.js feeds
 // it to history.replaceState so a TV that slept/refreshed rejoins the same room.

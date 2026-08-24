@@ -23,7 +23,7 @@ import {
 } from "./flag.js";
 import { escapeHtml } from "./ui-common.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
-import { isValidRoomCode, screenQuery } from "./roomcode.js";
+import { isValidRoomCode, screenQuery, emitsScreenJoined } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
 import { track } from "./consent.js";
 import { drawQr } from "./qr.js";
@@ -66,7 +66,7 @@ function stopHeartbeat() {
 
 // The ONLY thing the TV ever writes: its heartbeat (§6). Started only AFTER the
 // room is confirmed to exist (F4/sawState) so a mistyped code never materializes
-// a phantom `rooms/{WRONGCODE}/screenHeartbeat` node in the shared DB. Every 4s
+// a phantom `rooms/{WRONGCODE}/screenHeartbeat` node in Flag Party's RTDB. Every 4s
 // — KEEP this cadence: the phone's `screenLive` window is 10s (flag-ui.js), so
 // slower beats would flap. The `.catch` swallows offline write rejections (F5).
 function startHeartbeat() {
@@ -95,7 +95,6 @@ function connect(c, joinVia) {
   // The couch-join QR: a phone scanning it lands on player.html?room=CODE.
   const qc = $("tvJoinQrCanvas");
   if (qc) drawQr(qc, new URL("player.html?room=" + code, location.href).href);
-  track("screen_joined", { mode: "tv", via });
 
   // Room-not-found / room-closed protocol (F4). `sawState` is per-subscription:
   // a null snapshot before the first real state means the code is wrong (→ back
@@ -112,6 +111,13 @@ function connect(c, joinVia) {
     if (!sawState) {
       sawState = true;
       startHeartbeat();
+      // Instrument the attach ONLY now that the code resolved to a real room —
+      // a mistyped code never lands a `screen_joined`, so `tv_attach_14d` counts
+      // real TVs, not typos. A `follow` re-connect is the SAME physical TV
+      // session carrying into the next game (not a new attach), so it is
+      // deliberately NOT emitted — see docs/analytics.md. The follow-exclusion
+      // rule lives in the pure `emitsScreenJoined` (roomcode.js), unit-tested.
+      if (emitsScreenJoined(via)) track("screen_joined", { mode: "tv", via });
       // Keep the URL on the current room so a TV sleep/refresh rejoins it (F1).
       // Written only after sawState, so a mistyped code is never pinned.
       try {
