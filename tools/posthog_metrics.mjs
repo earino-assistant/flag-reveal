@@ -183,8 +183,8 @@ export function buildMetrics(windows) {
       sql: `select
         countIf(properties.correct=true) correct,
         countIf(properties.correct=false) wrong,
-        round(avg(properties.atStep),1) avg_step,
-        round(median(properties.atStep),1) median_step,
+        round(avg(toFloat64OrNull(properties.atStep)),1) avg_step,
+        round(median(toFloat64OrNull(properties.atStep)),1) median_step,
         countIf(properties.contested=true) contested,
         count() total
         from events where ${W14} and event='flag_ring'`,
@@ -194,7 +194,7 @@ export function buildMetrics(windows) {
       sql: `select
         countIf(properties.outcome='won') won,
         countIf(properties.outcome='busted') busted,
-        round(avg(properties.winningStep),1) avg_winning_step,
+        round(avg(toFloat64OrNull(properties.winningStep)),1) avg_winning_step,
         count() total
         from events where ${W14} and event='flag_round'`,
     },
