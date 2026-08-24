@@ -1,6 +1,6 @@
 {
   "name": "flag-reveal",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Flag Reveal — a Jackbox-style flag-guessing party game. Static, no-build, Firebase RTDB sync.",
   "type": "module",
