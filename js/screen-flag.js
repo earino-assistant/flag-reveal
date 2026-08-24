@@ -25,6 +25,7 @@ import { drawQr } from "./qr.js";
 const $ = (id) => document.getElementById(id);
 let code = null;
 let heartbeatTimer = null;
+let unsubRoom = null;
 
 function cfgFromRoom(room) {
   const s = (room && room.settings) || {};
@@ -41,6 +42,17 @@ function cfgFromRoom(room) {
 }
 
 function connect(c, via) {
+  // Tear down any live room state first — connect() doubles as the re-connect
+  // used by followRoom(), and the heartbeat/subscription otherwise run forever.
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  if (unsubRoom) {
+    unsubRoom();
+    unsubRoom = null;
+  }
+
   code = c;
   $("tvCode").textContent = code;
   $("s-join").classList.add("hidden");
@@ -56,10 +68,37 @@ function connect(c, via) {
   heartbeatTimer = setInterval(beat, 4000);
 
   onConnectionChange((up) => $("connPill").classList.toggle("hidden", up));
-  subscribeRoom(code, render);
+  unsubRoom = subscribeRoom(code, render);
+}
+
+// Follow a finished room's `nextRoom` pointer into the next game (SPEC-v3.1
+// §765, §1361 — subscribers, and any TV, follow the pointer). This is a pure
+// re-subscribe: it tears down the old room's heartbeat + subscription and
+// reconnects. The TV remains a passive subscriber — followRoom writes NOTHING
+// (the only write is the heartbeat that connect() already owns).
+function followRoom(next) {
+  // connect() stops the old heartbeat + subscription, but do it here too so the
+  // teardown is explicit and order-independent.
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+  if (unsubRoom) {
+    unsubRoom();
+    unsubRoom = null;
+  }
+  connect(next, "follow");
 }
 
 function render(room) {
+  // Follow a finished room's pointer to the next game — the same guard the
+  // phone uses (js/flag-ui.js). A gameOver room that grows `nextRoom` steers
+  // every subscriber, TV included, into the fresh room's lobby.
+  const next = room && room.nextRoom;
+  if (next && isValidRoomCode(next) && next !== code) {
+    followRoom(next);
+    return;
+  }
   if (!room) {
     $("tvHeader").textContent = "Waiting for the room…";
     return;
