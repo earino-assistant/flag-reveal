@@ -14,11 +14,13 @@
 
 /* ================================================================
  * PostHog project config (public embeddable key, EU-resident instance —
- * same trust model as the Firebase keys in config.js). Shared with GeoParty.
+ * same trust model as the Firebase keys in config.js). Flag Reveal's OWN
+ * project — NOT the shared GeoParty key (see tests/analytics.test.js, which
+ * guards against reverting to it).
  * ================================================================ */
 
 export const POSTHOG_PROJECT_KEY =
-  "phc_Au8ogwiWbfcWqhbP6iE8ayyT5JSQtambPHFSffykdvkE";
+  "phc_tjYdfjtT6Ve8ywyLe8jrJBpzzxsyCTit6p3KXspbqvEG";
 
 // A minimal, safe URL scrub: drop the query string and collapse long digit runs
 // (ids) so nothing route-identifying rides on a captured URL. Pure.

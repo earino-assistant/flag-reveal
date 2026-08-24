@@ -16,7 +16,12 @@ import {
   setConsent,
   CONSENT_ACCEPTED,
   CONSENT_DECLINED,
+  POSTHOG_PROJECT_KEY,
+  POSTHOG_INIT_OPTIONS,
 } from "../js/analytics.js";
+
+// The shared GeoParty project key — Flag Reveal must NOT send analytics here.
+const GEOPARTY_PROJECT_KEY = "phc_Au8ogwiWbfcWqhbP6iE8ayyT5JSQtambPHFSffykdvkE";
 
 // A localStorage-shaped stub.
 function fakeStorage(initial) {
@@ -27,6 +32,24 @@ function fakeStorage(initial) {
     removeItem: (k) => m.delete(k),
   };
 }
+
+test("PostHog points at Flag Reveal's own project, not shared GeoParty", () => {
+  assert.equal(
+    POSTHOG_PROJECT_KEY,
+    "phc_tjYdfjtT6Ve8ywyLe8jrJBpzzxsyCTit6p3KXspbqvEG",
+    "must be the Flag Reveal project key"
+  );
+  assert.notEqual(
+    POSTHOG_PROJECT_KEY,
+    GEOPARTY_PROJECT_KEY,
+    "must not revert to the shared GeoParty project key"
+  );
+  assert.equal(
+    POSTHOG_INIT_OPTIONS.api_host,
+    "https://eu.i.posthog.com",
+    "must stay on the EU instance"
+  );
+});
 
 test("the two flag events exist with the expected shape", () => {
   assert.ok(EVENT_SCHEMA.flag_ring, "flag_ring must be in the schema");
