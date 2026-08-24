@@ -28,6 +28,12 @@
 
   <!-- ============================ DISPLAY ============================ -->
   <section id="s-display" class="phase-screen hidden">
+    <!-- Game-over celebration layers (decorative; screen-flag.js fills the
+         confetti burst). Bloom sits BEHIND the content (z-index 0), confetti
+         ABOVE it (z-index 2) — the GeoParty pitfall was confetti behind the
+         leaderboard. Both aria-hidden: the "👑 name wins" text carries meaning. -->
+    <div id="tvBloom" class="tv-bloom" aria-hidden="true"></div>
+    <div id="tvConfetti" class="tv-confetti" aria-hidden="true"></div>
     <header class="tv-head">
       <div class="tv-room">Room <strong id="tvCode" data-ph-mask>······</strong></div>
       <div id="tvHeader" class="tv-round">Lobby</div>
@@ -43,7 +49,6 @@
       <div id="tvAnswer" class="tv-answer hidden">—</div>
       <div id="tvResult" class="tv-result"></div>
       <div id="tvComingUp" class="tv-comingup"></div>
-      <div id="tvBeats" class="reveal-beats" data-ph-mask></div>
     </main>
 
     <aside class="tv-side">
@@ -51,6 +56,11 @@
       <ul id="tvBoard" class="totals-list tv-board" data-ph-mask></ul>
       <div id="tvNote" class="waiting-note"></div>
     </aside>
+
+    <!-- The wrong-guess "busts" gallery. Its own grid block so the reveal
+         layout can place it below the standings, center-stage (not a
+         sidebar). Hidden except during reveal/gameOver. -->
+    <section id="tvBeats" class="reveal-beats tv-busts" data-ph-mask></section>
   </section>
 
   <script type="module" src="js/consent.js"></script>

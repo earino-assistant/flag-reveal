@@ -557,6 +557,7 @@ body.tv { overflow: hidden; }
   height: 100vh;
   gap: 1.6rem;
   padding: 1.6rem 2.1rem;
+  position: relative;
 }
 .tv-head {
   grid-area: head;
@@ -581,6 +582,100 @@ body.tv { overflow: hidden; }
 .tv-board .team-row { font-size: 1.3rem; padding: 0.8em 1em; }
 .tv-board .score { font-size: 1.4rem; }
 .tv-note, #tvNote { color: var(--muted); }
+/* The wrong-guess gallery: its own grid block, hidden until the reveal
+   layout claims it (below). */
+.tv-busts { grid-area: busts; display: none; }
+
+/* ---- TV layout state machine (data-phase drives the whole screen) --------
+ * roundActive: the flag is the ONLY thing on screen — full-bleed. Everything
+ * else (standings, answer, busts) is hidden; the head shrinks to a corner chip.
+ * reveal / gameOver: a centered "results card" — answer, leaderboard and the
+ * wrong-guess flags stacked and legible from the couch; the flag shrinks back. */
+#s-display[data-phase="roundActive"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  grid-template-areas: "main";
+  padding: 1rem;
+}
+#s-display[data-phase="roundActive"] .tv-side { display: none; }
+/* The head becomes an unobtrusive corner chip floating over the big flag. It
+   keeps the room code (masked, reused elsewhere) and the round indicator. */
+#s-display[data-phase="roundActive"] .tv-head {
+  position: absolute;
+  top: 0.7rem;
+  right: 1.3rem;
+  z-index: 5;
+  gap: 1.1rem;
+  padding: 0.4rem 0.9rem;
+  border-bottom: 0;
+  border-radius: 999px;
+  background: rgba(14, 14, 18, 0.55);
+  opacity: 0.8;
+}
+#s-display[data-phase="roundActive"] .tv-room { font-size: 0.95rem; }
+#s-display[data-phase="roundActive"] .tv-round { font-size: 1.15rem; }
+/* Height-driven so the flag always fits the viewport height; max-width caps
+   the rare very-wide flag. aspect-ratio (on .flag-canvas) keeps it undistorted. */
+#s-display[data-phase="roundActive"] .tv-reveal {
+  width: auto;
+  max-width: 96vw;
+  height: 94vh;
+  margin: 0;
+}
+
+#s-display[data-phase="reveal"],
+#s-display[data-phase="gameOver"] {
+  grid-template-columns: minmax(0, 62rem);
+  grid-template-rows: auto auto auto auto;
+  grid-template-areas: "head" "main" "side" "busts";
+  justify-content: center;
+  align-content: start;
+  overflow-y: auto;
+  gap: 1rem;
+}
+#s-display[data-phase="reveal"] .tv-main,
+#s-display[data-phase="gameOver"] .tv-main {
+  justify-content: flex-start;
+}
+/* The flag is revealed now — shrink it so the answer + standings own the frame. */
+#s-display[data-phase="reveal"] .tv-reveal,
+#s-display[data-phase="gameOver"] .tv-reveal {
+  max-width: min(46vh, 42rem);
+  margin: 0 auto;
+}
+/* Standings move out of the sidebar into the centered column, center-stage. */
+#s-display[data-phase="reveal"] .tv-side,
+#s-display[data-phase="gameOver"] .tv-side {
+  overflow: visible;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+#s-display[data-phase="reveal"] .side-title,
+#s-display[data-phase="gameOver"] .side-title {
+  text-align: center;
+  font-size: 1rem;
+}
+#s-display[data-phase="reveal"] .tv-busts,
+#s-display[data-phase="gameOver"] .tv-busts {
+  display: flex;
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+}
+
+/* Each wrong guess: its flag beside the "team guessed COUNTRY" line. */
+.beat { display: flex; align-items: center; gap: 0.7rem; }
+.beat-flag {
+  flex: 0 0 auto;
+  width: 3.2rem;
+  height: 2.13rem;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: var(--tile-cover);
+}
+.beat-text { min-width: 0; font-size: 1.15rem; }
 
 @media (max-width: 720px) {
   #s-display {
@@ -593,9 +688,84 @@ body.tv { overflow: hidden; }
 /* ---- Confetti (cheap) ---- */
 .confetti { height: 0; }
 
+/* ---- Game-over celebration — "your color takes the room" ------------------
+ * Cribbed from GeoParty (references/win-celebration-ui.md). A FAST, NON-BLOCKING
+ * enhancement of the TV game-over screen (no modal, buttons/nav stay live): the
+ * winner's color floods in behind the "👑 name wins" headline, the headline
+ * punches with a colored glow, a confetti burst falls in that color, then it
+ * settles (~1.4s) into a calm resting glow. `--win` is the single color knob
+ * (screen-flag.js sets it per-winner via celebrationSpec); a champion goes gold
+ * (var(--accent)). Color is never the sole signal — the headline text carries
+ * the meaning. Both layers are aria-hidden decoration. */
+
+/* Bloom: a radial wash of the winner's color, BEHIND the content (z-index 0). */
+.tv-bloom {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(58% 55% at 50% 44%, var(--win, transparent), transparent 70%);
+}
+/* Confetti wrap: ABOVE the content (z-index 2). PITFALL (GeoParty): a burst at
+   z-index 0 falls behind the leaderboard and reads as broken. */
+.tv-confetti {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+/* During the celebration, lift the results content above the bloom: the bloom is
+   a positioned z-index:0 layer, so the (non-positioned) grid items would
+   otherwise paint under it. Confetti still sits above everything. */
+#s-display.celebrate .tv-head,
+#s-display.celebrate .tv-main,
+#s-display.celebrate .tv-side,
+#s-display.celebrate .tv-busts { position: relative; z-index: 1; }
+
+#s-display.celebrate .tv-bloom { animation: tv-bloom-in 1.4s ease-out forwards; }
+@keyframes tv-bloom-in {
+  0%   { opacity: 0; }
+  22%  { opacity: 0.9; }
+  100% { opacity: 0.4; } /* resting glow */
+}
+
+/* Headline punch: the "👑 name wins" line glows in the win color, then eases. */
+#s-display.celebrate .tv-result strong { color: var(--win, var(--accent)); }
+#s-display.celebrate .tv-result { animation: tv-headline-punch 1.4s ease-out; }
+@keyframes tv-headline-punch {
+  0%   { transform: scale(0.92); text-shadow: none; }
+  30%  { transform: scale(1.06); text-shadow: 0 0 30px var(--win, var(--accent)); }
+  100% { transform: scale(1); text-shadow: 0 0 12px var(--win, var(--accent)); }
+}
+
+/* Confetti pieces — cheap DOM spans; screen-flag.js sets --x/--dx/--rot/--delay/--c. */
+.tv-confetti span {
+  position: absolute;
+  top: -8%;
+  left: var(--x, 50%);
+  width: 0.7rem;
+  height: 1rem;
+  background: var(--c, var(--win, var(--accent)));
+  border-radius: 1px;
+  opacity: 0;
+  animation: tv-confetti-fall 1.4s var(--delay, 0s) ease-in forwards;
+}
+@keyframes tv-confetti-fall {
+  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  12%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0), 108vh) rotate(var(--rot, 540deg)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .flag-tile, .flag-img, button { transition: none; }
   #revealFlag.flag-canvas.full, .tv-reveal.flag-canvas.full { animation: none; }
+  /* Collapse the celebration to its final static frame: bloom at resting
+     opacity, headline static, NO confetti. */
+  #s-display.celebrate .tv-bloom { animation: none; opacity: 0.4; }
+  #s-display.celebrate .tv-result { animation: none; }
+  .tv-confetti { display: none; }
 }
 
 /* ============================ v0.2 additions ============================ */

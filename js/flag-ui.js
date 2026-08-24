@@ -1005,7 +1005,16 @@ async function playAgain() {
   const teams = gs.teams || {};
   const winner = gameWinner(teams, cfg);
   if (winner !== myTeam) return;
-  const { teams: newTeams, hostTeam } = carryStandings(teams, winner);
+  // Carry only the winner's slot forward (F6, tv-stability-analysis.md): guests
+  // re-claim by deviceId via the auto-follow + tryClaim resume, so a phone that
+  // isn't open at game over no longer leaves a ghost slot the TV counts as a
+  // live player. Season mode keeps the full roster (carryStandings ignores
+  // winnerOnly when cfg.carry, to preserve every team's running total).
+  const seasonCfg = room.settings && room.settings.carry ? { carry: true } : {};
+  const { teams: newTeams, hostTeam } = carryStandings(teams, winner, {
+    ...seasonCfg,
+    winnerOnly: true,
+  });
   const c2 = makeRoomCode();
   const state = {
     createdAt: Date.now(),

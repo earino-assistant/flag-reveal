@@ -40,6 +40,24 @@ it carries no personal data), and country names shown at reveal are not identify
 - `#tvJoinCode` — room code echoed into the big join-QR caption → `data-ph-mask`.
 - `#tvJoinQrCanvas` — the couch-join QR (canvas). Not text; `captureCanvas:
   false` covers it. No `data-ph-mask` needed.
+- **TV-stability audit (F1–F5, 2026-08-24):** the TV-stability fixes introduced
+  no new team-name or room-code text surface. F1's `history.replaceState(…,
+  screenQuery(code, via))` writes the room code into `location` (the browser
+  URL), not into a captured DOM text node — session replay records DOM, not the
+  address bar, and PostHog URL scrubbing is a separate concern; no mask applies.
+  F2's `resetDisplay` header ("Joining the next game…") and the F4
+  not-found/closed strings written to `#sErr` are generic status copy with no
+  identifiers. `#tvCode`/`#tvJoinCode` (already `data-ph-mask`ed above) remain
+  the only room-code text surfaces on the TV.
+- **TV layout polish (flag-dominant round + rich reveal, 2026-08-24):** the
+  `data-phase` layout state machine and the reveal "results card" render the
+  same masked surfaces in new positions — `#tvBoard` (standings) and `#tvBeats`
+  (busts) both keep `data-ph-mask`; `#tvBeats` moved out of `<main>` into its
+  own `.tv-busts` grid block but its element/id/mask are unchanged. Each wrong
+  guess now renders a `.beat-flag` `<img>` of the *guessed country's* flag SVG
+  (`aria-hidden`, decorative) — an image, not text, and carries no team name or
+  room code, so no mask applies (same rule as the progressive flag and QR
+  canvases). No new team-name or room-code text surface was introduced.
 
 ### `daily.html` (solo Daily Challenge)
 - The Daily is single-device and solo — **no team names, no room codes** are
