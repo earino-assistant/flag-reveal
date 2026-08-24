@@ -92,3 +92,52 @@ the lobby's TV-connect QR), alongside `typed` and `link`.
 `front_door_join`, `front_door_create`, `team_joined`, `screen_joined`,
 `next_game`, `consent_given`, `consent_denied` — routing/funnel aggregates, all
 schema-gated identically.
+
+## Metrics tooling (the weekly "State of Flag Reveal" pull)
+
+Two Node-built-in scripts (no npm deps) mirror GeoParty's proven pattern. They
+target **PostHog project 256584** (Flag Reveal, EU instance
+`https://eu.i.posthog.com`) — NOT GeoParty's 252836.
+
+- **`tools/posthog_metrics.mjs`** — pulls the KPIs below over fixed 14d/30d
+  windows into a single JSON bag. The `POSTHOG_PERSONAL_API_KEY` is read from
+  the environment only (never committed, never printed). Windows are anchored
+  to `--asof` (default today UTC) as literal `toDate('…')` bounds, never
+  `now()`, so a re-run reproduces the same numbers. Per-query 30s timeout + one
+  5xx/timeout retry. **Exit contract:** exit 0 only if every query succeeded;
+  any error → exit 1 with `bag.ok=false` + `bag.errors=[failed keys]`.
+- **`tools/posthog_report.mjs`** — pure `buildDigest(metrics, prev)` renders a
+  deterministic markdown digest with week-over-week deltas. No-silent-sections
+  policy: every section renders real numbers, `none in window`, or
+  `⚠ NO DATA (query failed)` — a blank section can never masquerade as a
+  healthy zero.
+- **`tests/posthog-report.test.js`** — covers the pure `buildDigest` + the
+  window builder with no network (all-error bag → markers not zeros; null
+  exception stack doesn't crash; delta math incl. missing/unreliable baseline).
+
+Usage:
+
+```
+POSTHOG_PERSONAL_API_KEY=... node tools/posthog_metrics.mjs \
+  --asof 2026-08-24 --out /opt/data/flag-reveal-metrics/flag-metrics-2026-08-24.json
+node tools/posthog_report.mjs flag-metrics-2026-08-24.json flag-metrics-last-week.json
+```
+
+The metrics JSON is written to a dated history under
+`/opt/data/flag-reveal-metrics/` on the persistent volume and is **NEVER**
+committed (this is a public Pages repo). The report's `prev` baseline is the
+newest earlier dated file, rotated only after a fully-ok run.
+
+### KPIs pulled
+
+| key | window | question |
+|---|---|---|
+| `core_30d` | 30d | rooms created (`front_door_create`), teams joined, rounds (`flag_round`), rings (`flag_ring`), distinct players |
+| `mode_mix_30d` | 30d | created vs rounds vs rings by `mode` |
+| `funnel_14d` | 14d | party funnel: `front_door_join` → `team_joined` → `flag_round` → `next_game` |
+| `ring_health_14d` | 14d | the core mechanic: `flag_ring` correct vs wrong, avg/median `atStep`, contested count |
+| `round_outcome_14d` | 14d | `flag_round` won vs busted, avg `winningStep` |
+| `daily_30d` | 30d | `daily_started` → `daily_completed` → `share_daily` |
+| `tv_attach_14d` | 14d | `screen_joined` by `via` (typed \| link \| qr) |
+| `exceptions_14d` | 14d | `$exception` by `$exception_functions` + `$exception_handled` |
+| `consent_30d` | 30d | `consent_given` vs `consent_denied` |
