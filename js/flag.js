@@ -95,11 +95,26 @@ function shuffle(arr, rng) {
 // "selecting the flag pool by recognizability" without a formal tier→difficulty
 // table. `world = all eligible`, `easy = tier:"easy"`, `expert = tier:"expert"`
 // is the sensible reading and keeps `gameFlags` a total function.
-function eligiblePool(pool, difficulty) {
+// Exported so the phone and the TV derive the tier's size from the SAME filter
+// flag.js uses internally, instead of each re-deriving it (the old private
+// `poolSize` copies in flag-ui.js / screen-flag.js).
+export function eligiblePool(pool, difficulty) {
   const eligible = (pool || []).filter((e) => e && e.eligible !== false);
   if (difficulty === "easy") return eligible.filter((e) => e.tier === "easy");
   if (difficulty === "expert") return eligible.filter((e) => e.tier === "expert");
   return eligible; // "world" and any unknown difficulty → the mixed pool
+}
+
+// The pool-clamped round budget: min(requested, |eligible pool|). `requested`
+// defaults to the whole eligible pool when cfg.roundCount is absent. This is the
+// single source of truth for "Round N / M": the clamp used to be copy-pasted at
+// four+ call sites (flag.js twice, flag-ui.js, screen-flag.js), which meant a
+// future eligibility change could make the phone and TV disagree about M.
+export function effectiveRoundCount(cfg, pool) {
+  const difficulty = (cfg && cfg.difficulty) || "world";
+  const size = eligiblePool(pool, difficulty).length;
+  const requested = cfg && cfg.roundCount != null ? cfg.roundCount : size;
+  return Math.min(requested, size);
 }
 
 // ---------------------------------------------------------------------------
@@ -143,10 +158,7 @@ export function gameFlags(gameSeed, effectiveRoundCount, difficulty, pool) {
 // owner refresh re-authors the identical round — no resample (§8.1).
 export function flagForRound(config, gameSeed, number, pool) {
   const difficulty = (config && config.difficulty) || "world";
-  const poolSize = eligiblePool(pool, difficulty).length;
-  const requested = config && config.roundCount != null ? config.roundCount : poolSize;
-  const effectiveRoundCount = Math.min(requested, poolSize);
-  const seq = gameFlags(gameSeed, effectiveRoundCount, difficulty, pool);
+  const seq = gameFlags(gameSeed, effectiveRoundCount(config, pool), difficulty, pool);
   return { answerIso: seq[number - 1], flagSeed: hash(gameSeed, number) };
 }
 
@@ -410,11 +422,7 @@ function isGameOver(gameState, fromRound, cfg) {
     const maxTotal = totals.length ? Math.max(...totals) : 0;
     if (maxTotal >= target) return true;
   }
-  const difficulty = cfg.difficulty || "world";
-  const poolSize = eligiblePool(cfg.pool || [], difficulty).length;
-  const requested = cfg.roundCount != null ? cfg.roundCount : poolSize;
-  const effectiveRoundCount = Math.min(requested, poolSize);
-  return fromRound >= effectiveRoundCount;
+  return fromRound >= effectiveRoundCount(cfg, cfg.pool || []);
 }
 
 export function advanceState(gameState, fromRound, cfg = {}) {
@@ -503,6 +511,34 @@ export function roundConduct(gameState, serverNow, isOwner, cfg = {}) {
   }
 
   return "continue";
+}
+
+// ---------------------------------------------------------------------------
+// 11b. winAttemptOutcome — the §4.2 abort taxonomy as a pure classifier.
+// ---------------------------------------------------------------------------
+// When a phone's `resolveRound({kind:"win"})` transaction ABORTS (returned
+// falsy), the phone re-reads the latest snapshot and decides what actually
+// happened. This is that decision, extracted from doWinAttempt so it can be
+// unit-tested against every §4.2 case. Returns one of:
+//   "retry" — a/b/c benign: still live (or no snapshot yet) → try again.
+//   "won"   — e: my own win already committed (my ack was merely lost).
+//   "lost"  — d: a RIVAL's win serialized first (my correct ring was contested).
+//   "bust"  — f: the round busted before my win landed.
+//   "over"  — g: the round genuinely advanced past me.
+// `myTeam` is the caller's slot; the committed-vs-aborted split stays in the UI
+// (it is the transaction's own return value, not a property of the snapshot).
+export function winAttemptOutcome(gameState, roundNumber, myTeam) {
+  const gs = gameState;
+  const r = gs && gs.round;
+  const oc = r && r.outcome;
+  // Still resolvable (or empty local cache) → benign, retry.
+  if (!gs || (gs.phase === "roundActive" && r && r.number === roundNumber && oc == null)) {
+    return "retry";
+  }
+  if (oc && oc.kind === "win" && oc.team === myTeam) return "won";
+  if (oc && oc.kind === "win") return "lost";
+  if (oc && oc.kind === "bust") return "bust";
+  return "over";
 }
 
 // ---------------------------------------------------------------------------
