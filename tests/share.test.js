@@ -35,7 +35,7 @@ test("withUtm preserves an existing query (e.g. ?room=CODE)", () => {
 
 test("partyShareText brags the points and links back", () => {
   const t = partyShareText({ winner: "The Cartographers", points: 4200, url: "URL" });
-  assert.match(t, /Flag Reveal/);
+  assert.match(t, /Flag Party/);
   assert.match(t, /The Cartographers hit 4,200 pts/);
   assert.match(t, /beat us: URL/);
 });
@@ -77,7 +77,7 @@ test("dailyShareText: header, grid, link — three lines", () => {
   });
   const lines = t.split("\n");
   assert.equal(lines.length, 3);
-  assert.match(lines[0], /Flag Reveal Daily #12/);
+  assert.match(lines[0], /Flag Party Daily #12/);
   assert.match(lines[0], /🔥4/);
   assert.match(lines[0], /3,125 pts/);
   assert.equal(lines[1], `${EMOJI_FAST}${EMOJI_MISS}`);

@@ -87,7 +87,7 @@ function buildDigest(metrics, prev) {
   const win = metrics.window || {};
   const asof = metrics.asof || (metrics.generated_at || "").slice(0, 10) || "?";
   const gen = (metrics.generated_at || "").slice(0, 10) || "?";
-  lines.push(`**State of Flag Reveal** — as of ${asof} · 30d ${win.start30 || "?"}→${win.end || "?"} · 14d ${win.start14 || "?"}→${win.end || "?"} · generated ${gen}`);
+  lines.push(`**State of Flag Party** — as of ${asof} · 30d ${win.start30 || "?"}→${win.end || "?"} · 14d ${win.start14 || "?"}→${win.end || "?"} · generated ${gen}`);
   lines.push("");
   if (metrics.ok === false) {
     lines.push(`> ⚠ metrics pull incomplete — failed queries: ${(metrics.errors || []).join(", ") || "unknown"}`);

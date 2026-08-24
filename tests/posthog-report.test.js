@@ -149,7 +149,7 @@ test("unreliable baseline (prev.ok=false) suppresses deltas with a warning", () 
 
 test("header prints asof and the resolved window bounds", () => {
   const out = buildDigest(fullBag(), null);
-  assert.match(out, /State of Flag Reveal/);
+  assert.match(out, /State of Flag Party/);
   assert.match(out, /as of 2026-08-24/);
   assert.match(out, /30d 2026-07-25→2026-08-24/);
   assert.match(out, /14d 2026-08-10→2026-08-24/);

@@ -33,13 +33,13 @@ export function withUtm(href, campaign) {
  * country name. `url` should already be UTM-tagged by the caller.
  * ================================================================ */
 
-// "Flag Reveal 🚩 The Cartographers hit 4,200 pts — beat us: <url>"
+// "Flag Party 🚩 The Cartographers hit 4,200 pts — beat us: <url>"
 // winner omitted → "we hit …". points defaults to 0 (an all-bust game still
 // gets a shareable card).
 export function partyShareText({ winner, points = 0, url }) {
   const who = winner ? `${winner} hit` : "we hit";
   const pts = Number(points) || 0;
-  return `Flag Reveal 🚩 ${who} ${pts.toLocaleString()} pts — beat us: ${url}`;
+  return `Flag Party 🚩 ${who} ${pts.toLocaleString()} pts — beat us: ${url}`;
 }
 
 /* ================================================================
@@ -70,13 +70,13 @@ export function emojiRow(rounds, steps = 8) {
 }
 
 // The daily card:
-//   line 1  header — "Flag Reveal Daily #N", 🔥streak (a 🔥1 is noise), score
+//   line 1  header — "Flag Party Daily #N", 🔥streak (a 🔥1 is noise), score
 //   line 2  the emoji grid
 //   line 3  the link (UTM-tagged by the caller)
 export function dailyShareText({ dayNumber, score = 0, rounds, url, streak = 0, steps = 8 }) {
   const flair = streak >= 2 ? `🔥${streak}` : "🚩";
   const pts = (Number(score) || 0).toLocaleString();
-  const first = `Flag Reveal Daily #${dayNumber} ${flair} · ${pts} pts`;
+  const first = `Flag Party Daily #${dayNumber} ${flair} · ${pts} pts`;
   return `${first}\n${emojiRow(rounds, steps)}\nBeat me: ${url}`;
 }
 
