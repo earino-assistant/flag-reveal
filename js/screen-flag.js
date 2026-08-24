@@ -16,7 +16,7 @@ import {
 } from "./firebase.js";
 import { renderReveal } from "./reveal-render.js";
 import { gameWinner, shouldFollowRoom } from "./flag.js";
-import { FLAGS, byIso2 } from "./flags-data.js";
+import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, screenQuery } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
 import { track } from "./consent.js";
@@ -200,6 +200,11 @@ function render(room) {
   const r = gs.round;
   const teams = gs.teams || {};
 
+  // Drive the whole TV layout from the phase (CSS state machine in style.css):
+  //   roundActive → flag full-bleed, everything else hidden.
+  //   reveal / gameOver → centered results card (answer + standings + busts).
+  $("s-display").dataset.phase = phase;
+
   renderBoard($("tvBoard"), teams, phase === "gameOver" ? gameWinner(teams, cfg) : null);
   // The join QR belongs to the lobby only — hidden the moment play starts.
   const qrWrap = $("tvJoinQr");
@@ -306,9 +311,15 @@ function renderBeats(box, results, teams) {
       const wrong = byIso2(res.wrongIso);
       const div = document.createElement("div");
       div.className = "beat";
-      div.innerHTML = `😅 <span data-ph-mask>${escapeHtml(t ? t.name : tN)}</span> guessed ${escapeHtml(
+      // The wrong country's vendored flag SVG next to the comedy line. Decorative
+      // (aria-hidden) — the guess is named in the text; no personal data on it.
+      div.innerHTML = `<img class="beat-flag" src="${escapeHtml(
+        flagAssetPath(res.wrongIso)
+      )}" alt="" aria-hidden="true" /><span class="beat-text">😅 <span data-ph-mask>${escapeHtml(
+        t ? t.name : tN
+      )}</span> guessed ${escapeHtml(
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      )} at step ${res.wrongStep} — out this round.`;
+      )} at step ${res.wrongStep} — out this round.</span>`;
       box.appendChild(div);
     }
   }

@@ -43,7 +43,6 @@
       <div id="tvAnswer" class="tv-answer hidden">—</div>
       <div id="tvResult" class="tv-result"></div>
       <div id="tvComingUp" class="tv-comingup"></div>
-      <div id="tvBeats" class="reveal-beats" data-ph-mask></div>
     </main>
 
     <aside class="tv-side">
@@ -51,6 +50,11 @@
       <ul id="tvBoard" class="totals-list tv-board" data-ph-mask></ul>
       <div id="tvNote" class="waiting-note"></div>
     </aside>
+
+    <!-- The wrong-guess "busts" gallery. Its own grid block so the reveal
+         layout can place it below the standings, center-stage (not a
+         sidebar). Hidden except during reveal/gameOver. -->
+    <section id="tvBeats" class="reveal-beats tv-busts" data-ph-mask></section>
   </section>
 
   <script type="module" src="js/consent.js"></script>

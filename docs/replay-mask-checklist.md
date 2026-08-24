@@ -49,6 +49,15 @@ it carries no personal data), and country names shown at reveal are not identify
   not-found/closed strings written to `#sErr` are generic status copy with no
   identifiers. `#tvCode`/`#tvJoinCode` (already `data-ph-mask`ed above) remain
   the only room-code text surfaces on the TV.
+- **TV layout polish (flag-dominant round + rich reveal, 2026-08-24):** the
+  `data-phase` layout state machine and the reveal "results card" render the
+  same masked surfaces in new positions — `#tvBoard` (standings) and `#tvBeats`
+  (busts) both keep `data-ph-mask`; `#tvBeats` moved out of `<main>` into its
+  own `.tv-busts` grid block but its element/id/mask are unchanged. Each wrong
+  guess now renders a `.beat-flag` `<img>` of the *guessed country's* flag SVG
+  (`aria-hidden`, decorative) — an image, not text, and carries no team name or
+  room code, so no mask applies (same rule as the progressive flag and QR
+  canvases). No new team-name or room-code text surface was introduced.
 
 ### `daily.html` (solo Daily Challenge)
 - The Daily is single-device and solo — **no team names, no room codes** are
