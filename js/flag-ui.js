@@ -442,8 +442,12 @@ async function createRoom() {
   const pace = paceOf(paceId);
   myName = ($("homeName").value || "").trim() || "Player 1";
   const d = GAME_DEFAULTS;
+  const roundsRaw = parseInt(($("createRounds") && $("createRounds").value) || "", 10);
+  const roundCount = Number.isFinite(roundsRaw) && roundsRaw > 0
+    ? Math.min(Math.max(roundsRaw, 3), 20)
+    : d.roundCount;
   const settings = {
-    roundCount: d.roundCount,
+    roundCount,
     target: d.target,
     stepMs: pace.stepMs,
     graceMs: pace.graceMs,
@@ -650,7 +654,9 @@ function renderLobby(gs) {
   const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
   const inputLabel = cfg.inputMode === "choice" ? "Tap-to-choose" : "Type the country";
   const paceLabel = paceOf(cfg.pace).label;
-  $("lobbyMode").textContent = `${paceLabel} · ${diffLabel} · ${inputLabel}`;
+  const pool = poolSize();
+  const roundCount = pool > 0 ? Math.min(cfg.roundCount, pool) : cfg.roundCount;
+  $("lobbyMode").textContent = `${paceLabel} · ${diffLabel} · ${inputLabel} · ${roundCount} rounds`;
 
   const teams = gs.teams || {};
   const ul = $("lobbyTeams");
