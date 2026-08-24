@@ -511,6 +511,15 @@ input:focus, select:focus {
 }
 .ld-links a:hover, .ld-links .link-btn:hover { color: var(--fg); border-color: var(--line-strong); }
 
+/* Ownership line, quiet, under the footer links (cribbed from GeoParty). */
+.ld-ownership {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  opacity: 0.7;
+  margin: 0.8rem 0 8px;
+}
+
 /* ---- Doc pages ---- */
 .doc-wrap { max-width: 640px; }
 .howto { line-height: 1.65; padding-left: 1.3rem; }
