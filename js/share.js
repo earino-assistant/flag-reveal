@@ -82,5 +82,5 @@ export function dailyShareText({ dayNumber, score = 0, rounds, url, streak = 0, 
 
 // The clipboard-fallback toast text (share-ui.js).
 export function shareToastText() {
-  return "Result copied 📋";
+  return "Result copied — paste it in the chat 📋";
 }

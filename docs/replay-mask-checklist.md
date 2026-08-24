@@ -16,6 +16,16 @@ or a **room code** must carry `data-ph-mask`, and this checklist must be updated
 in the same change. The progressive flag itself is *not* masked (it is the game;
 it carries no personal data), and country names shown at reveal are not identifying.
 
+## Consent disclosure
+
+As of the 2026-08-24 content-strategy pass, the consent banner (`js/consent.js`)
+**discloses session replay to the player** in plain language — "an anonymised
+replay of the screens you see (names, codes and everything you type are blanked
+out)". This wording is only accurate as long as the masking above holds: every
+team-name / room-code surface carries `data-ph-mask` and `maskAllInputs: true`
+blanks all typed input. If a future change adds an unmasked identifying surface,
+the banner copy becomes a false claim — fix the mask, not the copy.
+
 ## Masked surfaces (verified)
 
 ### `player.html`

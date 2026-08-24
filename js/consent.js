@@ -79,9 +79,11 @@ function ensureBanner() {
   lead.textContent = "\u{1F3F3}️ Share anonymous play stats?";
   text.append(
     lead,
-    " When rounds are rung, busted or won, plus the difficulty and mode — so we ",
-    "can see whether players actually race each other. Never your guesses, the ",
-    "countries, your team names, or the room code. EU-hosted, change anytime.",
+    " Which rounds were won, missed or timed out, plus the difficulty and mode — ",
+    "and an anonymised replay of the screens you see (names, codes and everything ",
+    "you type are blanked out) — so we can see whether players actually race each ",
+    "other. Never your guesses, the countries, your team names, or the room code. ",
+    "EU-hosted, change anytime.",
   );
   const status = document.createElement("span");
   status.className = "consent-status";

@@ -35,19 +35,19 @@
         <div id="joinErr" class="join-err"></div>
       </div>
 
-      <button id="btnShowCreate" class="btn-ghost">Start a new room →</button>
+      <button id="btnShowCreate" class="btn-ghost">Start a party →</button>
 
       <div id="createPanel" class="settings-group card hidden">
         <label class="field-label" for="createDifficulty">Difficulty</label>
         <select id="createDifficulty">
           <option value="easy">Easy — well-known flags</option>
-          <option value="world" selected>World — the mixed pool</option>
+          <option value="world" selected>World — the full mix</option>
           <option value="expert">Expert — obscure &amp; look-alikes</option>
         </select>
-        <label class="field-label" for="createInput">Input</label>
+        <label class="field-label" for="createInput">How players answer</label>
         <select id="createInput">
-          <option value="typeahead" selected>Typeahead (type the country)</option>
-          <option value="choice">Choice (tap 1 of 4 — for kids)</option>
+          <option value="typeahead" selected>Type the country</option>
+          <option value="choice">Tap 1 of 4 — easier, great for kids</option>
         </select>
         <label class="field-label" for="createPace">Round pace</label>
         <select id="createPace">
@@ -63,7 +63,7 @@
           <option value="15">15</option>
           <option value="20">20 — marathon</option>
         </select>
-        <button id="btnCreate" class="btn-primary">Create room</button>
+        <button id="btnCreate" class="btn-primary">Start the party</button>
         <div id="createErr" class="join-err"></div>
       </div>
 
@@ -114,7 +114,7 @@
           <p class="tv-connect-title">Play on the TV</p>
           <p class="tv-connect-line">On the TV, open the game and tap
             <strong>Add a TV</strong>, then enter this room's code — or scan
-            onto a spare phone.</p>
+            the QR with a spare phone or tablet.</p>
           <button id="btnShareTvLink" class="tv-connect-share" type="button">Share the TV link 📋</button>
           <p class="tv-connect-ok">TV connected — eyes up on the big screen.</p>
         </div>
@@ -191,7 +191,7 @@
       <div id="goWinner" class="reveal-headline" data-ph-mask>—</div>
       <ul id="goBoard" class="totals-list" data-ph-mask></ul>
       <div class="go-share-row">
-        <button id="btnShareParty" class="btn-primary">Share result 📋</button>
+        <button id="btnShareParty" class="btn-primary">Share your result 📋</button>
       </div>
       <p id="goGuestNote" class="waiting-note hidden" data-ph-mask></p>
       <div class="action-bar">

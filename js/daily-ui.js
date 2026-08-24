@@ -25,9 +25,9 @@ import {
 import { dailyShareText, emojiRow, withUtm } from "./share.js";
 import { shareText } from "./share-ui.js";
 import { renderReveal } from "./reveal-render.js";
-import { normalizeName } from "./flag.js";
 import { FLAGS, byIso2 } from "./flags-data.js";
 import { track, openBanner } from "./consent.js";
+import { toast, suggestFor, pop } from "./ui-common.js";
 
 // Reveal cadence (Classic pace). A flag opens over ~8 steps, then a short grace
 // window in which a late answer still counts before the round times out.
@@ -41,70 +41,14 @@ const SCREENS = ["d-intro", "d-round", "d-reveal", "d-done"];
 function show(id) {
   for (const s of SCREENS) $(s).classList.toggle("hidden", s !== id);
 }
-let toastTimer = null;
-function toast(msg) {
-  const t = $("toast");
-  t.textContent = msg;
-  t.classList.remove("hidden");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add("hidden"), 2600);
-}
-
-const reduceMotion =
-  typeof matchMedia === "function" &&
-  matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-// A subtle "pop" on a correct name — WebAudio, tiny, and only when motion/FX is
-// welcome (reduced-motion users get none). Fully best-effort.
-let audioCtx = null;
-function pop() {
-  if (reduceMotion) return;
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(520, now);
-    osc.frequency.exponentialRampToValueAtTime(880, now + 0.09);
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + 0.24);
-  } catch {
-    /* audio blocked — no-op */
-  }
-}
+// toast + the WebAudio pop (the Daily's 520→880 Hz variant) are shared in
+// ui-common.js; the pop() call site passes the Daily frequencies.
 
 // ---------------------------------------------------------------------------
-// Typeahead (a compact clone of the party phone's, over the full dataset)
+// Typeahead (over the full dataset). suggestFor + NAME_INDEX are shared in
+// ui-common.js; renderSuggest / hideSuggest stay here (the `answered` guard and
+// the commitGuess callback are Daily-specific).
 // ---------------------------------------------------------------------------
-const NAME_INDEX = FLAGS.map((f) => ({
-  iso2: f.iso2,
-  name: f.name,
-  keys: [f.name, ...(f.aliases || [])].map(normalizeName),
-}));
-function suggestFor(query) {
-  const q = normalizeName(query);
-  if (!q) return [];
-  const starts = [];
-  const contains = [];
-  for (const e of NAME_INDEX) {
-    let rank = 2;
-    for (const k of e.keys) {
-      if (k.startsWith(q)) {
-        rank = 0;
-        break;
-      }
-      if (k.includes(q)) rank = Math.min(rank, 1);
-    }
-    if (rank === 0) starts.push(e);
-    else if (rank === 1) contains.push(e);
-  }
-  return starts.concat(contains).slice(0, 6);
-}
 function renderSuggest(query) {
   const list = suggestFor(query);
   const ul = $("dSuggest");
@@ -258,7 +202,7 @@ function commitGuess(iso2) {
     answered = true;
     clearTimers();
     hideSuggest();
-    pop();
+    pop(520, 880);
     run = recordDailyRound(run, { correct: true, atStep: currentStep });
     showReveal();
   } else {
@@ -287,7 +231,7 @@ function showReveal() {
   $("dRevealAnswer").textContent = ans ? ans.name : String(answerIso()).toUpperCase();
   const resultEl = $("dRevealResult");
   if (entry.correct) {
-    resultEl.textContent = `🎉 Named it at step ${entry.atStep} — +${entry.points}!`;
+    resultEl.textContent = `🎉 Named it at step ${entry.atStep} of ${DAILY_STEPS} — +${entry.points}!`;
     resultEl.className = "reveal-result good";
   } else {
     resultEl.textContent = "Missed this one. 🙈";
@@ -321,7 +265,9 @@ function finish() {
 }
 
 function showDone(result, { locked }) {
-  $("dDoneTitle").textContent = locked ? "You've done today's ✓" : "Daily done!";
+  $("dDoneTitle").textContent = locked
+    ? "You've played today's Daily ✓"
+    : `Daily #${dayNum} — you did it! 🎉`;
   $("dDoneScore").textContent = (result.score || 0).toLocaleString();
   $("dDoneEmoji").textContent = emojiRow(result.rounds, DAILY_STEPS);
   const streak = result.streak || 0;
