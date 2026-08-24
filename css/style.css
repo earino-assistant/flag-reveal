@@ -132,7 +132,7 @@ button:disabled {
 .hidden { display: none !important; }
 .muted-note { color: var(--muted); font-size: 0.95rem; }
 .eyebrow {
-  color: var(--faint);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
@@ -247,7 +247,7 @@ input:focus, select:focus {
 .lobby-mode { margin: 1.1rem 0 0; }
 
 .section-label {
-  color: var(--faint);
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
@@ -400,7 +400,7 @@ input:focus, select:focus {
   position: relative;
   width: 100%;
   aspect-ratio: var(--flag-aspect, 3 / 2);
-  background: var(--panel);
+  background: var(--tile-cover);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   overflow: hidden;
@@ -470,7 +470,7 @@ input:focus, select:focus {
 .round-status { text-align: center; margin: 0.9rem 0; min-height: 1.4em; font-weight: 600; }
 
 /* ---- Reveal ---- */
-.reveal-round { color: var(--faint); font-weight: 700; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem; }
+.reveal-round { color: var(--muted); font-weight: 700; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem; }
 .reveal-headline { font-size: clamp(1.7rem, 6.5vw, 2.5rem); font-weight: 800; font-family: var(--font-display); margin: 0.25rem 0; letter-spacing: -0.02em; }
 .reveal-result { font-size: 1.12rem; font-weight: 700; margin: 0.2rem 0 0.9rem; }
 .reveal-result.good { color: var(--good); }
@@ -584,7 +584,7 @@ body.tv { overflow: hidden; }
 .tv-result strong { color: var(--accent); }
 .tv-comingup { font-size: 1.2rem; margin-top: 0.5rem; text-align: center; color: var(--accent-2); }
 .tv-side { grid-area: side; overflow-y: auto; }
-.side-title { color: var(--faint); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 0 0 0.6rem; }
+.side-title { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 0 0 0.6rem; }
 .tv-board .team-row { font-size: 1.3rem; padding: 0.8em 1em; }
 .tv-board .score { font-size: 1.4rem; }
 .tv-note, #tvNote { color: var(--muted); }
@@ -628,7 +628,7 @@ body.tv { overflow: hidden; }
 }
 .join-qr .qr-canvas { width: 116px; height: 116px; }
 .join-qr-cap {
-  color: var(--faint);
+  color: var(--muted);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -739,6 +739,7 @@ body.tv { overflow: hidden; }
   margin-top: 0.7rem;
   line-height: 1;
 }
+.daily-emoji-cap { color: var(--muted); text-align: center; font-size: 0.8rem; margin: 0.5rem 0 0; }
 .daily-note { color: var(--muted); text-align: center; margin: 1.1rem 0 0.6rem; }
 .daily-links { justify-content: center; margin-top: 0.8rem; }
 
