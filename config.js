@@ -1,22 +1,19 @@
 // config.js — public client credentials. Never put secret/server keys here.
-// Flag Reveal reuses the GeoParty Firebase project (geoparty-9ffe7) — the same
-// RTDB project that hosts the reference implementation. All room data lives
-// under `rooms/{CODE}`, a sibling namespace to GeoParty's rooms, so the two
-// games share one database but never collide on room codes' data.
+// Flag Reveal has its OWN Firebase project (projectId `flagreveal`) — fully
+// isolated from GeoParty's `geoparty-9ffe7`. All room data lives under
+// `rooms/{CODE}` in this project's RTDB.
 //
 // NOTE: the `apiKey` below is a PUBLIC client key by design (it ships in the
-// browser; GeoParty's CLAUDE.md calls this out). It is filled from the live
-// GeoParty config at `/opt/data/geoparty/config.js` — the single source of
-// truth for the shared project credentials. If this file shows a placeholder,
-// the builder must copy the real value from that file.
+// browser). It is the real value from the owner-provided firebaseConfig
+// (GitHub issue #1 comment, 2026-08-24).
 export const firebaseConfig = {
-  apiKey: "AIzaSyANUJd0cu8J3JnNgrpPcR5Z0txoI1u_r4I",
-  authDomain: "geoparty-9ffe7.firebaseapp.com",
-  databaseURL: "https://geoparty-9ffe7-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "geoparty-9ffe7",
-  storageBucket: "geoparty-9ffe7.firebasestorage.app",
-  messagingSenderId: "645603439629",
-  appId: "1:645603439629:web:ab332148756bc8b848d144"
+  apiKey: "AIzaSyBHHT1VOIn-ugdUXoNnul5ZfO2nD1rKF3U",
+  authDomain: "flagreveal.firebaseapp.com",
+  databaseURL: "https://flagreveal-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "flagreveal",
+  storageBucket: "flagreveal.firebasestorage.app",
+  messagingSenderId: "407784534208",
+  appId: "1:407784534208:web:93d45ff96914989cf3bd25"
 };
 
 // Scoring defaults (spec §1.7).
