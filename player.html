@@ -7,11 +7,24 @@
   <meta name="description" content="Ring in the country from a half-revealed flag. Phones in, first correct wins." />
   <meta name="theme-color" content="#0E0E12" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <!-- Pre-paint create routing: this classic inline script runs at parse time,
+       before the render-blocking stylesheet, so ?create=1 selects the create
+       screen on the FIRST paint — instead of the module-scripted wire() doing
+       it late (that graph waits on the Firebase CDN import, which is why the
+       form used to pop in over the join screen). CSS keys off html.want-create;
+       wire() reconciles and drops the class once it runs. -->
+  <script>
+    try {
+      if (new URLSearchParams(location.search).get("create") === "1") {
+        document.documentElement.classList.add("want-create");
+      }
+    } catch (e) { /* no-op: fall back to the default (home) screen */ }
+  </script>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="player">
   <div id="connPill" class="conn-pill hidden">Reconnecting — hang tight…</div>
-  <div id="toast" class="toast hidden" data-ph-mask></div>
+  <div id="toast" class="toast" data-ph-mask></div>
 
   <!-- ============================ HOME ============================ -->
   <section id="p-home" class="phase-screen">
@@ -37,7 +50,33 @@
 
       <button id="btnShowCreate" class="btn-ghost">Start a party →</button>
 
-      <div id="createPanel" class="settings-group card hidden">
+      <div id="pResume" class="resume-banner hidden">
+        <span>Rejoin room <strong id="resumeCode" data-ph-mask></strong>?</span>
+        <button id="btnResume" class="btn-primary">Rejoin</button>
+      </div>
+
+      <footer class="ld-footer">
+        <a href="howto.html">How to play</a>
+        <span aria-hidden="true">·</span>
+        <button id="btnPrivacy" class="link-btn" type="button">Privacy</button>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/earino-assistant/flag-reveal">GitHub</a>
+      </footer>
+      <p class="ld-ownership">© 2026 · A game by Eduardo Ariño de la Rubia</p>
+    </div>
+  </section>
+
+  <!-- ============================ CREATE ==========================
+       Its own phase screen (sibling of #p-home), not a disclosure inside the
+       join screen. Routed pre-paint by the inline <head> script so ?create=1
+       lands here directly. IDs match createRoom() in flag-ui.js. -->
+  <section id="p-create" class="phase-screen hidden">
+    <div class="wrap">
+      <button id="btnCreateBack" class="btn-ghost create-back" type="button">← Back</button>
+      <h1 class="brand">Start a <span class="accent">party</span></h1>
+      <p class="tagline">Set the table, then share the code with your crew.</p>
+
+      <div class="settings-group card">
         <label class="field-label" for="createDifficulty">Difficulty</label>
         <select id="createDifficulty">
           <option value="easy">Easy — well-known flags</option>
@@ -71,20 +110,6 @@
         <button id="btnCreate" class="btn-primary">Start the party</button>
         <div id="createErr" class="join-err"></div>
       </div>
-
-      <div id="pResume" class="resume-banner hidden">
-        <span>Rejoin room <strong id="resumeCode" data-ph-mask></strong>?</span>
-        <button id="btnResume" class="btn-primary">Rejoin</button>
-      </div>
-
-      <footer class="ld-footer">
-        <a href="howto.html">How to play</a>
-        <span aria-hidden="true">·</span>
-        <button id="btnPrivacy" class="link-btn" type="button">Privacy</button>
-        <span aria-hidden="true">·</span>
-        <a href="https://github.com/earino-assistant/flag-reveal">GitHub</a>
-      </footer>
-      <p class="ld-ownership">© 2026 · A game by Eduardo Ariño de la Rubia</p>
     </div>
   </section>
 
@@ -94,7 +119,7 @@
       <div class="lobby-head">
         <p class="eyebrow">Room code — share it to join</p>
         <div class="room-code-block">
-          <div id="lobbyCode" class="room-code-huge" data-ph-mask>······</div>
+          <div id="lobbyCode" class="room-code-huge skeleton" data-ph-mask>······</div>
           <div class="join-qr">
             <canvas id="lobbyJoinQr" class="qr-canvas" aria-hidden="true"></canvas>
             <span class="join-qr-cap">Scan to join</span>

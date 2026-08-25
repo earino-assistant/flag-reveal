@@ -105,6 +105,7 @@ function connect(c, joinVia) {
   via = joinVia || "typed";
   followedCodes.add(code);
   $("tvCode").textContent = code;
+  $("tvCode").classList.remove("skeleton"); // real code in — drop the pulse
   $("sErr").textContent = "";
   $("s-join").classList.add("hidden");
   $("s-display").classList.remove("hidden");
@@ -257,6 +258,7 @@ function render(room) {
     // room (the top-left .tv-room label is too small at 10 feet). Masked for
     // session replay.
     $("tvJoinCode").textContent = code;
+    $("tvJoinCode").classList.remove("skeleton"); // real code in — drop the pulse
     $("tvHeader").textContent = "Lobby — join on your phone";
     $("tvAnswer").classList.add("hidden");
     $("tvResult").textContent = "";

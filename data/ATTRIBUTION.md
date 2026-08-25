@@ -46,7 +46,16 @@ MIT as above). The images are **vendored** into this repo (not hot-linked) so
 the game works offline once served and carries no third-party runtime
 dependency (SPEC-v3.1 §8.1–§8.2).
 
-## 3. Application code
+## 3. `assets/SpaceGrotesk-Variable.woff2` — display typeface (SIL OFL 1.1)
+
+The display face is **Space Grotesk** by Florian Karsten, licensed under the
+**SIL Open Font License 1.1**. The full license text is vendored alongside the
+font at `assets/SpaceGrotesk-OFL.txt`. Like the flags, the font is **vendored**
+(not hot-linked from a CDN) so the game works offline once served and carries no
+third-party runtime dependency. The OFL's retention requirement is met by
+shipping that license file with the font.
+
+## 4. Application code
 
 The Flag Reveal application code carries its own separate license (see the
 repository `LICENSE`), independent of the ODbL data obligation above.
