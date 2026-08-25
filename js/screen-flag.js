@@ -478,7 +478,16 @@ function wire() {
     connect(c, "typed");
   });
   $("sCode").addEventListener("input", (e) => {
-    e.target.value = e.target.value.toUpperCase();
+    // Strip to the code alphabet as we go (GeoParty parity), then auto-connect
+    // the moment a full valid code is present — no Connect press needed. The
+    // button below stays as a fallback for paste/edge cases.
+    const c = e.target.value.toUpperCase().replace(/[^A-HJ-NP-Z]/g, "");
+    e.target.value = c;
+    if (isValidRoomCode(c)) {
+      $("sErr").textContent = "";
+      followedCodes = new Set(); // manual entry starts a fresh follow chain (F3)
+      connect(c, "typed");
+    }
   });
 
   const params = new URLSearchParams(location.search);
