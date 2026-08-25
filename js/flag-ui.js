@@ -1222,7 +1222,9 @@ function wire() {
     location.href = "player.html";
   });
 
-  $("btnPrivacy").addEventListener("click", openBanner);
+  // Both the home and create screens carry a footer Privacy button; wire every
+  // .js-privacy so the consent banner reopens from either.
+  document.querySelectorAll(".js-privacy").forEach((b) => b.addEventListener("click", openBanner));
 
   // Resume banner / URL routing.
   const params = new URLSearchParams(location.search);

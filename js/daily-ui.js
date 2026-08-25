@@ -313,8 +313,9 @@ function wire() {
   $("btnDailyStart").addEventListener("click", startDaily);
   $("btnDNext").addEventListener("click", nextRound);
   $("btnDShare").addEventListener("click", doShare);
-  const priv = $("btnPrivacy");
-  if (priv) priv.addEventListener("click", openBanner);
+  // Both the intro and the done screen carry a footer Privacy button; wire
+  // every .js-privacy so the consent banner reopens from either.
+  document.querySelectorAll(".js-privacy").forEach((b) => b.addEventListener("click", openBanner));
 
   const inp = $("dInput");
   inp.addEventListener("input", () => renderSuggest(inp.value));
