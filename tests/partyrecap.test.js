@@ -9,6 +9,7 @@ import {
   recordPartyRound,
   partyRecapCards,
   recapTeamResult,
+  recapTeamResults,
 } from "../js/partyrecap.js";
 
 // A settled reveal round as resolveOutcome leaves it: answerIso/flagSeed plus a
@@ -163,4 +164,43 @@ test("recapTeamResult: bust round, winner's slot also just missed", () => {
     atStep: 6,
   });
   assert.equal(recapTeamResult(card, "t2").status, "missed");
+});
+
+/* ---------------- recapTeamResults (TV: every team's story) ---------------- */
+
+const TEAMS = {
+  t1: { name: "Red", total: 60 },
+  t2: { name: "Blue", total: 0 },
+  t3: { name: "Green", total: 0 },
+};
+
+test("recapTeamResults: one row per team, carrying resolved name + own guess", () => {
+  const card = partyRecapCards([recordPartyRound([], winRound(1))[0]])[0];
+  const rows = recapTeamResults(card, TEAMS);
+  assert.deepEqual(rows, [
+    { team: "t1", name: "Red", status: "correct", guessIso: "fr", atStep: 3 },
+    { team: "t2", name: "Blue", status: "wrong", guessIso: "it", atStep: 5 },
+    { team: "t3", name: "Green", status: "missed", guessIso: null, atStep: null },
+  ]);
+});
+
+test("recapTeamResults: sorted by slot id for a stable auto-cycle order", () => {
+  const card = partyRecapCards([recordPartyRound([], winRound(1))[0]])[0];
+  const rows = recapTeamResults(card, { t3: { name: "Z" }, t1: { name: "A" }, t2: { name: "M" } });
+  assert.deepEqual(rows.map((r) => r.team), ["t1", "t2", "t3"]);
+});
+
+test("recapTeamResults: a team present only in results (left the standings) still shows", () => {
+  const card = partyRecapCards([recordPartyRound([], winRound(1))[0]])[0];
+  const rows = recapTeamResults(card, { t1: { name: "Red" } });
+  assert.deepEqual(rows.map((r) => r.team), ["t1", "t2", "t3"]);
+  // No name in teams → falls back to the slot id (never crashes on masking).
+  assert.equal(rows.find((r) => r.team === "t2").name, "t2");
+});
+
+test("recapTeamResults: nullish teams → rows come from the card's results", () => {
+  const card = partyRecapCards([recordPartyRound([], winRound(1))[0]])[0];
+  const rows = recapTeamResults(card, null);
+  assert.deepEqual(rows.map((r) => r.team), ["t1", "t2", "t3"]);
+  assert.ok(rows.every((r) => r.name === r.team));
 });

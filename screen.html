@@ -20,7 +20,6 @@
       <div class="join-row">
         <input id="sCode" maxlength="6" placeholder="CODE" autocomplete="off"
                autocapitalize="characters" spellcheck="false" class="code-input" />
-        <button id="btnSConnect" class="btn-primary">Connect</button>
       </div>
       <div id="sErr" class="join-err"></div>
     </div>
@@ -53,8 +52,21 @@
           <span id="tvJoinCode" class="tv-join-code skeleton" data-ph-mask>······</span></p>
       </div>
       <div id="tvAnswer" class="tv-answer hidden">—</div>
+      <!-- Game-over round recap (read-only fold of settled rounds): a single
+           auto-cycling card in the empty band above the winner line — each
+           round's answer flag + name and what every team guessed. Filled and
+           cycled by js/screen-flag.js from partyHistory. The card's team-name
+           spans carry data-ph-mask (inline, added in JS); the answer flag is
+           decorative (aria-hidden). Hidden except at gameOver (CSS state
+           machine). Passive-TV: no write, no transaction, no phase flip. -->
+      <div id="tvRecap" class="tv-recap hidden" aria-live="polite"></div>
       <div id="tvResult" class="tv-result"></div>
       <div id="tvComingUp" class="tv-comingup"></div>
+      <!-- Escape hatch: leave the room and return to the join screen to type a
+           different code (no reload). Visible on lobby + gameOver only (CSS).
+           Mirrors GeoParty's btnNewEntry → leaveRoom(): stops the heartbeat,
+           drops the subscription, clears the room + URL. No game-state write. -->
+      <button id="btnTvNewEntry" class="tv-newentry" type="button">← Enter a different code</button>
     </main>
 
     <aside class="tv-side">

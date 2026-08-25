@@ -74,6 +74,18 @@ the banner copy becomes a false claim — fix the mask, not the copy.
   name is wrapped in a `data-ph-mask` span by `js/screen-flag.js` (same inline
   pattern as `#tvResult`). It names **no country** — the guess content is
   disclosed only at reveal via `#tvBeats`. No room code is rendered.
+- `#tvRecap` — the game-over auto-cycling round recap (Item 1). Each card renders
+  one row per team (`😅 <team> guessed <country>` etc.), so every team name is
+  wrapped in a `data-ph-mask` span (`.tv-recap-name`) by `js/screen-flag.js`
+  (same inline pattern as `#tvResult`/`#tvBeats`). The answer country + each
+  team's guessed country are shared truth (already disclosed at reveal via
+  `#tvBeats`), not identifying, and the answer flag `<img>` is decorative
+  (`aria-hidden`) — no mask, same rule as the beats' `.beat-flag`. No room code
+  is rendered. The recap is a read-only fold of settled state (partyHistory): no
+  write, no transaction, no phase flip.
+- `#btnTvNewEntry` — the "← Enter a different code" escape hatch (Item 2). A
+  static button label with no team name or room code; it leaves the room back to
+  the join screen. Nothing to mask.
 - **TV layout polish (flag-dominant round + rich reveal, 2026-08-24):** the
   `data-phase` layout state machine and the reveal "results card" render the
   same masked surfaces in new positions — `#tvBoard` (standings) and `#tvBeats`

@@ -92,3 +92,28 @@ export function recapTeamResult(card, teamId) {
   }
   return { status: "missed", guessIso: null, atStep: null };
 }
+
+// The TV variant of recapTeamResult: EVERY team's story for one recap card, for
+// the shared big screen. Where a phone shows only its own guess (privacy §5.2),
+// the TV is the shared surface at game-over — every guess is already disclosed
+// via results/* at reveal — so it lists what each team guessed. Pure: it folds
+// recapTeamResult over the teams and pins the resolved team name (masked at the
+// DOM by the glue, never here). Sorted by slot id (t1, t2, …) for a stable
+// order across the auto-cycle. A team with no result on this card is "missed".
+// `teams` supplies the display name only; the slot id drives ordering + lookup.
+export function recapTeamResults(card, teams) {
+  const t = (teams && typeof teams === "object") ? teams : {};
+  // Union of teams present in the standings and teams with a result this round,
+  // so a team that never rang a single round still shows (all "missed").
+  const slots = new Set([
+    ...Object.keys(t),
+    ...Object.keys((card && card.results) || {}),
+  ]);
+  return [...slots]
+    .sort()
+    .map((teamId) => ({
+      team: teamId,
+      name: (t[teamId] && t[teamId].name) || teamId,
+      ...recapTeamResult(card, teamId),
+    }));
+}

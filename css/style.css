@@ -911,6 +911,80 @@ body.tv { overflow: hidden; }
   margin: 0 auto;
 }
 
+/* ---- TV game-over round recap (Item 1) ------------------------------------
+ * A single auto-cycling card in the empty band above the winner line: each
+ * round's answer flag + name and what every team guessed. Hidden except at
+ * gameOver — screen-flag.js toggles `.hidden` (it only ever builds at gameOver).
+ * Sized for the couch; the card fades in on each auto-cycle (reduced-motion
+ * drops the animation — the content still advances). */
+.tv-recap { width: 100%; max-width: 42rem; margin: 0.4rem auto 1rem; }
+.tv-recap-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1.2rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-1);
+  text-align: left;
+  animation: tvRecapFade 0.4s ease;
+}
+.tv-recap-flag {
+  flex: 0 0 auto;
+  width: 6rem;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--tile-cover);
+}
+.tv-recap-body { min-width: 0; flex: 1; }
+.tv-recap-round {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.tv-recap-answer {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  margin-bottom: 0.4rem;
+}
+.tv-recap-teams { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.tv-recap-team { display: flex; gap: 0.6rem; font-size: 1.1rem; }
+.tv-recap-name { font-weight: 600; }
+.tv-recap-guess { color: var(--muted); }
+.tv-recap-team.correct .tv-recap-guess { color: var(--good); }
+.tv-recap-team.wrong .tv-recap-guess { color: var(--bad); }
+@keyframes tvRecapFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-recap-card { animation: none; }
+}
+
+/* The "reenter a different code" escape hatch (Item 2): a quiet pill in the main
+   column, visible on lobby + gameOver only (no way back mid-round). */
+.tv-newentry {
+  display: none;
+  margin-top: 1.4rem;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  padding: 0.6rem 1.3rem;
+  border-radius: 999px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.tv-newentry:hover { color: var(--fg); border-color: var(--accent); }
+#s-display[data-phase="lobby"] .tv-newentry,
+#s-display[data-phase="gameOver"] .tv-newentry { display: inline-block; }
+
 /* Each wrong guess: its flag beside the "team guessed COUNTRY" line. */
 .beat { display: flex; align-items: center; gap: 0.7rem; }
 .beat-flag {

@@ -29,6 +29,7 @@ import {
 } from "./flag.js";
 import { escapeHtml } from "./ui-common.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
+import { recordPartyRound, partyRecapCards, recapTeamResults } from "./partyrecap.js";
 import { isValidRoomCode, screenQuery, emitsScreenJoined } from "./roomcode.js";
 import { GAME_DEFAULTS } from "../config.js";
 import { track } from "./consent.js";
@@ -58,6 +59,21 @@ let celebrated = false;
 let wrongHintSeen = new Set();
 let wrongHintRound = null;
 let wrongHintTimer = null;
+// Game-over round recap (Item 1). Flag Party keeps only the CURRENT round in
+// the RTDB, so — exactly like the phone (flag-ui.js) — the TV folds a
+// memory-only `partyHistory` at every reveal echo (recordPartyRound, idempotent
+// per round number). At game-over it renders a SINGLE card that auto-cycles to
+// the next round every few seconds (GeoParty TV style: the TV has no touch, so a
+// swipe carousel is dead UI). This is a READ-ONLY fold of settled state — no
+// write, no transaction, no phase flip (passive-TV contract). `recapBuilt`
+// latches the build to one per game-over entry (render re-runs on every
+// heartbeat); it resets whenever we leave gameOver so a fresh game rebuilds.
+let partyHistory = [];
+let recapCards = [];
+let recapIndex = 0;
+let recapTimer = null;
+let recapBuilt = false;
+const RECAP_CYCLE_MS = 5000;
 
 function cfgFromRoom(room) {
   const s = (room && room.settings) || {};
@@ -100,6 +116,10 @@ function connect(c, joinVia) {
     unsubRoom();
     unsubRoom = null;
   }
+  // A fresh room (manual connect or follow) — drop the old game's recap fold so
+  // the next game-over never shows the previous room's rounds.
+  partyHistory = [];
+  stopRecapCycle();
 
   code = c;
   via = joinVia || "typed";
@@ -177,6 +197,7 @@ function resetDisplay(header) {
   $("tvNote").textContent = "";
   $("tvAnswer").classList.add("hidden");
   hideWrongHint();
+  stopRecapCycle();
   const qrWrap = $("tvJoinQr");
   if (qrWrap) qrWrap.classList.add("hidden");
 }
@@ -250,10 +271,18 @@ function render(room) {
   if (qrWrap) qrWrap.classList.toggle("hidden", phase !== "lobby");
 
   // Tear down the game-over celebration the moment we leave that phase (a fresh
-  // game / lobby), so the next winner's burst can fire again (§once-only).
-  if (phase !== "gameOver" && celebrated) endCelebration();
+  // game / lobby), so the next winner's burst can fire again (§once-only). The
+  // recap card + auto-cycle timer are torn down on the same edge (and rebuilt on
+  // the next game-over entry) so they never leak across phases/games.
+  if (phase !== "gameOver") {
+    if (celebrated) endCelebration();
+    if (recapBuilt) stopRecapCycle();
+  }
 
   if (phase === "lobby") {
+    // A fresh game (in-place lobby return) — the recap starts empty, exactly as
+    // the phone does (flag-ui.js). A room change already reset it in connect().
+    partyHistory = [];
     // Echo the room code into the big QR caption so it's legible across the
     // room (the top-left .tv-room label is too small at 10 feet). Masked for
     // session replay.
@@ -273,6 +302,10 @@ function render(room) {
   }
 
   if (phase === "gameOver") {
+    // Fold the finishing round too — advanceState only flips the phase, so the
+    // last round is still in gs.round; recordPartyRound dedupes by number, so a
+    // reveal echo already captured is a no-op (mirrors flag-ui.js).
+    partyHistory = recordPartyRound(partyHistory, r, { mode: "tv" });
     const winner = gameWinner(teams, cfg);
     const wt = teams[winner];
     $("tvHeader").textContent = "Game over";
@@ -284,6 +317,12 @@ function render(room) {
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "👑 The winner's phone starts the next game.";
+    // Build the auto-cycling round recap ONCE per game-over entry (render
+    // re-runs on every heartbeat) — read-only fold of settled state, no write.
+    if (!recapBuilt) {
+      recapBuilt = true;
+      buildRecap(teams);
+    }
     if (wt && winner && !celebrated) celebrate(winner, room.gameSeed || code);
     return;
   }
@@ -309,6 +348,9 @@ function render(room) {
   });
 
   if (reveal) {
+    // Fold this settled round into the recap history (idempotent per echo), so
+    // the game-over recap has every round even for a TV that attached mid-game.
+    partyHistory = recordPartyRound(partyHistory, r, { mode: "tv" });
     const oc = r.outcome || {};
     const answer = byIso2(r.answerIso);
     $("tvAnswer").textContent = answer ? answer.name : r.answerIso.toUpperCase();
@@ -404,6 +446,136 @@ function endCelebration() {
   if (wrap) wrap.innerHTML = "";
 }
 
+// ---------------------------------------------------------------------------
+// Game-over round recap (Item 1) — an auto-cycling card of the settled rounds.
+// ---------------------------------------------------------------------------
+
+// Build the recap for a fresh game-over: derive the cards from partyHistory,
+// draw the first, and — when there's more than one — start the auto-cycle. The
+// TV has no touch input, so a single card cycles (GeoParty style), not a swipe
+// carousel. `teams` is captured at build time (settled at game-over) and used
+// only for display names (masked in the DOM) + slot ordering. Read-only: no
+// write, no transaction, no phase flip.
+function buildRecap(teams) {
+  const box = $("tvRecap");
+  if (!box) return;
+  recapCards = partyRecapCards(partyHistory);
+  if (!recapCards.length) {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  recapIndex = 0;
+  drawRecapCard(teams);
+  if (recapCards.length > 1 && !recapTimer) {
+    recapTimer = setInterval(() => {
+      recapIndex = (recapIndex + 1) % recapCards.length;
+      drawRecapCard(teams);
+    }, RECAP_CYCLE_MS);
+  }
+}
+
+// Draw the card at recapIndex into #tvRecap: the round header, the answer flag
+// (decorative, aria-hidden) + name, and one row per team with what it guessed.
+// A brand-new node is built each cycle so the crossfade animation re-triggers
+// (CSS drops it under prefers-reduced-motion — the content still advances).
+// Team names are masked inline (data-ph-mask) for session replay; the answer
+// country + each guess are shared truth (already disclosed at reveal).
+function drawRecapCard(teams) {
+  const box = $("tvRecap");
+  if (!box) return;
+  const card = recapCards[recapIndex];
+  if (!card) return;
+  const answer = byIso2(card.answerIso);
+  const answerName = answer ? answer.name : card.answerIso.toUpperCase();
+
+  const rows = recapTeamResults(card, teams)
+    .map((row) => {
+      const guessCountry = row.guessIso ? byIso2(row.guessIso) : null;
+      const guessName = guessCountry
+        ? guessCountry.name
+        : row.guessIso
+          ? row.guessIso.toUpperCase()
+          : "";
+      let guess;
+      if (row.status === "correct") {
+        guess = `✅ got it${row.atStep ? ` at step ${row.atStep}` : ""}`;
+      } else if (row.status === "wrong") {
+        guess = `❌ guessed ${escapeHtml(guessName)}`;
+      } else {
+        guess = "🙈 didn't ring";
+      }
+      return `<li class="tv-recap-team ${row.status}"><span class="tv-recap-name" data-ph-mask>${escapeHtml(
+        row.name
+      )}</span><span class="tv-recap-guess">${guess}</span></li>`;
+    })
+    .join("");
+
+  box.innerHTML =
+    `<div class="tv-recap-card">` +
+    `<img class="tv-recap-flag" src="${escapeHtml(
+      flagAssetPath(card.answerIso)
+    )}" alt="" aria-hidden="true" />` +
+    `<div class="tv-recap-body">` +
+    `<div class="tv-recap-round">Round ${card.number} of ${card.totalRounds}</div>` +
+    `<div class="tv-recap-answer">${escapeHtml(answerName)}</div>` +
+    `<ul class="tv-recap-teams">${rows}</ul>` +
+    `</div></div>`;
+}
+
+// Tear down the recap card + auto-cycle timer and hide the box. Idempotent —
+// called on the leave-gameOver edge, on room changes (resetDisplay/connect), and
+// on the reenter-code escape hatch. Clears the build latch so the next game-over
+// rebuilds. The partyHistory accumulator itself is NOT cleared here (a
+// gameOver → lobby → gameOver of the SAME game must keep the fold); it is reset
+// on a room change (connect) and a fresh in-place game (lobby).
+function stopRecapCycle() {
+  if (recapTimer) {
+    clearInterval(recapTimer);
+    recapTimer = null;
+  }
+  recapBuilt = false;
+  recapCards = [];
+  recapIndex = 0;
+  const box = $("tvRecap");
+  if (box) {
+    box.innerHTML = "";
+    box.classList.add("hidden");
+  }
+}
+
+// Item 2 — the "reenter the code" escape hatch. Leave the current room and
+// return to the join screen so the user can type a different code without a
+// reload. Mirrors GeoParty's leaveRoom(): stop the heartbeat, drop the
+// subscription, clear the room + follow chain + recap fold + URL, and surface a
+// blank join screen with the input focused. No game-state write (passive-TV):
+// leaving is a pure client teardown.
+function leaveToJoin() {
+  stopHeartbeat();
+  if (unsubRoom) {
+    unsubRoom();
+    unsubRoom = null;
+  }
+  code = null;
+  followedCodes = new Set();
+  partyHistory = [];
+  if (celebrated) endCelebration();
+  resetDisplay(""); // clears the board/beats/answer + the recap (stopRecapCycle)
+  $("s-display").classList.add("hidden");
+  $("s-join").classList.remove("hidden");
+  $("sErr").textContent = "";
+  const input = $("sCode");
+  if (input) {
+    input.value = "";
+    input.focus();
+  }
+  try {
+    history.replaceState(null, "", location.pathname);
+  } catch {
+    /* file:// */
+  }
+}
+
 // Pop the transient "guessed wrong" hint for a team (name already resolved,
 // masked in the DOM). Restart the auto-dismiss on each new ring so back-to-back
 // wrong guesses each get their ~2.5s beat. Reduced motion is handled in CSS
@@ -479,19 +651,15 @@ function wire() {
   // registering it on every follow/reconnect stacked a fresh listener each time.
   onConnectionChange((up) => $("connPill").classList.toggle("hidden", up));
 
-  $("btnSConnect").addEventListener("click", () => {
-    const c = ($("sCode").value || "").trim().toUpperCase();
-    if (!isValidRoomCode(c)) {
-      $("sErr").textContent = "Enter a 6-letter room code.";
-      return;
-    }
-    followedCodes = new Set(); // manual entry starts a fresh follow chain (F3)
-    connect(c, "typed");
-  });
+  // The reenter-code escape hatch (Item 2): visible on lobby + gameOver (CSS),
+  // it leaves the room back to the join screen so a new code can be typed.
+  const btnNew = $("btnTvNewEntry");
+  if (btnNew) btnNew.addEventListener("click", leaveToJoin);
+
   $("sCode").addEventListener("input", (e) => {
     // Strip to the code alphabet as we go (GeoParty parity), then auto-connect
-    // the moment a full valid code is present — no Connect press needed. The
-    // button below stays as a fallback for paste/edge cases.
+    // the moment a full valid code is present — no Connect press needed. A full
+    // pasted code auto-joins the same way (the Connect button was removed).
     const c = e.target.value.toUpperCase().replace(/[^A-HJ-NP-Z]/g, "");
     e.target.value = c;
     if (isValidRoomCode(c)) {
