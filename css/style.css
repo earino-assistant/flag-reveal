@@ -629,9 +629,65 @@ input:focus, select:focus {
 
 /* ---- Doc pages ---- */
 .doc-wrap { max-width: 640px; }
-.howto { line-height: 1.65; padding-left: 1.3rem; }
-.howto li { margin-bottom: 1rem; }
-.howto li::marker { color: var(--accent); font-weight: 700; }
+
+/* howto.html — visual, screenshot-based step list (mirrors GeoParty's).
+   Not unit-testable (static copy): a flex row of thumbnail + numbered badge +
+   one bold line, stacking to a full-width image under 480px, then a CTA row. */
+.howto-wrap { max-width: 640px; }
+.howto-steps {
+  list-style: none;
+  margin: 24px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.howto-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+.howto-step img {
+  flex: 0 0 auto;
+  width: 128px;
+  height: 84px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--panel-2);
+}
+.howto-step-no {
+  display: inline-block;
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+.howto-step p { margin: 0; font-weight: 600; line-height: 1.35; }
+@media (max-width: 480px) {
+  .howto-step { flex-direction: column; align-items: stretch; text-align: center; }
+  .howto-step img { width: 100%; height: 140px; }
+}
+.howto-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 420px;
+  margin: 8px auto 32px;
+}
+.howto-cta a {
+  display: block;
+  text-align: center;
+  padding: 16px 0;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.howto-cta .btn-ghost { font-weight: 600; }
 code {
   background: var(--panel-2);
   border: 1px solid var(--line);
