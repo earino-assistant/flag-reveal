@@ -16,6 +16,7 @@ import {
   normalizeAnswer,
   buildAnswerIndex,
   resolveOutcome,
+  lockedOutTeams,
   advanceState,
   roundConduct,
   gameWinner,
@@ -283,6 +284,35 @@ test("resolveOutcome win: aborts on null state / stale round / already resolved"
     resolveOutcome(reveal, { kind: "win", team: "t1", roundNumber: 3 }, CFG),
     undefined
   );
+});
+
+// ---------------------------------------------------------------------------
+// lockedOutTeams — TV "guessed wrong" hint detection (Item 4)
+// ---------------------------------------------------------------------------
+test("lockedOutTeams: only CURRENT-round lockouts, sorted, content-free", () => {
+  // baseRoundActive has t2 locked THIS round (3) and t3 a stale straggler (2).
+  const teams = lockedOutTeams(baseRoundActive().round);
+  assert.deepEqual(teams, ["t2"]); // t3's lockedRound 2 !== 3 → excluded
+});
+
+test("lockedOutTeams: multiple current lockouts returned sorted", () => {
+  const round = {
+    number: 5,
+    private: {
+      t3: { lockedRound: 5, wrongIso: "NL", wrongStep: 2 },
+      t1: { lockedRound: 5, wrongIso: "BE", wrongStep: 1 },
+      t2: { lockedRound: 4, wrongIso: "DE", wrongStep: 3 }, // stale → excluded
+    },
+  };
+  assert.deepEqual(lockedOutTeams(round), ["t1", "t3"]);
+});
+
+test("lockedOutTeams: no private / no round / empty → []", () => {
+  assert.deepEqual(lockedOutTeams(null), []);
+  assert.deepEqual(lockedOutTeams({ number: 1 }), []);
+  assert.deepEqual(lockedOutTeams({ number: 1, private: {} }), []);
+  // A reveal round drops `private` entirely → nothing to hint.
+  assert.deepEqual(lockedOutTeams({ number: 1, results: {} }), []);
 });
 
 test("resolveOutcome bust: all zero, no total change, disclosures still filtered", () => {

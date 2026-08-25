@@ -34,6 +34,12 @@
          leaderboard. Both aria-hidden: the "👑 name wins" text carries meaning. -->
     <div id="tvBloom" class="tv-bloom" aria-hidden="true"></div>
     <div id="tvConfetti" class="tv-confetti" aria-hidden="true"></div>
+    <!-- Transient "guessed wrong" hint (Item 4): a passive, content-free pill the
+         TV pops when a team rings in wrong mid-round, then fades (~2.5s, timed in
+         screen-flag.js). The team name is masked for replay; role=status +
+         aria-live announces it. It names no country — the guess is disclosed only
+         at reveal (the beats below). -->
+    <div id="tvWrongHint" class="tv-wrong-hint hidden" role="status" aria-live="polite"></div>
     <header class="tv-head">
       <div class="tv-room">Room <strong id="tvCode" data-ph-mask>······</strong></div>
       <div id="tvHeader" class="tv-round">Lobby</div>

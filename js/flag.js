@@ -337,6 +337,24 @@ function discloseFor(round, tN) {
   return { rangOut: false };
 }
 
+// Team slots that have locked THEMSELVES out with a wrong ring in the CURRENT
+// round — PRESENCE ONLY, never the guessed country. Drives the TV's transient
+// "guessed wrong" hint (screen-flag.js): the passive screen surfaces the FACT of
+// a mid-round wrong ring without disclosing its content. Filtered on
+// `lockedRound === round.number` (the same straggler guard as discloseFor, §4.3),
+// so a delayed prior-round write never fabricates a hint. Returns a sorted slot
+// list; `wrongIso`/`wrongStep` are deliberately NOT read — the guess stays hidden
+// until reveal's beats (privacy §5.2: disclose the fact, never the content).
+export function lockedOutTeams(round) {
+  if (!round || !round.private) return [];
+  const out = [];
+  for (const tN of Object.keys(round.private)) {
+    const p = round.private[tN];
+    if (p && p.lockedRound === round.number) out.push(tN);
+  }
+  return out.sort();
+}
+
 export function resolveOutcome(gameState, attempt, cfg = {}) {
   // Empty-local-cache first run (§4.2 case a): cannot resolve without state.
   if (gameState == null) return undefined;

@@ -533,6 +533,22 @@ input:focus, select:focus {
   padding: 0.75em 1.15em; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-pop); max-width: 90vw;
 }
+/* Item 4: the TV's transient "guessed wrong" hint — a content-free pill popped
+   when a team rings in wrong mid-round (fades after ~2.5s via JS). Top-center so
+   it reads over the full-bleed flag without covering the reveal's focus. */
+.tv-wrong-hint {
+  position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 2500; max-width: 90vw; text-align: center;
+  background: var(--panel-2); color: var(--fg);
+  padding: 0.6em 1.2em; border-radius: 999px; border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pop); font-size: 1.35rem; font-weight: 700;
+  animation: wrong-hint-in 220ms ease-out;
+}
+.tv-wrong-hint span { color: var(--accent); }
+@keyframes wrong-hint-in {
+  from { opacity: 0; transform: translate(-50%, -0.5rem); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
 .landing-hero { max-width: var(--maxw); padding-top: 11vh; }
 .landing-hero .brand { font-size: clamp(2.6rem, 11vw, 4rem); }
@@ -861,6 +877,8 @@ body.tv { overflow: hidden; }
   #s-display.celebrate .tv-bloom { animation: none; opacity: 0.4; }
   #s-display.celebrate .tv-result { animation: none; }
   .tv-confetti { display: none; }
+  /* The "guessed wrong" hint still shows/hides — just no slide-in. */
+  .tv-wrong-hint { animation: none; }
 }
 
 /* ============================ v0.2 additions ============================ */
