@@ -673,6 +673,10 @@ body.tv { overflow: hidden; }
 }
 #s-display[data-phase="roundActive"] .tv-room { font-size: 0.95rem; }
 #s-display[data-phase="roundActive"] .tv-round { font-size: 1.15rem; }
+/* Lobby has no flag yet — render() empties #tvReveal but the element keeps its
+   .reveal-holder margin, reserving dead space above the join QR. Collapse it. */
+#s-display[data-phase="lobby"] .tv-reveal { display: none; }
+
 /* Height-driven so the flag always fits the viewport height; max-width caps
    the rare very-wide flag. aspect-ratio (on .flag-canvas) keeps it undistorted. */
 #s-display[data-phase="roundActive"] .tv-reveal {
