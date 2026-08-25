@@ -100,11 +100,33 @@ continuing**, not a new attach, so `follow` is deliberately **NOT** emitted as a
 `screen_joined`. `via` is therefore always one of `typed | link | qr` in
 PostHog; `follow` exists only in the client re-connect path.
 
+## `game_over` — one per finished game, emitted by the advancing phone
+
+Emitted by **the phone whose `advanceRound` transaction committed the
+game-ending advance** (reveal of the final round → `gameOver`). Emission is
+**at-most-once** (a module-level `gameOverEmitted` latch, re-armed on an in-place
+lobby return), mirroring `flag_round`'s committed-path discipline — the
+transaction core is untouched; this only adds an emission on the path that
+already committed. Closes the funnel gap: completion rate, rounds-per-game, and
+create→start→finish conversion.
+
+| prop | type | notes |
+|---|---|---|
+| `mode` | string | `tv` \| `phone` |
+| `roundsPlayed` | int | the final round number (advancing from the reveal of round N ⇒ N rounds played) |
+| `teamCount` | int | live team slots at game over |
+| `difficulty` | string | `easy` \| `world` \| `expert` |
+| `inputMode` | string | `typeahead` \| `choice` |
+
 ## Other events
 
 `front_door_join`, `front_door_create`, `team_joined`, `screen_joined`,
-`next_game`, `consent_given`, `consent_denied` — routing/funnel aggregates, all
-schema-gated identically.
+`next_game`, `game_over`, `consent_given`, `consent_denied` — routing/funnel
+aggregates, all schema-gated identically.
+
+`share_party` is **not** dead: it is pulled by `share_party_30d` in
+`tools/posthog_metrics.mjs` and rendered by `tools/posthog_report.mjs` (the
+flagship-mode virality signal).
 
 ## Metrics tooling (the weekly "State of Flag Reveal" pull)
 

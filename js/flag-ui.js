@@ -40,12 +40,15 @@ import {
   eligiblePool,
   effectiveRoundCount,
   winAttemptOutcome,
+  winRetryExhausted,
   shouldLockOut,
   guessModeLabel,
+  endsGameOnAdvance,
+  hostStalled,
 } from "./flag.js";
 import { ringEmission, revealEmission } from "./flag-analytics.js";
 import { recordPartyRound, partyRecapCards, recapTeamResult } from "./partyrecap.js";
-import { escapeHtml, toast, suggestFor, pop } from "./ui-common.js";
+import { escapeHtml, toast, suggestFor, pop, primeAudio, vibrate } from "./ui-common.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, deviceId } from "./roomcode.js";
@@ -105,6 +108,7 @@ let winAttempts = 0;
 const emittedRounds = new Set(); // roundKey → flag_round emitted
 const ringed = new Set(); // `${roundKey}:${correct}` → flag_ring emitted
 let committedOutcome = null; // {number, kind} when MY transaction committed
+let gameOverEmitted = false; // game_over is emitted at-most-once by the advancer
 
 // Typeahead source. The NAME_INDEX + suggestFor ranking now lives in
 // ui-common.js (shared, identical to the Daily's); NAMES is the free-text alias
@@ -306,7 +310,13 @@ function runConduct() {
   } else if (action === "advance") {
     opInFlight = true;
     cancelOwnerTimers();
+    // Does this advance end the game? Decided from the CURRENT snapshot (pure);
+    // only used to emit game_over if OUR transaction is the one that commits.
+    const willEnd = endsGameOnAdvance(gs, r.number, cfg);
     advanceRound(code, r.number, cfgNow())
+      .then((committed) => {
+        if (committed && willEnd) emitGameOver(r.number);
+      })
       .catch(() => {})
       .finally(() => {
         opInFlight = false;
@@ -325,6 +335,8 @@ function commitGuess(iso2, displayedStep) {
   if (winState && winState.roundNumber === r.number && winState.phase === "trying") {
     return; // a win attempt is already in flight
   }
+
+  vibrate([15]); // a short tactile tick the instant a ring lands (Android)
 
   if (iso2 === r.answerIso) {
     attemptWin(r.number, r.currentStep);
@@ -358,14 +370,35 @@ function attemptWin(roundNumber, displayedStep) {
   doWinAttempt(roundNumber, displayedStep);
 }
 
+const WIN_RETRY_MAX = 40;
 function retryWin(roundNumber, displayedStep) {
   const gs = room && room.gameState;
   const r = gs && gs.round;
   const stillLive =
     !gs ||
     (gs.phase === "roundActive" && r && r.number === roundNumber && r.outcome == null);
-  if (stillLive && winAttempts++ < 40) {
+  if (stillLive && winAttempts < WIN_RETRY_MAX) {
+    winAttempts++;
     setTimeout(() => doWinAttempt(roundNumber, displayedStep), 120);
+    return;
+  }
+  // No more retries: the budget is spent (a flaky network swallowed every attempt),
+  // or the round slipped away without our ring resolving. Don't leave the buzzer
+  // bricked on "Ringing in…" — drop winState so the next tap re-arms, with an
+  // honest status. winRetryExhausted guards the common still-live-but-out-of-budget
+  // case; either way we only touch OUR own in-flight round and NEVER a resolved
+  // outcome (won/lost/bust/over won the race and must stand).
+  const exhausted = winRetryExhausted(winState, winAttempts, WIN_RETRY_MAX);
+  if (
+    (exhausted || !stillLive) &&
+    winState &&
+    winState.phase === "trying" &&
+    winState.roundNumber === roundNumber
+  ) {
+    winState = null;
+    winAttempts = 0;
+    setStatus("Couldn't reach the server — ring again.");
+    renderRoundControls();
   }
 }
 
@@ -420,6 +453,25 @@ function emitRing({ correct, contested, atStep, points }, roundNumber) {
   if (!decision.emit) return;
   ringed.add(decision.key);
   track("flag_ring", decision.props);
+}
+
+// game_over — emitted at-most-once by the phone whose advanceRound transaction
+// COMMITTED the game-ending advance (the same committed-path discipline that gates
+// flag_round). Aggregates only, no identifiers: mode, how many rounds were played
+// (the final round number), the live team count, and the locked difficulty/input
+// mode. `roundsPlayed` is the reveal round we advanced FROM — advancing from the
+// reveal of round N into gameOver means N rounds were played.
+function emitGameOver(roundsPlayed) {
+  if (gameOverEmitted) return;
+  gameOverEmitted = true;
+  const teams = (room && room.gameState && room.gameState.teams) || {};
+  track("game_over", {
+    mode: modeStr(),
+    roundsPlayed,
+    teamCount: Object.keys(teams).length,
+    difficulty: cfg.difficulty,
+    inputMode: cfg.inputMode,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -608,6 +660,7 @@ function render() {
 
   if (phase === "lobby") {
     partyHistory = []; // fresh game (in-place lobby return); recap starts empty
+    gameOverEmitted = false; // re-arm game_over for the next game
     renderLobby(gs);
     showScreen("p-lobby");
   } else if (phase === "roundActive") {
@@ -684,6 +737,16 @@ function renderLobby(gs) {
   $("lobbyNote").textContent = owner
     ? "Start when everyone's in."
     : "Waiting for the host to start…";
+
+  // The host phone runs the clock for everyone — a lock/background stalls the game
+  // (Fix 5). Nudge the owner to keep it awake; other phones don't see this.
+  const hostTip = $("lobbyHostTip");
+  if (hostTip) {
+    hostTip.textContent = owner
+      ? "You're the host — keep this phone unlocked and plugged in while you play."
+      : "";
+    hostTip.classList.toggle("hidden", !owner);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -742,6 +805,23 @@ function renderRound(gs) {
   });
 
   renderRoundControls();
+  renderHostHint(r);
+}
+
+// Fix 5: a DISPLAY-ONLY "the host's screen may be asleep" nudge on non-owner
+// phones when the reveal clock has frozen mid-round (hostStalled). Zero authority,
+// zero writes (CLAUDE.md) — the TV stays passive, no transaction fires. It never
+// shows on the owner's own phone (the owner IS the potentially-asleep host), and
+// clears the instant the step advances (a fresh snapshot re-renders with a newer
+// stepStartedAt). Also refreshed by the 1s interval so it appears on a quiet feed.
+function renderHostHint(r) {
+  const el = $("roundHostHint");
+  if (!el) return;
+  const stalled = !isOwner() && hostStalled(r, cfg, serverNow());
+  el.textContent = stalled
+    ? "The host's screen may be asleep — give their phone a tap 👋"
+    : "";
+  el.classList.toggle("hidden", !stalled);
 }
 
 function renderRoundControls() {
@@ -860,10 +940,11 @@ function renderRevealScreen(gs) {
       ? `🎉 You got it at step ${oc.atStep} of ${cfg.steps} — +${pts}!`
       : `${wt ? wt.name : oc.team} got it at step ${oc.atStep} of ${cfg.steps} — +${pts}!`;
     resultEl.className = "reveal-result " + (mine ? "good" : "");
-    // Your own win: a single subtle pop, once per round.
+    // Your own win: a single subtle pop + haptic buzz, once per round.
     if (mine && poppedRound !== r.number) {
       poppedRound = r.number;
       pop(540, 900);
+      vibrate([10, 40, 20]);
     }
   } else {
     resultEl.textContent = `Nobody got it! 🙈`;
@@ -963,9 +1044,13 @@ function renderBeats(box, results, teams) {
       const wrong = byIso2(res.wrongIso);
       const div = document.createElement("div");
       div.className = "beat";
+      // Mode-aware suffix: a wrong ring locks a team out only in "First correct
+      // wins". In "Multiple guesses" (shouldLockOut false) the team is still
+      // playing, so never claim they're out.
+      const suffix = shouldLockOut(cfg) ? "out this round." : "still in the round.";
       div.textContent = `😅 ${t ? t.name : tN} guessed ${
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      } at step ${res.wrongStep} of ${cfg.steps} — out this round.`;
+      } at step ${res.wrongStep} of ${cfg.steps} — ${suffix}`;
       box.appendChild(div);
     }
   }
@@ -1163,6 +1248,13 @@ function drawQrOnce(id, tag, text) {
 // Wire the DOM + boot
 // ---------------------------------------------------------------------------
 function wire() {
+  // Unlock WebAudio inside the first real gesture (iOS Safari autoplay policy) so
+  // the win pop can actually sound — pop() itself fires in the snapshot-echo render
+  // path, outside any gesture, where a never-resumed context stays silent.
+  const prime = () => primeAudio();
+  window.addEventListener("pointerdown", prime, { once: true });
+  window.addEventListener("touchstart", prime, { once: true });
+
   // Create is its own screen now (not an accordion). These two just flip the
   // #p-home ↔ #p-create pair and keep the URL honest so a refresh reopens the
   // same screen (the pre-paint inline script keys off ?create=1).
@@ -1205,10 +1297,16 @@ function wire() {
 
   // Reveal controls
   $("btnNext").addEventListener("click", () => {
-    const r = room.gameState && room.gameState.round;
+    const gs = room.gameState;
+    const r = gs && gs.round;
     if (!r) return;
     cancelOwnerTimers();
-    advanceRound(code, r.number, cfgNow()).catch(() => {});
+    const willEnd = endsGameOnAdvance(gs, r.number, cfg);
+    advanceRound(code, r.number, cfgNow())
+      .then((committed) => {
+        if (committed && willEnd) emitGameOver(r.number);
+      })
+      .catch(() => {});
   });
   $("btnHold").addEventListener("click", () => {
     updateRoom(code, { "gameState/round/autoAdvanceAt": null }).catch(() => {});
@@ -1261,6 +1359,10 @@ setInterval(() => {
     runConduct(); // ensure a dead-owner fallback still fires on a quiet feed
   } else if (room && room.gameState && room.gameState.phase === "roundActive") {
     runConduct(); // non-owner bust deadline can pass with no new snapshot
+    // Refresh the host-asleep hint on a quiet feed (a frozen clock produces no new
+    // snapshot, so the >2×stepMs threshold must be re-checked on the timer).
+    const r = room.gameState.round;
+    if (r && !$("p-round").classList.contains("hidden")) renderHostHint(r);
   }
 }, 1000);
 

@@ -512,6 +512,21 @@ export function advanceState(gameState, fromRound, cfg = {}) {
   return undefined;
 }
 
+// endsGameOnAdvance(gameState, fromRound, cfg) → bool. Pure mirror of the
+// gameOver branch of advanceState: true iff advancing from the reveal of
+// `fromRound` would land in gameOver (target reached, or the round budget spent).
+// Exposed so the phone that COMMITS the advance can emit the game_over analytics
+// event at-most-once without re-deriving the round budget itself. Reads no
+// private/*, flips no phase, writes nothing (SPEC §4.4, CLAUDE.md — this only
+// classifies the same transition advanceState already decides).
+export function endsGameOnAdvance(gameState, fromRound, cfg = {}) {
+  if (!gameState || gameState.phase !== "reveal") return false;
+  const round = gameState.round;
+  if (!round || round.number !== fromRound) return false;
+  if (round.outcome == null) return false;
+  return isGameOver(gameState, fromRound, cfg);
+}
+
 // ---------------------------------------------------------------------------
 // 11. roundConduct — the per-snapshot decision every phone runs (§4.4).
 // ---------------------------------------------------------------------------
@@ -585,6 +600,36 @@ export function winAttemptOutcome(gameState, roundNumber, myTeam) {
   if (oc && oc.kind === "win") return "lost";
   if (oc && oc.kind === "bust") return "bust";
   return "over";
+}
+
+// winRetryExhausted(winState, attemptCount, max) → bool. The pure decision behind
+// flag-ui's retryWin bail-out: true when a win-attempt retry loop has spent its
+// whole budget while the phone is STILL {phase:"trying"} for a round — its ring
+// never resolved because a flaky network swallowed every retry. The caller then
+// drops winState so the buzzer re-arms on the next tap (with an honest status)
+// instead of freezing forever on "Ringing in…". False whenever the outcome has
+// already resolved (won/lost/bust/over) — those won the resolution race and must
+// stand; the reset must never clobber them (§4.2 tail).
+export function winRetryExhausted(winState, attemptCount, max) {
+  return !!winState && winState.phase === "trying" && attemptCount >= max;
+}
+
+// hostStalled(round, cfg, now) → bool. A DISPLAY-ONLY staleness cue for non-owner
+// phones (zero authority, zero writes — CLAUDE.md): true when the reveal clock
+// hasn't advanced for more than 2× stepMs while it still SHOULD be advancing
+// (currentStep < steps). The owning phone drives currentStep every stepMs (writing
+// stepStartedAt); a backgrounded/locked host freezes that write, so a long gap
+// since stepStartedAt with steps still to go is the visible symptom of a sleeping
+// host. Never fires at the final step (cadence legitimately stops there, waiting on
+// the bust grace) or once the round is resolved. Pure; the caller only renders a
+// hint and clears it when the step advances.
+export function hostStalled(round, cfg, now) {
+  if (!round || round.outcome != null) return false;
+  const steps = (cfg && cfg.steps) || STEPS;
+  const stepMs = (cfg && cfg.stepMs) || STEP_MS;
+  if (round.currentStep == null || round.currentStep >= steps) return false;
+  if (round.stepStartedAt == null) return false;
+  return now - round.stepStartedAt > 2 * stepMs;
 }
 
 // ---------------------------------------------------------------------------

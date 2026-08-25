@@ -32,6 +32,9 @@ import {
   eligiblePool,
   effectiveRoundCount,
   winAttemptOutcome,
+  winRetryExhausted,
+  hostStalled,
+  endsGameOnAdvance,
   shouldLockOut,
   guessModeLabel,
 } from "../js/flag.js";
@@ -877,4 +880,88 @@ test("winAttemptOutcome: round genuinely advanced past me → over (case g)", ()
   assert.equal(winAttemptOutcome(gs, 3, "t1"), "over");
   // Or advanced to gameOver with no round at all.
   assert.equal(winAttemptOutcome({ phase: "gameOver" }, 3, "t1"), "over");
+});
+
+// ---------------------------------------------------------------------------
+// winRetryExhausted — the retryWin bail-out decision (§4.2 tail, Fix 1).
+// ---------------------------------------------------------------------------
+test("winRetryExhausted: true only when still trying AND budget spent", () => {
+  const trying = { roundNumber: 3, phase: "trying" };
+  assert.equal(winRetryExhausted(trying, 40, 40), true, "at the cap → exhausted");
+  assert.equal(winRetryExhausted(trying, 41, 40), true, "past the cap → exhausted");
+  assert.equal(winRetryExhausted(trying, 39, 40), false, "budget left → keep trying");
+});
+
+test("winRetryExhausted: never clobbers a resolved outcome", () => {
+  for (const phase of ["won", "lost", "bust", "over"]) {
+    assert.equal(
+      winRetryExhausted({ roundNumber: 3, phase }, 999, 40),
+      false,
+      `${phase} resolved → must NOT reset`
+    );
+  }
+  assert.equal(winRetryExhausted(null, 999, 40), false, "no win in flight → nothing to reset");
+});
+
+// ---------------------------------------------------------------------------
+// hostStalled — the display-only sleeping-host cue (Fix 5).
+// ---------------------------------------------------------------------------
+test("hostStalled: fires only after >2×stepMs with steps still to go", () => {
+  const cfg = { steps: 8, stepMs: 1000 };
+  const round = { currentStep: 3, stepStartedAt: 1000, outcome: undefined };
+  assert.equal(hostStalled(round, cfg, 1000 + 2000), false, "exactly 2×stepMs → not yet");
+  assert.equal(hostStalled(round, cfg, 1000 + 2001), true, "just past 2×stepMs → stalled");
+  assert.equal(hostStalled(round, cfg, 1000 + 500), false, "fresh step → fine");
+});
+
+test("hostStalled: never at the final step or once resolved", () => {
+  const cfg = { steps: 8, stepMs: 1000 };
+  // Final step: cadence legitimately stops (waiting on the bust grace).
+  assert.equal(
+    hostStalled({ currentStep: 8, stepStartedAt: 0, outcome: undefined }, cfg, 999999),
+    false
+  );
+  // A resolved round is never "stalled".
+  assert.equal(
+    hostStalled({ currentStep: 3, stepStartedAt: 0, outcome: { kind: "win" } }, cfg, 999999),
+    false
+  );
+  assert.equal(hostStalled(null, cfg, 999999), false);
+});
+
+// ---------------------------------------------------------------------------
+// endsGameOnAdvance — the pure "does this advance end the game?" gate (Fix 4).
+// ---------------------------------------------------------------------------
+test("endsGameOnAdvance: true at the last reveal, false before it", () => {
+  const cfg = { roundCount: 2, difficulty: "world", pool: POOL, target: 0 };
+  const reveal = (number) => ({
+    phase: "reveal",
+    round: { number, outcome: { kind: "win", team: "t1" } },
+    teams: { t1: { total: 100 } },
+  });
+  assert.equal(endsGameOnAdvance(reveal(2), 2, cfg), true, "final round → game over");
+  assert.equal(endsGameOnAdvance(reveal(1), 1, cfg), false, "more rounds left");
+});
+
+test("endsGameOnAdvance: false unless it's an advanceable resolved reveal", () => {
+  const cfg = { roundCount: 2, difficulty: "world", pool: POOL, target: 0 };
+  // Wrong phase.
+  assert.equal(
+    endsGameOnAdvance({ phase: "roundActive", round: { number: 2 } }, 2, cfg),
+    false
+  );
+  // Reveal but not yet resolved (outcome absent).
+  assert.equal(
+    endsGameOnAdvance({ phase: "reveal", round: { number: 2 } }, 2, cfg),
+    false
+  );
+  // Round-number mismatch (stale advance).
+  assert.equal(
+    endsGameOnAdvance(
+      { phase: "reveal", round: { number: 2, outcome: { kind: "bust" } } },
+      1,
+      cfg
+    ),
+    false
+  );
 });

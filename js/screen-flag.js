@@ -26,6 +26,7 @@ import {
   confettiSpec,
   effectiveRoundCount,
   lockedOutTeams,
+  shouldLockOut,
 } from "./flag.js";
 import { escapeHtml } from "./ui-common.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
@@ -364,7 +365,7 @@ function render(room) {
     } else {
       $("tvResult").textContent = `Nobody got it! 🙈`;
     }
-    renderBeats($("tvBeats"), r.results || {}, teams, cfg.steps);
+    renderBeats($("tvBeats"), r.results || {}, teams, cfg.steps, shouldLockOut(cfg));
     // Coming-up line rides in the main column under the result, where all eyes
     // are; tvNote is reserved for lobby/idle states.
     $("tvComingUp").textContent = "Next round coming up…";
@@ -620,8 +621,11 @@ function renderBoard(ul, teams, winner) {
   }
 }
 
-function renderBeats(box, results, teams, steps) {
+function renderBeats(box, results, teams, steps, lockOut) {
   box.innerHTML = "";
+  // Mode-aware suffix: a wrong ring locks a team out only in "First correct wins"
+  // (lockOut). In "Multiple guesses" the team keeps playing, so never say "out".
+  const suffix = lockOut ? "out this round." : "still in the round.";
   for (const tN of Object.keys(results)) {
     const res = results[tN];
     if (res && res.rangOut && res.wrongIso) {
@@ -637,7 +641,7 @@ function renderBeats(box, results, teams, steps) {
         t ? t.name : tN
       )}</span> guessed ${escapeHtml(
         wrong ? wrong.name : res.wrongIso.toUpperCase()
-      )} at step ${res.wrongStep} of ${steps} — out this round.</span>`;
+      )} at step ${res.wrongStep} of ${steps} — ${suffix}</span>`;
       box.appendChild(div);
     }
   }

@@ -232,6 +232,31 @@ test("share_party carries only mode/points/method", () => {
   assert.deepEqual(clean, { mode: "phone", points: 4200, method: "share" });
 });
 
+test("game_over exists and keeps only aggregates, no identifiers", () => {
+  assert.ok(EVENT_SCHEMA.game_over, "game_over must be in the schema");
+  assert.equal(EVENT_SCHEMA.game_over.roundsPlayed, "int");
+  assert.equal(EVENT_SCHEMA.game_over.teamCount, "int");
+  const clean = sanitizeProps(EVENT_SCHEMA.game_over, {
+    mode: "phone",
+    roundsPlayed: 8,
+    teamCount: 3,
+    difficulty: "expert",
+    inputMode: "choice",
+    // hostile extras a careless caller might pass:
+    winnerName: "The Cartographers",
+    roomCode: "ABCDEF",
+    answerIso: "fr",
+  });
+  assert.deepEqual(clean, {
+    mode: "phone",
+    roundsPlayed: 8,
+    teamCount: 3,
+    difficulty: "expert",
+    inputMode: "choice",
+  });
+  assert.ok(!("winnerName" in clean) && !("roomCode" in clean) && !("answerIso" in clean));
+});
+
 test("screen_joined accepts via=qr", () => {
   const clean = sanitizeProps(EVENT_SCHEMA.screen_joined, { mode: "tv", via: "qr" });
   assert.equal(clean.via, "qr");

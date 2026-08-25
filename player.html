@@ -138,6 +138,7 @@
             <span class="join-qr-cap">Scan to join</span>
           </div>
         </div>
+        <p id="lobbyHostTip" class="muted-note hidden"></p>
       </div>
 
       <!-- Owner-directed feature: put the reveal on a TV. JS (renderLobby) sets
@@ -188,6 +189,10 @@
       </div>
 
       <div id="roundReveal" class="reveal-holder"></div>
+
+      <!-- Fix 5: display-only host-asleep nudge (non-owner phones). JS toggles
+           .hidden via renderHostHint; zero authority, zero writes. -->
+      <div id="roundHostHint" class="round-status muted-note hidden" aria-live="polite"></div>
 
       <div id="buzzTypeahead" class="buzzer">
         <div class="typeahead">
