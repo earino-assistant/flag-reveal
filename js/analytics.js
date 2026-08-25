@@ -177,6 +177,17 @@ export const EVENT_SCHEMA = Object.freeze({
     roundKey: "string",
   },
 
+  // game_over — emitted at-most-once by the phone whose advanceRound transaction
+  // committed the game-ending advance. Aggregates only: how many rounds were
+  // played, the live team count, and the locked mode dimensions. No identifiers.
+  game_over: {
+    mode: "string",
+    roundsPlayed: "int",
+    teamCount: "int",
+    difficulty: "string",
+    inputMode: "string",
+  },
+
   consent_given: {},
   consent_denied: {},
   next_game: { mode: "string" },

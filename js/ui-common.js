@@ -73,23 +73,70 @@ const reduceMotion =
   typeof matchMedia === "function" &&
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 let audioCtx = null;
+
+// Get (creating once) the shared AudioContext, or null if WebAudio is absent.
+function getCtx() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  } catch {
+    audioCtx = null;
+  }
+  return audioCtx;
+}
+
+// Prime/resume the AudioContext from INSIDE a real user gesture. iOS Safari's
+// autoplay policy leaves any context created outside a gesture "suspended"
+// forever — and pop() fires in the snapshot-echo render path (not a gesture), so
+// without this the signature win sound never sounds on iPhones. Each app wires
+// this to the first pointerdown/touch at boot (once is enough). Idempotent and a
+// no-op under reduced motion (pop is silent there anyway).
+export function primeAudio() {
+  if (reduceMotion) return;
+  const ctx = getCtx();
+  if (ctx && ctx.state === "suspended" && typeof ctx.resume === "function") {
+    ctx.resume().catch(() => {});
+  }
+}
+
 export function pop(fromHz = 540, toHz = 900) {
   if (reduceMotion) return;
   try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    const now = audioCtx.currentTime;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    const ctx = getCtx();
+    if (!ctx) return;
+    // A context never unlocked inside a gesture (autoplay-locked iOS) stays
+    // suspended: don't sound into it — nudge a resume for next time and bail,
+    // rather than scheduling a note that never plays.
+    if (ctx.state === "suspended") {
+      if (typeof ctx.resume === "function") ctx.resume().catch(() => {});
+      return;
+    }
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
     osc.type = "triangle";
     osc.frequency.setValueAtTime(fromHz, now);
     osc.frequency.exponentialRampToValueAtTime(toHz, now + 0.09);
     gain.gain.setValueAtTime(0.0001, now);
     gain.gain.exponentialRampToValueAtTime(0.16, now + 0.02);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-    osc.connect(gain).connect(audioCtx.destination);
+    osc.connect(gain).connect(ctx.destination);
     osc.start(now);
     osc.stop(now + 0.24);
   } catch {
     /* audio blocked — no-op */
+  }
+}
+
+// Best-effort haptic tap (Android; iOS Safari ignores navigator.vibrate). Guarded
+// for existence and silenced under reduced motion, matching pop()'s discipline.
+// `pattern` is a Vibration API duration or on/off array (e.g. [15], [10,40,20]).
+export function vibrate(pattern) {
+  if (reduceMotion) return;
+  try {
+    if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
+      navigator.vibrate(pattern);
+    }
+  } catch {
+    /* vibrate blocked — no-op */
   }
 }

@@ -27,7 +27,7 @@ import { shareText } from "./share-ui.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2 } from "./flags-data.js";
 import { track, openBanner } from "./consent.js";
-import { toast, suggestFor, pop } from "./ui-common.js";
+import { toast, suggestFor, pop, primeAudio, vibrate } from "./ui-common.js";
 
 // Reveal cadence (Classic pace). A flag opens over ~8 steps, then a short grace
 // window in which a late answer still counts before the round times out.
@@ -203,6 +203,7 @@ function commitGuess(iso2) {
     clearTimers();
     hideSuggest();
     pop(520, 880);
+    vibrate([10, 40, 20]);
     run = recordDailyRound(run, { correct: true, atStep: currentStep });
     showReveal();
   } else {
@@ -310,6 +311,12 @@ let wired = false;
 function wire() {
   if (wired) return;
   wired = true;
+  // Unlock WebAudio inside the first real gesture (iOS Safari autoplay policy) so
+  // the correct-answer pop can actually sound — pop() fires in a render path, not
+  // a gesture, where a never-resumed context stays silent.
+  const prime = () => primeAudio();
+  window.addEventListener("pointerdown", prime, { once: true });
+  window.addEventListener("touchstart", prime, { once: true });
   $("btnDailyStart").addEventListener("click", startDaily);
   $("btnDNext").addEventListener("click", nextRound);
   $("btnDShare").addEventListener("click", doShare);
