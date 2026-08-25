@@ -428,9 +428,59 @@ input:focus, select:focus {
 
 /* ---- The progressive flag reveal ---- */
 .reveal-holder { margin: 0.5rem 0 1.1rem; }
-/* Game-over winning flag: prominent above the "team wins" line but not so large
-   it dominates the standings/share below it. */
-.go-flag { max-width: 17rem; margin: 0.5rem auto 1rem; }
+/* Game-over round recap: a horizontal, snap-scrolling strip of round cards in
+   the band above the "team wins" line — each round's answer (flag + name) and
+   this phone's own guess. Fills the empty band without dominating the standings
+   and share row below it. */
+.recap-list {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.25rem 0.1rem 0.6rem;
+  margin: 0.4rem 0 0.9rem;
+}
+.recap-card {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 14rem;
+  max-width: 16rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-1);
+  text-align: left;
+}
+.recap-flag {
+  flex: 0 0 auto;
+  width: 3.2rem;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--tile-cover);
+}
+.recap-body { min-width: 0; }
+.recap-round {
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.recap-answer {
+  font-weight: 700;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.recap-guess { font-size: 0.85rem; margin-top: 0.15rem; color: var(--muted); }
+.recap-guess.correct { color: var(--good); }
+.recap-guess.wrong { color: var(--bad); }
 .flag-canvas {
   position: relative;
   width: 100%;

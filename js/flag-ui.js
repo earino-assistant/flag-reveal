@@ -44,9 +44,10 @@ import {
   guessModeLabel,
 } from "./flag.js";
 import { ringEmission, revealEmission } from "./flag-analytics.js";
+import { recordPartyRound, partyRecapCards, recapTeamResult } from "./partyrecap.js";
 import { escapeHtml, toast, suggestFor, pop } from "./ui-common.js";
 import { renderReveal } from "./reveal-render.js";
-import { FLAGS, byIso2 } from "./flags-data.js";
+import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, deviceId } from "./roomcode.js";
 import { GAME_DEFAULTS, BUNDLED_VERSIONS } from "../config.js";
 import { track, openBanner } from "./consent.js";
@@ -76,6 +77,12 @@ let myTeam = null;
 let myName = "";
 let wantJoin = false; // joining and not yet holding a slot
 let cfg = defaultCfg();
+
+// Memory-only round history for the game-over recap. Flag Party keeps only the
+// CURRENT round in RTDB, so we fold each reveal into this list as the echoes
+// arrive (recordPartyRound is idempotent by round number). Reset when a game
+// returns to the lobby; a fresh game reloads the page anyway (see playAgain).
+let partyHistory = [];
 
 let serverTimeOffset = 0;
 const serverNow = () => Date.now() + serverTimeOffset;
@@ -585,6 +592,7 @@ function render() {
   }
 
   if (phase === "lobby") {
+    partyHistory = []; // fresh game (in-place lobby return); recap starts empty
     renderLobby(gs);
     showScreen("p-lobby");
   } else if (phase === "roundActive") {
@@ -592,9 +600,15 @@ function render() {
     renderRound(gs);
     showScreen("p-round");
   } else if (phase === "reveal") {
+    // Fold this settled round into the recap history (idempotent per echo).
+    partyHistory = recordPartyRound(partyHistory, gs.round);
     renderRevealScreen(gs);
     showScreen("p-reveal");
   } else if (phase === "gameOver") {
+    // The finishing round is still in gs.round (advanceState only flips the
+    // phase) — fold it too so the last round shows even if its reveal echo was
+    // missed. recordPartyRound dedupes on round number.
+    partyHistory = recordPartyRound(partyHistory, gs.round);
     renderGameOver(gs);
     showScreen("p-gameover");
   }
@@ -944,6 +958,71 @@ function renderBeats(box, results, teams) {
 // ---------------------------------------------------------------------------
 // Game over
 // ---------------------------------------------------------------------------
+
+// This phone's own line for one recap card. Shows the player's OWN guess only —
+// the answer country when they got it, their own wrong guess when they rang out,
+// or nothing when they never rang. Never another team's guessed country (§5.2).
+function recapGuessText(me) {
+  if (me.status === "correct") {
+    return me.atStep != null
+      ? `✅ You got it at step ${me.atStep}`
+      : "✅ You got it";
+  }
+  if (me.status === "wrong") {
+    const g = byIso2(me.guessIso);
+    return `❌ You guessed ${g ? g.name : me.guessIso.toUpperCase()}`;
+  }
+  return "🙈 You didn't guess this one";
+}
+
+// The game-over round recap: one card per round showing the answer (flag + name,
+// shared truth) and this phone's own guess. A read-only render of partyHistory —
+// no transaction, no phase flip. The answer country is not a team name, so the
+// card carries no data-ph-mask; the flag image stays aria-hidden (decorative,
+// the name is the label).
+function renderRecap(box) {
+  if (!box) return;
+  const cards = partyRecapCards(partyHistory);
+  box.innerHTML = "";
+  if (!cards.length) {
+    box.classList.add("hidden");
+    return;
+  }
+  box.classList.remove("hidden");
+  for (const card of cards) {
+    const ans = byIso2(card.answerIso);
+    const me = recapTeamResult(card, myTeam);
+
+    const el = document.createElement("div");
+    el.className = "recap-card";
+
+    const flag = document.createElement("img");
+    flag.className = "recap-flag";
+    flag.src = flagAssetPath(card.answerIso);
+    flag.alt = "";
+    flag.setAttribute("aria-hidden", "true");
+
+    const body = document.createElement("div");
+    body.className = "recap-body";
+
+    const head = document.createElement("div");
+    head.className = "recap-round";
+    head.textContent = `Round ${card.number} of ${card.totalRounds}`;
+
+    const answer = document.createElement("div");
+    answer.className = "recap-answer";
+    answer.textContent = ans ? ans.name : card.answerIso.toUpperCase();
+
+    const guess = document.createElement("div");
+    guess.className = "recap-guess " + me.status;
+    guess.textContent = recapGuessText(me);
+
+    body.append(head, answer, guess);
+    el.append(flag, body);
+    box.appendChild(el);
+  }
+}
+
 function renderGameOver(gs) {
   const teams = gs.teams || {};
   const winner = gameWinner(teams, cfg);
@@ -953,26 +1032,11 @@ function renderGameOver(gs) {
     ? `${iWon ? "👑 You win" : "👑 " + wt.name + " wins"} — ${wt.total || 0} pts!`
     : "—";
 
-  // The winning flag above the winner line — the last round's answer, fully
-  // revealed (the same helper the reveal screen uses). Decorative (aria-hidden,
-  // a country flag not a team name) so it carries no data-ph-mask. gs.round is
-  // carried into gameOver by advanceState (it only flips the phase), so the
-  // finishing round's answerIso/flagSeed are still here.
-  const goFlag = $("goFlag");
-  const r = gs.round;
-  if (goFlag && r && r.answerIso) {
-    renderReveal(goFlag, {
-      flagSeed: r.flagSeed,
-      gridN: cfg.gridN,
-      steps: cfg.steps,
-      iso2: r.answerIso,
-      revealAspect: cfg.revealAspect,
-      full: true,
-    });
-    goFlag.classList.remove("hidden");
-  } else if (goFlag) {
-    goFlag.classList.add("hidden");
-  }
+  // The round recap fills the band above the winner line: each round's answer
+  // (a country flag + name — shared truth) and THIS phone's own guess. It is a
+  // read-only fold of already-settled rounds (partyHistory) — no transaction,
+  // no phase flip. See renderRecap.
+  renderRecap($("goRecap"));
 
   renderBoard($("goBoard"), teams);
   $("btnPlayAgain").classList.toggle("hidden", !iWon);
