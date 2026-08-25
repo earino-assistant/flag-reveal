@@ -936,6 +936,28 @@ function renderGameOver(gs) {
   $("goWinner").textContent = wt
     ? `${iWon ? "👑 You win" : "👑 " + wt.name + " wins"} — ${wt.total || 0} pts!`
     : "—";
+
+  // The winning flag above the winner line — the last round's answer, fully
+  // revealed (the same helper the reveal screen uses). Decorative (aria-hidden,
+  // a country flag not a team name) so it carries no data-ph-mask. gs.round is
+  // carried into gameOver by advanceState (it only flips the phase), so the
+  // finishing round's answerIso/flagSeed are still here.
+  const goFlag = $("goFlag");
+  const r = gs.round;
+  if (goFlag && r && r.answerIso) {
+    renderReveal(goFlag, {
+      flagSeed: r.flagSeed,
+      gridN: cfg.gridN,
+      steps: cfg.steps,
+      iso2: r.answerIso,
+      revealAspect: cfg.revealAspect,
+      full: true,
+    });
+    goFlag.classList.remove("hidden");
+  } else if (goFlag) {
+    goFlag.classList.add("hidden");
+  }
+
   renderBoard($("goBoard"), teams);
   $("btnPlayAgain").classList.toggle("hidden", !iWon);
 
