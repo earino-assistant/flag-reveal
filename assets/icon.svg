@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#22222C"/>
+      <stop offset="1" stop-color="#0E0E12"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- 🚩-on-dark: a gold flag furling from a pole, matching the theme color. -->
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- pole -->
+    <line x1="168" y1="120" x2="168" y2="404" stroke="#F4F4F6" stroke-width="20"/>
+    <circle cx="168" cy="112" r="14" fill="#F4F4F6"/>
+    <!-- flag, gold, with a gentle furl at the fly edge -->
+    <path fill="#FFCF3F" d="M168,132
+      h176
+      c-28,26 -28,58 0,84
+      c28,26 28,58 0,84
+      h-176 z"/>
+  </g>
+</svg>

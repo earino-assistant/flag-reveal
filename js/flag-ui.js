@@ -184,6 +184,21 @@ const $ = (id) => document.getElementById(id);
 const SCREENS = ["p-home", "p-lobby", "p-round", "p-reveal", "p-gameover"];
 function showScreen(id) {
   for (const s of SCREENS) $(s).classList.toggle("hidden", s !== id);
+  // #p-create is a pre-game sibling (not a game phase); hide it whenever a real
+  // phase screen takes over so it can't linger over the lobby.
+  $("p-create").classList.add("hidden");
+}
+// Flip between the home and create screens (both pre-game). Drops the pre-paint
+// html.want-create class so the CSS override yields to these .hidden toggles,
+// and keeps the URL in sync so a refresh restores the same screen.
+function showCreate(on, focusFirst) {
+  $("p-home").classList.toggle("hidden", on);
+  $("p-create").classList.toggle("hidden", !on);
+  document.documentElement.classList.remove("want-create");
+  try {
+    history.replaceState(null, "", on ? "player.html?create=1" : "player.html");
+  } catch { /* restricted history (file://) — leave the URL as-is */ }
+  if (on && focusFirst) $("createDifficulty").focus();
 }
 function setStatus(msg) {
   $("roundStatus").textContent = msg || "";
@@ -619,6 +634,7 @@ function render() {
 // ---------------------------------------------------------------------------
 function renderLobby(gs) {
   $("lobbyCode").textContent = code;
+  $("lobbyCode").classList.remove("skeleton"); // real code in — drop the pulse
   const owner = isOwner();
 
   // TV-connect callout: a code-forward card for the host; a quieter version for
@@ -1147,9 +1163,11 @@ function drawQrOnce(id, tag, text) {
 // Wire the DOM + boot
 // ---------------------------------------------------------------------------
 function wire() {
-  $("btnShowCreate").addEventListener("click", () => {
-    $("createPanel").classList.toggle("hidden");
-  });
+  // Create is its own screen now (not an accordion). These two just flip the
+  // #p-home ↔ #p-create pair and keep the URL honest so a refresh reopens the
+  // same screen (the pre-paint inline script keys off ?create=1).
+  $("btnShowCreate").addEventListener("click", () => showCreate(true, true));
+  $("btnCreateBack").addEventListener("click", () => showCreate(false));
   $("btnCreate").addEventListener("click", createRoom);
   $("btnJoin").addEventListener("click", () => {
     const c2 = ($("homeCode").value || "").trim().toUpperCase();
@@ -1209,13 +1227,14 @@ function wire() {
   // Resume banner / URL routing.
   const params = new URLSearchParams(location.search);
   const urlRoom = (params.get("room") || "").toUpperCase();
-  if (params.get("create") === "1") {
-    $("createPanel").classList.remove("hidden");
-  }
   if (isValidRoomCode(urlRoom)) {
     joinRoom(urlRoom, "");
     return;
   }
+  // Reconcile the create screen with the URL. If ?create=1, the pre-paint script
+  // already showed it via html.want-create; take ownership of the .hidden state
+  // and drop that class so later toggles (Back, showScreen) work normally.
+  showCreate(params.get("create") === "1");
   const sess = loadSession();
   if (sess && isValidRoomCode(sess.code)) {
     $("resumeCode").textContent = sess.code;

@@ -1,9 +1,21 @@
 /* style.css — Flag Party. One stylesheet for every page (index, player,
  * screen, howto). Dark, party-appropriate; readable on a TV (large) and on
  * phones. Design tokens follow the GeoParty kernel's palette for family
- * consistency; the flag-reveal grid + buzzer are new. No build step, no web
- * fonts (must render offline once served) — hierarchy is carried by scale,
- * weight, spacing and one warm accent, not by a downloaded typeface. */
+ * consistency; the flag-reveal grid + buzzer are new. No build step, no
+ * hot-linked fonts — the one display face is VENDORED (assets/, like the flag
+ * SVGs), so it still renders offline once served. Hierarchy is carried by
+ * scale, weight, spacing and one warm accent. */
+
+/* Space Grotesk, vendored (not CDN-linked) so it works offline once cached,
+   exactly like the flag SVGs. Variable face spans 300–700; font-display: swap
+   avoids blocking first paint. Shared with the GeoParty kernel for family. */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("../assets/SpaceGrotesk-Variable.woff2") format("woff2");
+  font-weight: 300 700;
+  font-display: swap;
+  font-style: normal;
+}
 
 :root {
   --bg: #0e0e12;
@@ -12,7 +24,7 @@
   --raised: #2e2e3a;
   --fg: #f4f4f6;
   --muted: #b0b0bc;
-  --faint: #7c7c8a;
+  --faint: #8b8b99; /* ≥4.5:1 AA on --panel (placeholders, tiny labels) */
   --accent: #ffcf3f;
   --accent-ink: #1c1608; /* text/icon on the yellow accent */
   --accent-2: #4dd6ff;
@@ -30,8 +42,8 @@
   --line-strong: rgba(255, 255, 255, 0.15);
   --focus: var(--accent-2);
 
-  /* No web font by design; lean on the best available display faces per OS,
-     then do the real work with scale/weight/tracking below. */
+  /* Display face is the vendored Space Grotesk (see @font-face above); the rest
+     are per-OS fallbacks for the swap window before it loads. */
   --font-display: "Space Grotesk", "SF Pro Display", "Segoe UI", system-ui,
     -apple-system, Roboto, Helvetica, Arial, sans-serif;
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
@@ -66,7 +78,7 @@ html, body {
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.05;
   text-wrap: balance;
@@ -83,7 +95,11 @@ a:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3
   border-radius: 6px;
 }
 
-button {
+/* Base for every button AND any anchor wearing a button class — so an <a
+   class="btn-primary"> (landing CTA, howto back link, daily "← Home") inherits
+   the same radius, padding, min-height and centering a <button> gets, instead
+   of collapsing to bare link metrics. */
+button, .btn-primary, .btn-ghost {
   font: inherit;
   font-weight: 600;
   border: 1px solid var(--line);
@@ -93,9 +109,14 @@ button {
   color: var(--fg);
   padding: 0.72em 1.2em;
   min-height: 44px; /* comfortable phone target */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none; /* the anchor case */
   transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease,
     filter 0.15s ease, opacity 0.15s ease;
 }
+a.btn-primary:hover, a.btn-ghost:hover { text-decoration: none; }
 button:hover { background: var(--raised); border-color: var(--line-strong); }
 button:active { transform: translateY(1px); }
 button:disabled {
@@ -108,7 +129,7 @@ button:disabled {
 .btn-primary {
   background: var(--accent);
   color: var(--accent-ink);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   border-color: transparent;
   box-shadow: 0 10px 26px -14px rgba(255, 207, 63, 0.7);
@@ -130,6 +151,20 @@ button:disabled {
 .link-btn:hover { color: var(--fg); background: none; }
 
 .hidden { display: none !important; }
+/* A placeholder that reads as "loading", not as a real (empty) value — the
+   literal filler (e.g. "······" in the room-code blocks) hides behind a pulsing
+   block until the render path removes this class and sets the real code. The
+   reduced-motion rule below collapses the pulse to a static block. */
+.skeleton {
+  color: transparent !important;
+  background: var(--raised);
+  border-radius: 8px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
 .muted-note { color: var(--muted); font-size: 0.95rem; }
 .eyebrow {
   color: var(--muted);
@@ -148,6 +183,12 @@ button:disabled {
   padding: 1.5rem 1.15rem 6rem;
 }
 .phase-screen { min-height: 100vh; }
+/* Pre-paint create routing (player.html): a classic inline <script> in <head>
+   adds .want-create to <html> when ?create=1, so the create screen is the FIRST
+   paint — independent of the Firebase module graph that gates wire(). wire()
+   then reconciles the real .hidden state and drops this class. */
+html.want-create #p-home { display: none !important; }
+html.want-create #p-create { display: block !important; }
 .brand {
   font-size: clamp(2.1rem, 8vw, 3.1rem);
   margin: 0.1em 0 0.12em;
@@ -191,7 +232,7 @@ input:focus, select:focus {
 .code-input {
   text-transform: uppercase;
   letter-spacing: 0.35em;
-  font-weight: 800;
+  font-weight: 700;
   font-family: var(--font-display);
   text-align: center;
 }
@@ -206,6 +247,13 @@ input:focus, select:focus {
   padding: 1.1rem;
   box-shadow: var(--shadow-1);
 }
+
+/* ---- Create screen (its own phase, routed pre-paint so it never pops in
+   late behind the join screen). The commit button spans the card so it isn't
+   a runt under the full-width selects. */
+.create-back { align-self: flex-start; margin: 0 0 0.4rem; padding-left: 0; padding-right: 0.6rem; }
+#p-create .card { margin-top: 0.4rem; }
+#p-create .btn-primary { width: 100%; margin-top: 0.9rem; }
 
 .resume-banner {
   display: flex;
@@ -233,7 +281,7 @@ input:focus, select:focus {
 .room-code-huge {
   font-family: var(--font-display);
   font-size: clamp(2.7rem, 13vw, 4rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.26em;
   text-indent: 0.26em; /* balance the trailing tracking */
   text-align: center;
@@ -312,7 +360,7 @@ input:focus, select:focus {
 .tv-connect-body { min-width: 0; }
 .tv-connect-title {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.82rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -556,7 +604,7 @@ input:focus, select:focus {
 
 /* ---- Reveal ---- */
 .reveal-round { color: var(--muted); font-weight: 700; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.8rem; }
-.reveal-headline { font-size: clamp(1.7rem, 6.5vw, 2.5rem); font-weight: 800; font-family: var(--font-display); margin: 0.25rem 0; letter-spacing: -0.02em; }
+.reveal-headline { font-size: clamp(1.7rem, 6.5vw, 2.5rem); font-weight: 700; font-family: var(--font-display); margin: 0.25rem 0; letter-spacing: -0.02em; }
 .reveal-result { font-size: 1.12rem; font-weight: 700; margin: 0.2rem 0 0.9rem; }
 .reveal-result.good { color: var(--good); }
 .reveal-result.bad { color: var(--bad); }
@@ -581,8 +629,16 @@ input:focus, select:focus {
   position: fixed; left: 50%; bottom: 6rem; transform: translateX(-50%);
   z-index: 3000; background: var(--panel-2); color: var(--fg);
   padding: 0.75em 1.15em; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
-  box-shadow: var(--shadow-pop); max-width: 90vw;
+  box-shadow: var(--shadow-pop);
+  /* Fade in/out via .show (toast() in ui-common.js) rather than a hard
+     display toggle; cap the width so a long line wraps instead of stretching
+     across a desktop TV browser. */
+  max-width: min(92vw, 420px);
+  white-space: normal; text-align: center; line-height: 1.35;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
 }
+.toast.show { opacity: 1; }
 /* Item 4: the TV's transient "guessed wrong" hint — a content-free pill popped
    when a team rings in wrong mid-round (fades after ~2.5s via JS). Top-center so
    it reads over the full-bleed flag without covering the reveal's focus. */
@@ -600,7 +656,18 @@ input:focus, select:focus {
   to   { opacity: 1; transform: translate(-50%, 0); }
 }
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
-.landing-hero { max-width: var(--maxw); padding-top: 11vh; }
+/* A full-height flex column so the hero fills the viewport and the footer sits
+   at the bottom (margin-top:auto below) instead of floating wherever the
+   content happens to end on a tall phone. */
+.landing-hero {
+  max-width: var(--maxw);
+  padding-top: 11vh;
+  padding-bottom: 1.5rem;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+.landing .ld-footer { margin-top: auto; }
 .landing-hero .brand { font-size: clamp(2.6rem, 11vw, 4rem); }
 .landing-hero .tagline { font-size: 1.1rem; }
 .ld-panel { margin: 1.6rem 0 0.4rem; display: flex; flex-direction: column; gap: 0.7rem; align-items: stretch; }
@@ -625,6 +692,17 @@ input:focus, select:focus {
   font-size: 0.78rem;
   opacity: 0.7;
   margin: 0 0 8px;
+}
+
+/* Void fill: the setup/intro columns are phone-width cards; on a tablet/desktop
+   viewport they used to pin to the top of a mostly-empty screen. ≥768px they
+   center vertically instead. (Fixed action bars keep their own bottom pin.) */
+@media (min-width: 768px) {
+  #p-home, #p-create, #d-intro, #d-done {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
 }
 
 /* ---- Doc pages ---- */
@@ -663,7 +741,7 @@ input:focus, select:focus {
   display: inline-block;
   color: var(--accent);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.9rem;
   margin-bottom: 2px;
 }
@@ -734,11 +812,11 @@ body.tv { overflow: hidden; }
 }
 .tv-room { color: var(--muted); font-size: 1.25rem; }
 .tv-room strong { color: var(--accent); letter-spacing: 0.18em; font-family: var(--font-display); }
-.tv-round { font-size: clamp(1.6rem, 3vw, 2.6rem); font-weight: 800; font-family: var(--font-display); letter-spacing: -0.02em; }
+.tv-round { font-size: clamp(1.6rem, 3vw, 2.6rem); font-weight: 700; font-family: var(--font-display); letter-spacing: -0.02em; }
 .tv-main { grid-area: main; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
 .tv-reveal { width: 100%; max-width: 70vh; }
 .tv-reveal .flag-canvas, .tv-reveal.flag-canvas { border-width: 2px; }
-.tv-answer { font-size: clamp(2.1rem, 5vw, 3.6rem); font-weight: 800; font-family: var(--font-display); letter-spacing: -0.02em; margin-top: 1.1rem; text-align: center; }
+.tv-answer { font-size: clamp(2.1rem, 5vw, 3.6rem); font-weight: 700; font-family: var(--font-display); letter-spacing: -0.02em; margin-top: 1.1rem; text-align: center; }
 .tv-result { font-size: 1.6rem; margin-top: 0.55rem; text-align: center; color: var(--muted); }
 .tv-result strong { color: var(--accent); }
 .tv-comingup { font-size: 1.2rem; margin-top: 0.5rem; text-align: center; color: var(--accent-2); }
@@ -991,6 +1069,9 @@ body.tv { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .flag-tile, .flag-img, button { transition: none; }
   #revealFlag.flag-canvas.full, .tv-reveal.flag-canvas.full { animation: none; }
+  /* Toast appears/disappears instantly; skeletons hold a static block. */
+  .toast { transition: none; }
+  .skeleton { animation: none; }
   /* Collapse the celebration to its final static frame: bloom at resting
      opacity, headline static, NO confetti. */
   #s-display.celebrate .tv-bloom { animation: none; opacity: 0.4; }
@@ -1065,7 +1146,7 @@ body.tv { overflow: hidden; }
 .tv-join-code {
   color: var(--accent);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 2.5rem;
   letter-spacing: 0.16em;
   vertical-align: middle;
@@ -1095,7 +1176,7 @@ body.tv { overflow: hidden; }
 .ld-daily strong { color: var(--accent); }
 .ld-daily-streak {
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--accent);
   background: rgba(255, 207, 63, 0.12);
   border: 1px solid rgba(255, 207, 63, 0.3);
@@ -1123,7 +1204,7 @@ body.tv { overflow: hidden; }
 }
 .daily-num {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: clamp(2.8rem, 13vw, 4rem);
   line-height: 1;
   letter-spacing: -0.02em;
@@ -1162,7 +1243,7 @@ body.tv { overflow: hidden; }
 .total-val {
   color: var(--accent);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.4rem;
   font-variant-numeric: tabular-nums;
 }

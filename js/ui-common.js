@@ -19,15 +19,16 @@ export function escapeHtml(s) {
   }[ch]));
 }
 
-// The transient bottom toast (#toast on player.html and daily.html). Same 2.6s
-// dismiss as both originals; one shared timer.
+// The transient bottom toast (#toast on player.html and daily.html). Fades in/
+// out via the `.show` class (CSS opacity transition) rather than a hard display
+// toggle, so it eases instead of popping; same 2.6s dismiss, one shared timer.
 let toastTimer = null;
 export function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
-  t.classList.remove("hidden");
+  t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add("hidden"), 2600);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
 }
 
 // ---------------------------------------------------------------------------
