@@ -26,6 +26,7 @@ The headline experiment signal: *are correct rings actually colliding?*
 | `contested` | bool | a *correct* ring whose `resolveRound(win)` lost the race to a rival win (§4.2 case d) |
 | `difficulty` | string | `easy` \| `world` \| `expert` |
 | `inputMode` | string | `typeahead` \| `choice` |
+| `guessMode` | string | `single` (First correct wins — a wrong ring locks the team out) \| `multi` (Multiple guesses — a wrong ring is recorded but the team keeps guessing) |
 | `roundKey` | string | truncated `hash(gameSeed, round.number)` — `gameSeed` is random, so this is **not** identifying and never derived from the room code |
 
 ## `flag_round` — one per round at reveal, emitted by the committing phone
@@ -44,6 +45,7 @@ expected.
 | `ringCount` | int | best-effort local count (results with `correct` or `rangOut`); the **canonical** count is reconstructed downstream (below) |
 | `difficulty` | string | enables "bust rate by difficulty tier" |
 | `inputMode` | string | typeahead vs. choice — likely the strongest explanatory variable |
+| `guessMode` | string | `single` \| `multi` — separates lockout vs. multiple-guesses rounds (bust rate, winning-step, ring counts by mode) |
 | `roundNumber` | int | |
 | `roundKey` | string | join key with `flag_ring` |
 
@@ -70,6 +72,9 @@ count of distinct `flag_ring` events sharing a `roundKey`, **de-duplicated on
 - **Winning step distribution:** `flag_round.winningStep` — is the progressive
   reveal tuned so wins land mid-reveal, not at step 1 or only at step 8?
 - **Input mode effect:** contested-ring rate and winning step split by `inputMode`.
+- **Guess mode effect:** bust rate, winning step, and rings-per-round split by
+  `guessMode` — does "Multiple guesses" cut busts / shift wins later, and does it
+  raise the wrong-ring count per round (players taking more shots)?
 
 ## Daily Challenge + share events (v0.2)
 

@@ -415,8 +415,22 @@ input:focus, select:focus {
 .hud-item { font-weight: 700; font-family: var(--font-display); letter-spacing: -0.01em; }
 #roundHeader { font-size: 1.15rem; }
 
+/* Portrait: the text entry sits ABOVE the flag. The DOM order is head → flag →
+ * input → status; a flex column with `order` lifts the input above the flag so
+ * the on-screen keyboard (which docks at the bottom) never covers the typeahead
+ * suggestions, which drop DOWN from the input. Landscape overrides this below. */
+#p-round .wrap { display: flex; flex-direction: column; }
+#p-round .round-head { order: 0; }
+#p-round #buzzTypeahead,
+#p-round #buzzChoice { order: 1; }
+#p-round #roundReveal { order: 2; }
+#p-round #roundStatus { order: 3; }
+
 /* ---- The progressive flag reveal ---- */
 .reveal-holder { margin: 0.5rem 0 1.1rem; }
+/* Game-over winning flag: prominent above the "team wins" line but not so large
+   it dominates the standings/share below it. */
+.go-flag { max-width: 17rem; margin: 0.5rem auto 1rem; }
 .flag-canvas {
   position: relative;
   width: 100%;
@@ -496,7 +510,15 @@ input:focus, select:focus {
 .reveal-result { font-size: 1.12rem; font-weight: 700; margin: 0.2rem 0 0.9rem; }
 .reveal-result.good { color: var(--good); }
 .reveal-result.bad { color: var(--bad); }
-.reveal-beats { margin: 0.7rem 0; display: flex; flex-direction: column; gap: 0.4rem; }
+/* Wrong guesses lay out as a responsive grid: one column when narrow, two (or
+   more) once there's room, so several teams read cleanly instead of stacking
+   into one cramped column. Shared by the phone (#revealBeats) and TV (#tvBeats). */
+.reveal-beats {
+  margin: 0.7rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.4rem 1rem;
+}
 .beat { color: var(--muted); font-size: 0.95rem; }
 
 /* ---- Chrome ---- */
@@ -510,6 +532,22 @@ input:focus, select:focus {
   z-index: 3000; background: var(--panel-2); color: var(--fg);
   padding: 0.75em 1.15em; border-radius: var(--radius-sm); border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-pop); max-width: 90vw;
+}
+/* Item 4: the TV's transient "guessed wrong" hint — a content-free pill popped
+   when a team rings in wrong mid-round (fades after ~2.5s via JS). Top-center so
+   it reads over the full-bleed flag without covering the reveal's focus. */
+.tv-wrong-hint {
+  position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%);
+  z-index: 2500; max-width: 90vw; text-align: center;
+  background: var(--panel-2); color: var(--fg);
+  padding: 0.6em 1.2em; border-radius: 999px; border: 1px solid var(--line-strong);
+  box-shadow: var(--shadow-pop); font-size: 1.35rem; font-weight: 700;
+  animation: wrong-hint-in 220ms ease-out;
+}
+.tv-wrong-hint span { color: var(--accent); }
+@keyframes wrong-hint-in {
+  from { opacity: 0; transform: translate(-50%, -0.5rem); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
 }
 /* ---- Landing (a Decide/Learn surface: one idea, a hero earns its place) ---- */
 .landing-hero { max-width: var(--maxw); padding-top: 11vh; }
@@ -635,6 +673,10 @@ body.tv { overflow: hidden; }
 }
 #s-display[data-phase="roundActive"] .tv-room { font-size: 0.95rem; }
 #s-display[data-phase="roundActive"] .tv-round { font-size: 1.15rem; }
+/* Lobby has no flag yet — render() empties #tvReveal but the element keeps its
+   .reveal-holder margin, reserving dead space above the join QR. Collapse it. */
+#s-display[data-phase="lobby"] .tv-reveal { display: none; }
+
 /* Height-driven so the flag always fits the viewport height; max-width caps
    the rare very-wide flag. aspect-ratio (on .flag-canvas) keeps it undistorted. */
 #s-display[data-phase="roundActive"] .tv-reveal {
@@ -706,6 +748,58 @@ body.tv { overflow: hidden; }
   }
 }
 
+/* ---- Phone landscape reflow ------------------------------------------------
+ * In portrait the phone round/reveal screens are a tall vertical stack; in a
+ * short landscape viewport the full-width 3:2 flag plus the input below it is
+ * cramped. Here the flag and the input/results sit SIDE-BY-SIDE via grid areas
+ * (flag left, input/results right; head + status span both columns). The wrap
+ * widens past its portrait cap to use the horizontal space, and `align-self:
+ * start` keeps the flag at its natural aspect-ratio height instead of stretching.
+ * max-height guards this to phone-sized landscape only (tablets/desktop stay in
+ * the portrait stack). Portrait layout is untouched. */
+@media (orientation: landscape) and (max-height: 600px) {
+  #p-round .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "head  head"
+      "flag  input"
+      "status status";
+    align-content: start;
+    column-gap: 1.2rem;
+    max-width: 820px;
+    padding-top: 0.9rem;
+    padding-bottom: 1.4rem;
+  }
+  #p-round .round-head { grid-area: head; margin-bottom: 0.5rem; }
+  #p-round #roundReveal { grid-area: flag; margin: 0; align-self: start; }
+  #p-round #buzzTypeahead,
+  #p-round #buzzChoice { grid-area: input; align-self: start; margin: 0; }
+  #p-round #roundStatus { grid-area: status; margin: 0.6rem 0 0; }
+
+  #p-reveal .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    grid-template-areas:
+      "flag header"
+      "flag answer"
+      "flag result"
+      "flag board"
+      "flag beats";
+    align-content: start;
+    column-gap: 1.2rem;
+    max-width: 820px;
+    padding-top: 0.9rem;
+    padding-bottom: 5rem; /* clears the fixed .reveal-dock */
+  }
+  #p-reveal #revealFlag  { grid-area: flag; margin: 0; align-self: start; }
+  #p-reveal #revealHeader { grid-area: header; }
+  #p-reveal #revealAnswer { grid-area: answer; }
+  #p-reveal #revealResult { grid-area: result; }
+  #p-reveal #revealBoard  { grid-area: board; }
+  #p-reveal #revealBeats  { grid-area: beats; }
+}
+
 /* ---- Confetti (cheap) ---- */
 .confetti { height: 0; }
 
@@ -761,22 +855,31 @@ body.tv { overflow: hidden; }
   100% { transform: scale(1); text-shadow: 0 0 12px var(--win, var(--accent)); }
 }
 
-/* Confetti pieces — cheap DOM spans; screen-flag.js sets --x/--dx/--rot/--delay/--c. */
+/* Confetti pieces — cheap DOM spans on an infinite loop. flag.js#confettiSpec
+   (seeded, deterministic) sets each strip's --x (left), --c (color), --dur/
+   --delay (varied fall timing), --drift (a signed horizontal sway), --spin (a
+   randomized total rotation), and --size (a per-strip scale). The variety +
+   loop is what lifts this past the old one-shot lockstep fall; a gentle ease
+   keeps the sway from reading mechanical. */
 .tv-confetti span {
   position: absolute;
   top: -8%;
   left: var(--x, 50%);
-  width: 0.7rem;
-  height: 1rem;
+  width: calc(0.7rem * var(--size, 1));
+  height: calc(1rem * var(--size, 1));
   background: var(--c, var(--win, var(--accent)));
   border-radius: 1px;
   opacity: 0;
-  animation: tv-confetti-fall 1.4s var(--delay, 0s) ease-in forwards;
+  animation: tv-confetti-fall var(--dur, 3.4s) var(--delay, 0s)
+    cubic-bezier(0.37, 0.02, 0.63, 1) infinite;
 }
 @keyframes tv-confetti-fall {
-  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
-  12%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--dx, 0), 108vh) rotate(var(--rot, 540deg)); }
+  0%   { opacity: 0; transform: translate(0, -6vh) rotate(0deg); }
+  8%   { opacity: 0.92; }
+  100% {
+    opacity: 0.92;
+    transform: translate(var(--drift, 0), 116vh) rotate(var(--spin, 720deg));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -787,6 +890,8 @@ body.tv { overflow: hidden; }
   #s-display.celebrate .tv-bloom { animation: none; opacity: 0.4; }
   #s-display.celebrate .tv-result { animation: none; }
   .tv-confetti { display: none; }
+  /* The "guessed wrong" hint still shows/hides — just no slide-in. */
+  .tv-wrong-hint { animation: none; }
 }
 
 /* ============================ v0.2 additions ============================ */

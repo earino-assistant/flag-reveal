@@ -69,6 +69,11 @@ the banner copy becomes a false claim — fix the mask, not the copy.
   not-found/closed strings written to `#sErr` are generic status copy with no
   identifiers. `#tvCode`/`#tvJoinCode` (already `data-ph-mask`ed above) remain
   the only room-code text surfaces on the TV.
+- `#tvWrongHint` — the transient "guessed wrong" hint (Item 4). It renders the
+  ringing team's name inline (`😅 <team> guessed wrong — keep looking!`), so the
+  name is wrapped in a `data-ph-mask` span by `js/screen-flag.js` (same inline
+  pattern as `#tvResult`). It names **no country** — the guess content is
+  disclosed only at reveal via `#tvBeats`. No room code is rendered.
 - **TV layout polish (flag-dominant round + rich reveal, 2026-08-24):** the
   `data-phase` layout state machine and the reveal "results card" render the
   same masked surfaces in new positions — `#tvBoard` (standings) and `#tvBeats`

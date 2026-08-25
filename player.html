@@ -49,6 +49,11 @@
           <option value="typeahead" selected>Type the country</option>
           <option value="choice">Tap 1 of 4 — easier, great for kids</option>
         </select>
+        <label class="field-label" for="createGuessMode">Guessing</label>
+        <select id="createGuessMode">
+          <option value="single" selected>First correct wins — one guess each</option>
+          <option value="multi">Multiple guesses — keep trying till you get it</option>
+        </select>
         <label class="field-label" for="createPace">Round pace</label>
         <select id="createPace">
           <option value="chill">Chill — slow reveal, relaxed</option>
@@ -188,6 +193,7 @@
     <div class="wrap">
       <div id="goConfetti" class="confetti" aria-hidden="true"></div>
       <h1 class="brand">Game over!</h1>
+      <div id="goFlag" class="reveal-holder go-flag hidden" aria-hidden="true"></div>
       <div id="goWinner" class="reveal-headline" data-ph-mask>—</div>
       <ul id="goBoard" class="totals-list" data-ph-mask></ul>
       <div class="go-share-row">

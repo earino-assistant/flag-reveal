@@ -41,6 +41,7 @@ export function ringEmission(state, event) {
       contested: event.contested,
       difficulty: state.difficulty,
       inputMode: state.inputMode,
+      guessMode: state.guessMode,
       roundKey: rk,
     },
   };
@@ -87,6 +88,7 @@ export function revealEmission(state, event) {
         ringCount,
         difficulty: state.difficulty,
         inputMode: state.inputMode,
+        guessMode: state.guessMode,
         roundNumber: event.roundNumber,
         roundKey: rk,
       },

@@ -16,10 +16,15 @@ import {
   normalizeAnswer,
   buildAnswerIndex,
   resolveOutcome,
+  lockedOutTeams,
   advanceState,
   roundConduct,
   gameWinner,
   celebrationSpec,
+  confettiSpec,
+  CONFETTI_COLORS,
+  CONFETTI_GOLD,
+  CONFETTI_MAX,
   carryStandings,
   shouldFollowRoom,
   versionCompatible,
@@ -27,6 +32,8 @@ import {
   eligiblePool,
   effectiveRoundCount,
   winAttemptOutcome,
+  shouldLockOut,
+  guessModeLabel,
 } from "../js/flag.js";
 
 // A small fixture pool covering tiers, aliases, diacritics, the "Congo"
@@ -285,6 +292,35 @@ test("resolveOutcome win: aborts on null state / stale round / already resolved"
   );
 });
 
+// ---------------------------------------------------------------------------
+// lockedOutTeams — TV "guessed wrong" hint detection (Item 4)
+// ---------------------------------------------------------------------------
+test("lockedOutTeams: only CURRENT-round lockouts, sorted, content-free", () => {
+  // baseRoundActive has t2 locked THIS round (3) and t3 a stale straggler (2).
+  const teams = lockedOutTeams(baseRoundActive().round);
+  assert.deepEqual(teams, ["t2"]); // t3's lockedRound 2 !== 3 → excluded
+});
+
+test("lockedOutTeams: multiple current lockouts returned sorted", () => {
+  const round = {
+    number: 5,
+    private: {
+      t3: { lockedRound: 5, wrongIso: "NL", wrongStep: 2 },
+      t1: { lockedRound: 5, wrongIso: "BE", wrongStep: 1 },
+      t2: { lockedRound: 4, wrongIso: "DE", wrongStep: 3 }, // stale → excluded
+    },
+  };
+  assert.deepEqual(lockedOutTeams(round), ["t1", "t3"]);
+});
+
+test("lockedOutTeams: no private / no round / empty → []", () => {
+  assert.deepEqual(lockedOutTeams(null), []);
+  assert.deepEqual(lockedOutTeams({ number: 1 }), []);
+  assert.deepEqual(lockedOutTeams({ number: 1, private: {} }), []);
+  // A reveal round drops `private` entirely → nothing to hint.
+  assert.deepEqual(lockedOutTeams({ number: 1, results: {} }), []);
+});
+
 test("resolveOutcome bust: all zero, no total change, disclosures still filtered", () => {
   const gs = resolveOutcome(baseRoundActive(), { kind: "bust", roundNumber: 3 }, CFG);
   assert.equal(gs.phase, "reveal");
@@ -307,6 +343,54 @@ test("resolveOutcome: does not mutate the input gameState", () => {
   const snapshot = JSON.parse(JSON.stringify(gs));
   resolveOutcome(gs, { kind: "win", team: "t1", roundNumber: 3 }, CFG);
   assert.deepEqual(gs, snapshot);
+});
+
+// ---------------------------------------------------------------------------
+// shouldLockOut / guessModeLabel — the guess-mode policy (§1.7, §6b)
+// ---------------------------------------------------------------------------
+test("shouldLockOut: default (First correct wins) locks out; absent cfg too", () => {
+  assert.equal(shouldLockOut(undefined), true);
+  assert.equal(shouldLockOut({}), true);
+  assert.equal(shouldLockOut({ multiGuess: false }), true);
+});
+
+test("shouldLockOut: Multiple guesses does NOT lock out", () => {
+  assert.equal(shouldLockOut({ multiGuess: true }), false);
+});
+
+test("guessModeLabel: rides analytics as single|multi", () => {
+  assert.equal(guessModeLabel(undefined), "single");
+  assert.equal(guessModeLabel({}), "single");
+  assert.equal(guessModeLabel({ multiGuess: false }), "single");
+  assert.equal(guessModeLabel({ multiGuess: true }), "multi");
+});
+
+// Multi-guess arbitration: a team with a CURRENT-round private wrong record can
+// still win — resolveOutcome trusts the ringing team and never treats a prior
+// wrong-ringer as out (no arbitration change vs. lockout mode). t2 has a wrong
+// record for round 3 in baseRoundActive; it rings correct and wins.
+test("resolveOutcome win: a prior wrong-ringer (t2) can still win (multi-guess)", () => {
+  const gs = resolveOutcome(baseRoundActive(), { kind: "win", team: "t2", roundNumber: 3 }, CFG);
+  assert.equal(gs.phase, "reveal");
+  assert.deepEqual(gs.round.outcome, { kind: "win", team: "t2", atStep: 2 });
+  // Winner settles correct with points; its earlier wrong record is not shown.
+  assert.equal(gs.round.results.t2.correct, true);
+  assert.equal(gs.round.results.t2.points, 875);
+  assert.equal(gs.round.results.t2.rangOut, false);
+  assert.equal(gs.teams.t2.total, 1075); // 200 + 875
+  // A different wrong-ringer still shows in beats (disclosure unchanged). t3 is
+  // a stale straggler here, so t1 (correct:false, no wrong record) is clean.
+  assert.equal(gs.round.results.t1.correct, false);
+});
+
+// Multi-guess beats still record OTHER teams' wrong rings at settlement: a team
+// that rang wrong this round (current lockedRound) is disclosed even though the
+// winner is someone else — identical to lockout-mode disclosure.
+test("resolveOutcome win: non-winner wrong ring still disclosed for beats (multi-guess)", () => {
+  const gs = resolveOutcome(baseRoundActive(), { kind: "win", team: "t1", roundNumber: 3 }, CFG);
+  assert.equal(gs.round.results.t2.rangOut, true);
+  assert.equal(gs.round.results.t2.wrongIso, "BE");
+  assert.equal(gs.round.results.t2.wrongStep, 1);
 });
 
 // ---------------------------------------------------------------------------
@@ -529,6 +613,77 @@ test("celebrationSpec: unknown/invalid slot → falls back to gold, never undefi
     assert.equal(s.winVar, "var(--accent)");
     assert.equal(s.tier, "champion");
   }
+});
+
+test("celebrationSpec: passes the seed through + exposes an accent for a plain win", () => {
+  const win = celebrationSpec({ won: true, teamSlot: "t2", seed: 12345 });
+  assert.equal(win.seed, 12345);
+  assert.equal(win.accentColor, "var(--team-2)");
+  // A champion is gold-only — no accent to lean the palette on.
+  const champ = celebrationSpec({ won: true, teamSlot: "t2", champion: true, seed: 7 });
+  assert.equal(champ.seed, 7);
+  assert.equal(champ.accentColor, null);
+});
+
+// confettiSpec — the pure, deterministic confetti generator (the DOM/CSS loop
+// in screen-flag.js is UI-only and not unit-tested).
+test("confettiSpec: reduced motion → no confetti at all", () => {
+  assert.deepEqual(confettiSpec({ count: 90, seed: 1, reducedMotion: true }), []);
+});
+
+test("confettiSpec: deterministic — same seed yields byte-identical strips", () => {
+  const a = confettiSpec({ count: 40, seed: "GAME7", tier: "win" });
+  const b = confettiSpec({ count: 40, seed: "GAME7", tier: "win" });
+  assert.deepEqual(a, b);
+  const c = confettiSpec({ count: 40, seed: "GAME8", tier: "win" });
+  assert.notDeepEqual(a, c); // a different seed diverges
+});
+
+test("confettiSpec: every strip has the full per-strip variety, well-formed", () => {
+  const strips = confettiSpec({ count: 30, seed: 42, tier: "win" });
+  assert.equal(strips.length, 30);
+  for (const s of strips) {
+    assert.ok(s.left >= 0 && s.left <= 100);
+    assert.equal(typeof s.color, "string");
+    assert.ok(s.durationS > 0);
+    assert.ok(s.delayS >= 0);
+    assert.ok(Number.isFinite(s.driftVw));
+    assert.ok(s.spinDeg >= 360);       // always at least one full rotation
+    assert.ok(s.sizeScale > 0);
+  }
+  // Not lockstep: durations and drifts actually vary across strips.
+  assert.ok(new Set(strips.map((s) => s.durationS)).size > 1);
+  assert.ok(new Set(strips.map((s) => s.driftVw)).size > 1);
+});
+
+test("confettiSpec: champion → gold palette only, no palette/accent bleed", () => {
+  const strips = confettiSpec({ count: 60, seed: 3, tier: "champion", accentColor: "var(--team-1)" });
+  for (const s of strips) {
+    assert.ok(CONFETTI_GOLD.includes(s.color), `${s.color} not gold`);
+  }
+});
+
+test("confettiSpec: plain win leans on the accent color (~ACCENT_WEIGHT of strips)", () => {
+  const accent = "var(--team-3)";
+  const strips = confettiSpec({ count: 120, seed: 9, tier: "win", accentColor: accent });
+  const accentCount = strips.filter((s) => s.color === accent).length;
+  assert.ok(accentCount > 0, "some strips take the accent");
+  assert.ok(accentCount < strips.length, "not every strip is the accent");
+  // The rest come from the colorful (non-gold) palette.
+  for (const s of strips) {
+    assert.ok(s.color === accent || CONFETTI_COLORS.includes(s.color));
+  }
+});
+
+test("confettiSpec: strip count is capped at CONFETTI_MAX", () => {
+  const strips = confettiSpec({ count: 10000, seed: 1, tier: "champion" });
+  assert.equal(strips.length, CONFETTI_MAX);
+});
+
+test("confettiSpec: no count → sparse default, still non-empty", () => {
+  const strips = confettiSpec({ seed: 1, tier: "win" });
+  assert.ok(strips.length > 0);
+  assert.ok(strips.length <= CONFETTI_MAX);
 });
 
 test("carryStandings: zeroes totals by default, sets hostTeam, preserves identity", () => {

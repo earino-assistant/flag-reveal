@@ -6,8 +6,12 @@
 //   - The TV writes ONLY `screenHeartbeat`.
 //   - It runs NO roundConduct, NO resolveRound/advanceRound transaction, NO
 //     cadence. It owns no timer that changes game state and holds no authority.
-//   - It never reads round/private/* (privacy render-discipline, §5.2) — it
-//     reads only public round fields and results/* (post-round disclosure).
+//   - It reads round/private/* ONLY for PRESENCE — which teams locked themselves
+//     out this round (via lockedOutTeams, filtered on lockedRound), to pop the
+//     transient "guessed wrong" hint. It NEVER reads the guessed country
+//     (wrongIso/wrongStep): the hint discloses the FACT of a wrong ring, never
+//     its content (privacy §5.2). Guess content is still disclosed only at
+//     reveal, via results/* (the beats). All other reads are public round fields.
 
 import {
   subscribeRoom,
@@ -19,7 +23,9 @@ import {
   gameWinner,
   shouldFollowRoom,
   celebrationSpec,
+  confettiSpec,
   effectiveRoundCount,
+  lockedOutTeams,
 } from "./flag.js";
 import { escapeHtml } from "./ui-common.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
@@ -42,6 +48,16 @@ let followedCodes = new Set();
 // whenever the phase leaves gameOver (next game / lobby) so a fresh game can
 // celebrate again.
 let celebrated = false;
+// Item 4 — the transient "guessed wrong" hint. When a team rings in wrong DURING
+// a round, the TV pops a brief, content-free pill (masked team name; never the
+// country) that fades after ~2.5s. Pure local render — no write (passive-TV
+// contract). `wrongHintSeen` holds the slots already hinted THIS round so a
+// re-render on every heartbeat/step does not re-toast; it resets when the round
+// number changes. `wrongHintTimer` is a render-only dismiss timer (local DOM,
+// never game state).
+let wrongHintSeen = new Set();
+let wrongHintRound = null;
+let wrongHintTimer = null;
 
 function cfgFromRoom(room) {
   const s = (room && room.settings) || {};
@@ -159,6 +175,7 @@ function resetDisplay(header) {
   $("tvComingUp").textContent = "";
   $("tvNote").textContent = "";
   $("tvAnswer").classList.add("hidden");
+  hideWrongHint();
   const qrWrap = $("tvJoinQr");
   if (qrWrap) qrWrap.classList.add("hidden");
 }
@@ -221,6 +238,10 @@ function render(room) {
   //   roundActive → flag full-bleed, everything else hidden.
   //   reveal / gameOver → centered results card (answer + standings + busts).
   $("s-display").dataset.phase = phase;
+  // The "guessed wrong" hint belongs to the active round only — hide it the
+  // instant we leave roundActive (reveal shows the beats; lobby/gameOver show
+  // nothing). The new-ring detection lives in the roundActive branch below.
+  if (phase !== "roundActive") hideWrongHint();
 
   renderBoard($("tvBoard"), teams, phase === "gameOver" ? gameWinner(teams, cfg) : null);
   // The join QR belongs to the lobby only — hidden the moment play starts.
@@ -261,11 +282,16 @@ function render(room) {
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "👑 The winner's phone starts the next game.";
-    if (wt && winner && !celebrated) celebrate(winner);
+    if (wt && winner && !celebrated) celebrate(winner, room.gameSeed || code);
     return;
   }
 
   if (!r) return;
+  // A new round → forget which teams we've already hinted (fresh lockout set).
+  if (wrongHintRound !== r.number) {
+    wrongHintSeen = new Set();
+    wrongHintRound = r.number;
+  }
   const effRounds = effectiveRoundCount(cfg, FLAGS);
   $("tvHeader").textContent = `Round ${r.number}${effRounds ? " / " + effRounds : ""}`;
 
@@ -300,6 +326,16 @@ function render(room) {
     $("tvComingUp").textContent = "Next round coming up…";
     $("tvNote").textContent = "";
   } else {
+    // Item 4: surface a NEW wrong ring as a transient hint. lockedOutTeams reads
+    // round/private PRESENCE only (never the country) — the FACT that a team is
+    // out, masked, faded after ~2.5s. The full guess stays hidden until reveal's
+    // beats. A team already in `wrongHintSeen` this round is not re-toasted.
+    for (const tN of lockedOutTeams(r)) {
+      if (wrongHintSeen.has(tN)) continue;
+      wrongHintSeen.add(tN);
+      const t = teams[tN];
+      showWrongHint(t ? t.name : tN);
+    }
     $("tvAnswer").classList.add("hidden");
     $("tvResult").textContent = "";
     $("tvComingUp").textContent = "";
@@ -317,9 +353,9 @@ function render(room) {
 // + confetti below are UI-only glue. Reduced motion is handled entirely in CSS
 // (bloom to its resting frame, .tv-confetti display:none) so this stays
 // branch-free — we still build the nodes, CSS just hides them.
-function celebrate(winnerSlot) {
+function celebrate(winnerSlot, seed) {
   const disp = $("s-display");
-  const spec = celebrationSpec({ won: true, teamSlot: winnerSlot });
+  const spec = celebrationSpec({ won: true, teamSlot: winnerSlot, seed });
   if (spec.tier === "none") return;
   celebrated = true;
   disp.style.setProperty("--win", spec.winVar);
@@ -328,19 +364,27 @@ function celebrate(winnerSlot) {
   const wrap = $("tvConfetti");
   if (!wrap) return;
   wrap.innerHTML = "";
-  // Gold-flecked around the win color so a champion (gold) still reads distinct
-  // from the field, and a team color gets a little sparkle. Index-driven spread
-  // (no RNG) keeps the burst full-width and stable across re-renders.
-  const colors = [spec.winVar, spec.winVar, "var(--accent)", "var(--fg)"];
-  const n = spec.confettiCount;
+  // Seeded, deterministic per-strip specs (drift/spin/size/duration variety +
+  // gold-heavy champion / accent-leaning win palette) — the unit-tested pure
+  // generator. Reduced motion is still handled entirely in CSS (.tv-confetti
+  // display:none), so this stays branch-free: we build the looping spans and
+  // CSS hides them.
+  const strips = confettiSpec({
+    count: spec.confettiCount,
+    seed: spec.seed,
+    tier: spec.tier,
+    accentColor: spec.accentColor,
+  });
   const frag = document.createDocumentFragment();
-  for (let i = 0; i < n; i++) {
+  for (const strip of strips) {
     const s = document.createElement("span");
-    s.style.setProperty("--x", Math.round((i / n) * 100) + "%");
-    s.style.setProperty("--dx", Math.round((((i * 53) % 100) - 50) * spec.spread) + "vw");
-    s.style.setProperty("--rot", 360 + ((i * 97) % 540) + "deg");
-    s.style.setProperty("--delay", (i % 8) * 40 + "ms");
-    s.style.setProperty("--c", colors[i % colors.length]);
+    s.style.setProperty("--x", strip.left + "%");
+    s.style.setProperty("--c", strip.color);
+    s.style.setProperty("--dur", strip.durationS + "s");
+    s.style.setProperty("--delay", strip.delayS + "s");
+    s.style.setProperty("--drift", strip.driftVw + "vw");
+    s.style.setProperty("--spin", strip.spinDeg + "deg");
+    s.style.setProperty("--size", strip.sizeScale);
     frag.appendChild(s);
   }
   wrap.appendChild(frag);
@@ -356,6 +400,34 @@ function endCelebration() {
   }
   const wrap = $("tvConfetti");
   if (wrap) wrap.innerHTML = "";
+}
+
+// Pop the transient "guessed wrong" hint for a team (name already resolved,
+// masked in the DOM). Restart the auto-dismiss on each new ring so back-to-back
+// wrong guesses each get their ~2.5s beat. Reduced motion is handled in CSS
+// (the entrance animation is dropped); the show/hide is unconditional.
+function showWrongHint(name) {
+  const el = $("tvWrongHint");
+  if (!el) return;
+  el.innerHTML = `😅 <span data-ph-mask>${escapeHtml(
+    name
+  )}</span> guessed wrong — keep looking!`;
+  el.classList.remove("hidden");
+  if (wrongHintTimer) clearTimeout(wrongHintTimer);
+  wrongHintTimer = setTimeout(() => {
+    wrongHintTimer = null;
+    el.classList.add("hidden");
+  }, 2500);
+}
+
+// Hide the hint immediately (leaving roundActive, following a room, or a reset).
+function hideWrongHint() {
+  if (wrongHintTimer) {
+    clearTimeout(wrongHintTimer);
+    wrongHintTimer = null;
+  }
+  const el = $("tvWrongHint");
+  if (el) el.classList.add("hidden");
 }
 
 function renderBoard(ul, teams, winner) {
@@ -415,7 +487,16 @@ function wire() {
     connect(c, "typed");
   });
   $("sCode").addEventListener("input", (e) => {
-    e.target.value = e.target.value.toUpperCase();
+    // Strip to the code alphabet as we go (GeoParty parity), then auto-connect
+    // the moment a full valid code is present — no Connect press needed. The
+    // button below stays as a fallback for paste/edge cases.
+    const c = e.target.value.toUpperCase().replace(/[^A-HJ-NP-Z]/g, "");
+    e.target.value = c;
+    if (isValidRoomCode(c)) {
+      $("sErr").textContent = "";
+      followedCodes = new Set(); // manual entry starts a fresh follow chain (F3)
+      connect(c, "typed");
+    }
   });
 
   const params = new URLSearchParams(location.search);
