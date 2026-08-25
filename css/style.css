@@ -415,6 +415,17 @@ input:focus, select:focus {
 .hud-item { font-weight: 700; font-family: var(--font-display); letter-spacing: -0.01em; }
 #roundHeader { font-size: 1.15rem; }
 
+/* Portrait: the text entry sits ABOVE the flag. The DOM order is head → flag →
+ * input → status; a flex column with `order` lifts the input above the flag so
+ * the on-screen keyboard (which docks at the bottom) never covers the typeahead
+ * suggestions, which drop DOWN from the input. Landscape overrides this below. */
+#p-round .wrap { display: flex; flex-direction: column; }
+#p-round .round-head { order: 0; }
+#p-round #buzzTypeahead,
+#p-round #buzzChoice { order: 1; }
+#p-round #roundReveal { order: 2; }
+#p-round #roundStatus { order: 3; }
+
 /* ---- The progressive flag reveal ---- */
 .reveal-holder { margin: 0.5rem 0 1.1rem; }
 .flag-canvas {
@@ -704,6 +715,58 @@ body.tv { overflow: hidden; }
     grid-template-areas: "head" "main" "side";
     height: auto; min-height: 100vh;
   }
+}
+
+/* ---- Phone landscape reflow ------------------------------------------------
+ * In portrait the phone round/reveal screens are a tall vertical stack; in a
+ * short landscape viewport the full-width 3:2 flag plus the input below it is
+ * cramped. Here the flag and the input/results sit SIDE-BY-SIDE via grid areas
+ * (flag left, input/results right; head + status span both columns). The wrap
+ * widens past its portrait cap to use the horizontal space, and `align-self:
+ * start` keeps the flag at its natural aspect-ratio height instead of stretching.
+ * max-height guards this to phone-sized landscape only (tablets/desktop stay in
+ * the portrait stack). Portrait layout is untouched. */
+@media (orientation: landscape) and (max-height: 600px) {
+  #p-round .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "head  head"
+      "flag  input"
+      "status status";
+    align-content: start;
+    column-gap: 1.2rem;
+    max-width: 820px;
+    padding-top: 0.9rem;
+    padding-bottom: 1.4rem;
+  }
+  #p-round .round-head { grid-area: head; margin-bottom: 0.5rem; }
+  #p-round #roundReveal { grid-area: flag; margin: 0; align-self: start; }
+  #p-round #buzzTypeahead,
+  #p-round #buzzChoice { grid-area: input; align-self: start; margin: 0; }
+  #p-round #roundStatus { grid-area: status; margin: 0.6rem 0 0; }
+
+  #p-reveal .wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    grid-template-areas:
+      "flag header"
+      "flag answer"
+      "flag result"
+      "flag board"
+      "flag beats";
+    align-content: start;
+    column-gap: 1.2rem;
+    max-width: 820px;
+    padding-top: 0.9rem;
+    padding-bottom: 5rem; /* clears the fixed .reveal-dock */
+  }
+  #p-reveal #revealFlag  { grid-area: flag; margin: 0; align-self: start; }
+  #p-reveal #revealHeader { grid-area: header; }
+  #p-reveal #revealAnswer { grid-area: answer; }
+  #p-reveal #revealResult { grid-area: result; }
+  #p-reveal #revealBoard  { grid-area: board; }
+  #p-reveal #revealBeats  { grid-area: beats; }
 }
 
 /* ---- Confetti (cheap) ---- */
