@@ -30,7 +30,8 @@ export const GAME_DEFAULTS = {
   difficulty: "world",
   inputMode: "typeahead",
   choiceUnlockStep: 5,
-  autoAdvanceMs: 15000
+  autoAdvanceMs: 15000,
+  multiGuess: false
 };
 
 // Dataset/rules versions LOCKED into every room at creation (spec §8.1). A phone

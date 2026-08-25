@@ -28,6 +28,8 @@ import {
   eligiblePool,
   effectiveRoundCount,
   winAttemptOutcome,
+  shouldLockOut,
+  guessModeLabel,
 } from "../js/flag.js";
 
 // A small fixture pool covering tiers, aliases, diacritics, the "Congo"
@@ -337,6 +339,54 @@ test("resolveOutcome: does not mutate the input gameState", () => {
   const snapshot = JSON.parse(JSON.stringify(gs));
   resolveOutcome(gs, { kind: "win", team: "t1", roundNumber: 3 }, CFG);
   assert.deepEqual(gs, snapshot);
+});
+
+// ---------------------------------------------------------------------------
+// shouldLockOut / guessModeLabel — the guess-mode policy (§1.7, §6b)
+// ---------------------------------------------------------------------------
+test("shouldLockOut: default (First correct wins) locks out; absent cfg too", () => {
+  assert.equal(shouldLockOut(undefined), true);
+  assert.equal(shouldLockOut({}), true);
+  assert.equal(shouldLockOut({ multiGuess: false }), true);
+});
+
+test("shouldLockOut: Multiple guesses does NOT lock out", () => {
+  assert.equal(shouldLockOut({ multiGuess: true }), false);
+});
+
+test("guessModeLabel: rides analytics as single|multi", () => {
+  assert.equal(guessModeLabel(undefined), "single");
+  assert.equal(guessModeLabel({}), "single");
+  assert.equal(guessModeLabel({ multiGuess: false }), "single");
+  assert.equal(guessModeLabel({ multiGuess: true }), "multi");
+});
+
+// Multi-guess arbitration: a team with a CURRENT-round private wrong record can
+// still win — resolveOutcome trusts the ringing team and never treats a prior
+// wrong-ringer as out (no arbitration change vs. lockout mode). t2 has a wrong
+// record for round 3 in baseRoundActive; it rings correct and wins.
+test("resolveOutcome win: a prior wrong-ringer (t2) can still win (multi-guess)", () => {
+  const gs = resolveOutcome(baseRoundActive(), { kind: "win", team: "t2", roundNumber: 3 }, CFG);
+  assert.equal(gs.phase, "reveal");
+  assert.deepEqual(gs.round.outcome, { kind: "win", team: "t2", atStep: 2 });
+  // Winner settles correct with points; its earlier wrong record is not shown.
+  assert.equal(gs.round.results.t2.correct, true);
+  assert.equal(gs.round.results.t2.points, 875);
+  assert.equal(gs.round.results.t2.rangOut, false);
+  assert.equal(gs.teams.t2.total, 1075); // 200 + 875
+  // A different wrong-ringer still shows in beats (disclosure unchanged). t3 is
+  // a stale straggler here, so t1 (correct:false, no wrong record) is clean.
+  assert.equal(gs.round.results.t1.correct, false);
+});
+
+// Multi-guess beats still record OTHER teams' wrong rings at settlement: a team
+// that rang wrong this round (current lockedRound) is disclosed even though the
+// winner is someone else — identical to lockout-mode disclosure.
+test("resolveOutcome win: non-winner wrong ring still disclosed for beats (multi-guess)", () => {
+  const gs = resolveOutcome(baseRoundActive(), { kind: "win", team: "t1", roundNumber: 3 }, CFG);
+  assert.equal(gs.round.results.t2.rangOut, true);
+  assert.equal(gs.round.results.t2.wrongIso, "BE");
+  assert.equal(gs.round.results.t2.wrongStep, 1);
 });
 
 // ---------------------------------------------------------------------------

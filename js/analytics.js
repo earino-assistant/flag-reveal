@@ -158,6 +158,7 @@ export const EVENT_SCHEMA = Object.freeze({
     contested: "bool", // correct ring that lost the race to a rival win
     difficulty: "string",
     inputMode: "string",
+    guessMode: "string", // "single" (lockout) | "multi" (multiple guesses)
     roundKey: "string", // truncated hash(gameSeed, number) — not identifying
   },
 
@@ -171,6 +172,7 @@ export const EVENT_SCHEMA = Object.freeze({
     ringCount: "int", // best-effort local count; canonical count is downstream
     difficulty: "string",
     inputMode: "string",
+    guessMode: "string", // "single" (lockout) | "multi" (multiple guesses)
     roundNumber: "int",
     roundKey: "string",
   },

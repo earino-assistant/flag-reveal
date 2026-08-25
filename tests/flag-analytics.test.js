@@ -15,6 +15,7 @@ const RING_STATE = {
   team: "t2",
   difficulty: "world",
   inputMode: "choice",
+  guessMode: "single",
   roundKey: "RK1",
 };
 
@@ -39,6 +40,7 @@ test("ringEmission: first ring emits with the full flag_ring props", () => {
     contested: false,
     difficulty: "world",
     inputMode: "choice",
+    guessMode: "single",
     roundKey: "RK1",
   });
 });
@@ -100,6 +102,7 @@ const REVEAL_STATE = {
   mode: "tv",
   difficulty: "expert",
   inputMode: "type",
+  guessMode: "multi",
   roundKey: "RK7",
   emittedRounds: new Set(),
   committedOutcome: null,
@@ -142,6 +145,7 @@ test("revealEmission: flag_round emits only when MY transaction committed", () =
     ringCount: 2,
     difficulty: "expert",
     inputMode: "type",
+    guessMode: "multi",
     roundNumber: 7,
     roundKey: "RK7",
   });

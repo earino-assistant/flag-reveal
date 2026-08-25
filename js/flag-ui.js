@@ -40,6 +40,8 @@ import {
   eligiblePool,
   effectiveRoundCount,
   winAttemptOutcome,
+  shouldLockOut,
+  guessModeLabel,
 } from "./flag.js";
 import { ringEmission, revealEmission } from "./flag-analytics.js";
 import { escapeHtml, toast, suggestFor, pop } from "./ui-common.js";
@@ -124,6 +126,7 @@ function defaultCfg() {
     choiceUnlockStep: d.choiceUnlockStep,
     gridN: d.gridN,
     revealAspect: d.revealAspect,
+    multiGuess: d.multiGuess,
     gameSeed: null,
     pool: FLAGS,
     now: 0,
@@ -147,6 +150,7 @@ function cfgFromRoom(r) {
     choiceUnlockStep: s.choiceUnlockStep || d.choiceUnlockStep,
     gridN: s.gridN || d.gridN,
     revealAspect: s.revealAspect || d.revealAspect,
+    multiGuess: s.multiGuess === true,
     pace: s.pace || "classic",
     gameSeed: r ? r.gameSeed : null,
     pool: FLAGS,
@@ -303,9 +307,14 @@ function commitGuess(iso2, displayedStep) {
   if (iso2 === r.answerIso) {
     attemptWin(r.number, r.currentStep);
   } else {
-    // Wrong ring: lock self out, write own private lockout (§5). No other phone
-    // or renderer reads this during the round.
-    myLockRound = r.number;
+    // Wrong ring. In "First correct wins" (default) this locks the team out for
+    // the round; in "Multiple guesses" (cfg.multiGuess) it does NOT — the team
+    // keeps guessing. Either way we write the same private wrong-ring record
+    // (§5): it feeds the reveal beats and the TV's transient hint, and no other
+    // phone or renderer reads it during the round. The ONLY difference is the
+    // local re-guess gate (myLockRound) and the copy.
+    const lock = shouldLockOut(cfg);
+    if (lock) myLockRound = r.number;
     updateRoom(code, {
       ["gameState/round/private/" + myTeam]: {
         lockedRound: r.number,
@@ -314,7 +323,7 @@ function commitGuess(iso2, displayedStep) {
       },
     });
     emitRing({ correct: false, contested: false, atStep: displayedStep, points: 0 }, r.number);
-    setStatus("Wrong — you're locked out this round. 🙈");
+    setStatus(lock ? "Wrong — you're locked out this round. 🙈" : "Wrong — keep looking! 👀");
     renderRoundControls();
   }
 }
@@ -381,6 +390,7 @@ function emitRing({ correct, contested, atStep, points }, roundNumber) {
       team: myTeam,
       difficulty: cfg.difficulty,
       inputMode: cfg.inputMode,
+      guessMode: guessModeLabel(cfg),
       roundKey: roundKey(roundNumber),
     },
     { correct, contested, atStep, points }
@@ -396,6 +406,7 @@ function emitRing({ correct, contested, atStep, points }, roundNumber) {
 async function createRoom() {
   const difficulty = $("createDifficulty").value;
   const inputMode = $("createInput").value;
+  const multiGuess = !!($("createGuessMode") && $("createGuessMode").value === "multi");
   const paceId = ($("createPace") && $("createPace").value) || "classic";
   const pace = paceOf(paceId);
   myName = ($("homeName").value || "").trim() || "Player 1";
@@ -419,6 +430,7 @@ async function createRoom() {
     scoreProfile: "standard",
     difficulty,
     inputMode,
+    multiGuess,
   };
   const state = {
     createdAt: Date.now(),
@@ -620,8 +632,9 @@ function renderLobby(gs) {
   const paceLabel = paceOf(cfg.pace).label;
   const pool = eligiblePool(FLAGS, cfg.difficulty).length;
   const roundCount = pool > 0 ? effectiveRoundCount(cfg, FLAGS) : cfg.roundCount;
-  // Each token labelled so the muted line reads as prose, not three bare words.
-  $("lobbyMode").textContent = `${paceLabel} pace · ${diffLabel} flags · ${inputLabel} · ${roundCount} rounds`;
+  const guessLabel = cfg.multiGuess ? "multiple guesses" : "first correct wins";
+  // Each token labelled so the muted line reads as prose, not bare words.
+  $("lobbyMode").textContent = `${paceLabel} pace · ${diffLabel} flags · ${inputLabel} · ${guessLabel} · ${roundCount} rounds`;
 
   const teams = gs.teams || {};
   const ul = $("lobbyTeams");
@@ -660,9 +673,11 @@ function prepRound(gs) {
     setStatus("");
   }
   // Restore MY OWN lockout across a refresh — allowed for the owning phone only
-  // (§5.1), filtered on lockedRound === round.number.
+  // (§5.1), filtered on lockedRound === round.number. In "Multiple guesses" mode
+  // the private record is a wrong-ring beat, NOT a lockout, so never re-gate on
+  // it (shouldLockOut === false) — the phone stays live after a refresh too.
   const mine = r.private && r.private[myTeam];
-  if (mine && mine.lockedRound === r.number) myLockRound = r.number;
+  if (mine && mine.lockedRound === r.number && shouldLockOut(cfg)) myLockRound = r.number;
 }
 
 // The last round? effRounds 0 means the pool is unknown — never claim "final".
@@ -872,6 +887,7 @@ function emitRevealAnalytics(gs, r, oc) {
       mode: modeStr(),
       difficulty: cfg.difficulty,
       inputMode: cfg.inputMode,
+      guessMode: guessModeLabel(cfg),
       roundKey: rk,
       emittedRounds,
       committedOutcome,

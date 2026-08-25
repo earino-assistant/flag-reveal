@@ -137,6 +137,37 @@ test("the two flag events exist with the expected shape", () => {
   assert.equal(EVENT_SCHEMA.flag_ring.roundKey, "string");
   assert.equal(EVENT_SCHEMA.flag_ring.contested, "bool");
   assert.equal(EVENT_SCHEMA.flag_round.outcome, "string");
+  // guessMode rides both events (First correct wins vs Multiple guesses).
+  assert.equal(EVENT_SCHEMA.flag_ring.guessMode, "string");
+  assert.equal(EVENT_SCHEMA.flag_round.guessMode, "string");
+});
+
+test("guessMode survives the sanitizer as a plain allowlisted dimension", () => {
+  const ring = sanitizeProps(EVENT_SCHEMA.flag_ring, {
+    mode: "phone",
+    team: "t1",
+    atStep: 2,
+    correct: false,
+    points: 0,
+    contested: false,
+    difficulty: "world",
+    inputMode: "choice",
+    guessMode: "multi",
+    roundKey: "1998273",
+  });
+  assert.equal(ring.guessMode, "multi");
+  const round = sanitizeProps(EVENT_SCHEMA.flag_round, {
+    mode: "phone",
+    outcome: "won",
+    winningStep: 2,
+    ringCount: 1,
+    difficulty: "world",
+    inputMode: "choice",
+    guessMode: "single",
+    roundNumber: 4,
+    roundKey: "1998273",
+  });
+  assert.equal(round.guessMode, "single");
 });
 
 test("flag_ring keeps a bare tN slot id in team, not a team name", () => {

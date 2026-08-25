@@ -255,6 +255,34 @@ export function choiceUnlocked(currentStep, cfg) {
 }
 
 // ---------------------------------------------------------------------------
+// 6b. Guess mode — "First correct wins" (lockout) vs "Multiple guesses" (§1.7).
+// ---------------------------------------------------------------------------
+// The host picks one of two lockout policies at room creation, locked into
+// settings like difficulty/inputMode (§8.1):
+//   - default ("First correct wins"): a wrong ring ends that team's round —
+//     they are locked out until the next flag (`cfg.multiGuess` absent/false).
+//   - "Multiple guesses" (`cfg.multiGuess === true`): a wrong ring is still
+//     recorded (for beats + the TV hint) but does NOT lock the team out — they
+//     keep guessing until they get it right, the round busts, or a rival wins.
+//
+// Only the CLIENT's re-guess gate changes: `shouldLockOut(cfg) === false` tells
+// flag-ui not to set `myLockRound` and to keep the input live. The arbitration
+// is untouched — `resolveOutcome` already trusts the ringing team as the winner
+// and never assumes a prior wrong-ringer is out (a team with a current-round
+// private wrong record can still win; see the multi-guess test). No new
+// transaction, no new phase flip (CLAUDE.md).
+export function shouldLockOut(cfg) {
+  return !(cfg && cfg.multiGuess);
+}
+
+// The aggregate analytics dimension for the guess mode — rides `flag_ring` and
+// `flag_round` next to `difficulty`/`inputMode` so "First correct wins" vs
+// "Multiple guesses" is separable downstream. Aggregate-only (no PII).
+export function guessModeLabel(cfg) {
+  return cfg && cfg.multiGuess ? "multi" : "single";
+}
+
+// ---------------------------------------------------------------------------
 // 7. scoreRing — points for a correct ring at `atStep` (§1.7).
 // ---------------------------------------------------------------------------
 // max(min, round(base × (steps − atStep + 1) / steps)). Earlier = more; the

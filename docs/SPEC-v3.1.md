@@ -709,6 +709,38 @@ worth zero (zero is reserved for busts and wrong rings).
 - **Wrong ring: zero, and locked out for the round** — the cost is opportunity,
   not a negative score (§10). No negative scores in v3 (EM).
 
+#### Guess mode — "First correct wins" vs "Multiple guesses" (v3.1.x)
+
+A host choice at room creation, locked into settings like difficulty/inputMode
+(`settings.multiGuess`, §2/§8.1). Two lockout policies:
+
+- **First correct wins** (default, `multiGuess` absent/false): the wrong-ring
+  cost above — one wrong ring ends that team's round.
+- **Multiple guesses** (`multiGuess: true`): a wrong ring is still recorded (it
+  feeds the reveal beats and the TV's transient "guessed wrong — keep looking!"
+  hint, via the same `gameState/round/private/tN` write) but does **not** lock
+  the team out. They keep guessing until they ring correct, a rival wins, or the
+  round busts. The first correct ring still wins; a team that rang wrong earlier
+  can still win by ringing correct later.
+
+**The arbitration is untouched — this is the key invariant.** The three
+transactional writes are unchanged; no new transaction, no new phase flip. The
+mode changes exactly one thing: the *client's* re-guess gate. `resolveOutcome`
+already trusts the ringing team as the winner and never assumes a prior
+wrong-ringer is out, so a wrong-then-right team wins with **no** change to the
+resolve/advance cores. The only touch points are (a) `shouldLockOut(cfg)` /
+`guessModeLabel(cfg)` — two pure, tested helpers in `js/flag.js`; (b) the phone
+gating `myLockRound` + the input on `shouldLockOut(cfg)` in `commitGuess`; and
+(c) the `guessMode` analytics dimension (`single`|`multi`) on `flag_ring` /
+`flag_round` (§12). The private wrong-ring write stays a bare `update()` in
+**both** modes (it never changes a phase) — in multi-guess it is simply a beats
+record rather than a lockout, and the phone never re-gates on it.
+
+Design note (winner's own earlier wrong ring): in multi-guess mode a winner who
+rang wrong before ringing correct settles as `correct` (their earlier wrong ring
+is **not** re-surfaced in their own beats row — the win is the headline). Other
+teams' wrong rings still show in beats exactly as in lockout mode.
+
 ### 1.8 Win condition
 
 Dual, driven by locked settings:
@@ -759,7 +791,9 @@ rooms/{CODE}
                      { roundCount, target, stepMs, gridN, revealAspect,
                        base, min, steps, choiceUnlockStep, scoreProfile,
                        difficulty ("easy"|"world"|"expert"),
-                       inputMode ("typeahead"|"choice") }
+                       inputMode ("typeahead"|"choice"),
+                       multiGuess (bool; §1.7 guess mode — absent/false = "First
+                         correct wins" lockout, true = "Multiple guesses") }
   hostTeam           tN — reveal owner; rotates to the winner per GAME (§7)
   screenHeartbeat    ms epoch — the ONLY thing the TV writes (unchanged)
   nextRoom           pointer into a FINISHED room → subscribers follow (unchanged)
