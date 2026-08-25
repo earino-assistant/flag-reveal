@@ -855,22 +855,31 @@ body.tv { overflow: hidden; }
   100% { transform: scale(1); text-shadow: 0 0 12px var(--win, var(--accent)); }
 }
 
-/* Confetti pieces — cheap DOM spans; screen-flag.js sets --x/--dx/--rot/--delay/--c. */
+/* Confetti pieces — cheap DOM spans on an infinite loop. flag.js#confettiSpec
+   (seeded, deterministic) sets each strip's --x (left), --c (color), --dur/
+   --delay (varied fall timing), --drift (a signed horizontal sway), --spin (a
+   randomized total rotation), and --size (a per-strip scale). The variety +
+   loop is what lifts this past the old one-shot lockstep fall; a gentle ease
+   keeps the sway from reading mechanical. */
 .tv-confetti span {
   position: absolute;
   top: -8%;
   left: var(--x, 50%);
-  width: 0.7rem;
-  height: 1rem;
+  width: calc(0.7rem * var(--size, 1));
+  height: calc(1rem * var(--size, 1));
   background: var(--c, var(--win, var(--accent)));
   border-radius: 1px;
   opacity: 0;
-  animation: tv-confetti-fall 1.4s var(--delay, 0s) ease-in forwards;
+  animation: tv-confetti-fall var(--dur, 3.4s) var(--delay, 0s)
+    cubic-bezier(0.37, 0.02, 0.63, 1) infinite;
 }
 @keyframes tv-confetti-fall {
-  0%   { opacity: 0; transform: translate(0, 0) rotate(0deg); }
-  12%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--dx, 0), 108vh) rotate(var(--rot, 540deg)); }
+  0%   { opacity: 0; transform: translate(0, -6vh) rotate(0deg); }
+  8%   { opacity: 0.92; }
+  100% {
+    opacity: 0.92;
+    transform: translate(var(--drift, 0), 116vh) rotate(var(--spin, 720deg));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

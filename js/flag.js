@@ -672,25 +672,118 @@ export function shouldFollowRoom(room, currentCode, followedCodes) {
 }
 
 // ---------------------------------------------------------------------------
-// 12b. celebrationSpec — the game-over win moment (cribbed from GeoParty's
+// 12b. confettiSpec — the pure, deterministic game-over confetti generator
+// (cribbed from GeoParty's js/fx.js confettiSpec). The old TV burst was a
+// one-shot lockstep fall of identical strips; this returns per-strip specs with
+// varied fall duration/delay, a horizontal drift (sway), a randomized spin, and
+// size scaling, so the CSS loop varies instead of marching. Seeded (no
+// Math.random) → stable per game and unit-testable. A `champion` gets a richer,
+// gold-weighted burst; a plain win gets the colorful palette leaned toward the
+// winner's own team color (accentColor). Reduced motion → NO confetti at all.
+// screen-flag.js#celebrate renders these into looping .tv-confetti spans.
+// ---------------------------------------------------------------------------
+
+// The colorful ordinary-win palette and the champion's gold-weighted set. Both
+// frozen so the render layer can't mutate them.
+export const CONFETTI_COLORS = Object.freeze(
+  ["#ffcf3f", "#4dd6ff", "#ff6ec7", "#7dff8a", "#f4f4f6"]);
+export const CONFETTI_GOLD = Object.freeze(
+  ["#ffd700", "#ffcf3f", "#ffe89a", "#f6b73c", "#fff4c2"]);
+
+export const CONFETTI_TV_COUNT = 90;  // sparse-but-full TV loop default
+export const CONFETTI_MAX = 160;      // hard cap (champion, still cheap)
+
+// A plain win weights ~40% of the strips to the winner's own team color instead
+// of the fixed palette ("your color takes the room"). Champion bursts ignore
+// this — gold is the whole point.
+export const ACCENT_WEIGHT = 0.4;
+
+function confettiSeedInt(seed) {
+  if (typeof seed === "number" && Number.isFinite(seed)) return seed >>> 0;
+  return hashSeed(String(seed == null ? "confetti" : seed));
+}
+
+// { count, seed, tier, reducedMotion, accentColor } → an array of strip specs.
+// Same inputs always yield the same array (deterministic for tests and for a
+// stable loop per game). Each strip:
+//   left      0..100 (% of width)
+//   color     one of the tier's palette, or the accent color (see below)
+//   durationS positive fall duration (s)
+//   delayS    >= 0 start delay (s)
+//   driftVw   horizontal sway at the bottom (vw, signed)
+//   spinDeg   total rotation over the fall (deg, >= 360)
+//   sizeScale > 0 strip-size multiplier
+// accentColor: a CSS color (the winner's team color, e.g. "var(--team-2)"). A
+// strip below ACCENT_WEIGHT takes it instead of a palette pick. Ignored for a
+// champion (gold only). `count` is the FINAL strip count (celebrationSpec
+// already bakes the champion's larger burst in) — capped at CONFETTI_MAX.
+export function confettiSpec({
+  count, seed, tier, reducedMotion = false, accentColor = null,
+} = {}) {
+  if (reducedMotion === true) return [];   // reduced motion → no confetti
+  const champion = tier === "champion";
+  const base = Number.isFinite(count) && count > 0
+    ? Math.floor(count) : CONFETTI_TV_COUNT;
+  const n = Math.min(CONFETTI_MAX, base);
+  const palette = champion ? CONFETTI_GOLD : CONFETTI_COLORS;
+  const useAccent = !champion && typeof accentColor === "string" && !!accentColor;
+  const rand = mulberry32(confettiSeedInt(seed));
+  const round1 = (x) => Math.round(x * 10) / 10;
+  const round2 = (x) => Math.round(x * 100) / 100;
+  const bits = [];
+  for (let i = 0; i < n; i++) {
+    const rColor = rand();
+    const rLeft = rand();
+    const rDur = rand();
+    const rDelay = rand();
+    const rDrift = rand();
+    const rSpin = rand();
+    const rSize = rand();
+    // Champion biases toward the gold end (squared → front-loaded).
+    const pick = champion ? rColor * rColor : rColor;
+    const idx = Math.min(palette.length - 1, Math.floor(pick * palette.length));
+    const color = useAccent && rColor < ACCENT_WEIGHT ? accentColor : palette[idx];
+    bits.push({
+      left: round1(rLeft * 100),
+      color,
+      durationS: round2(2.6 + rDur * (champion ? 2.6 : 3.4)),
+      delayS: round2(rDelay * (champion ? 2.5 : 3.8)),
+      driftVw: round1((rDrift * 2 - 1) * (champion ? 10 : 7)),
+      spinDeg: 360 + Math.floor(rSpin * 720),
+      sizeScale: round2(champion ? 1.1 + rSize * 0.7 : 0.85 + rSize * 0.6),
+    });
+  }
+  return bits;
+}
+
+// ---------------------------------------------------------------------------
+// 12c. celebrationSpec — the game-over win moment (cribbed from GeoParty's
 // "Your Color Takes the Room", references/win-celebration-ui.md).
 // ---------------------------------------------------------------------------
 // Pure: maps a decided winner to the celebration's tier / color / burst size so
 // the TV render (screen-flag.js) is thin glue. No DOM, no write — the win is
 // already captured, so this adds NO analytics event. The winner's team slot
-// drives a color takeover (`--win` → var(--team-N)); a `champion` goes gold
-// (var(--accent)), louder, keeping the crown. An unknown/invalid slot falls
-// back to gold rather than an undefined color. Color is never the sole signal —
-// the caller still renders "👑 name wins" text (accessibility).
-export function celebrationSpec({ won = false, champion = false, teamSlot = null } = {}) {
+// drives a color takeover (`--win` → var(--team-N)) and the confetti accent; a
+// `champion` goes gold (var(--accent)), louder and gold-only, keeping the crown.
+// An unknown/invalid slot falls back to gold rather than an undefined color.
+// `seed` (the game seed) is passed straight through to confettiSpec so the burst
+// is stable per game. Color is never the sole signal — the caller still renders
+// "👑 name wins" text (accessibility).
+export function celebrationSpec({
+  won = false, champion = false, teamSlot = null, seed = null,
+} = {}) {
   if (!won) {
-    return { tier: "none", winVar: null, confettiCount: 0, spread: 0, crown: false };
+    return { tier: "none", winVar: null, accentColor: null, confettiCount: 0, seed: null, crown: false };
   }
   const m = /^t([1-4])$/.exec(teamSlot || "");
   if (champion || !m) {
-    return { tier: "champion", winVar: "var(--accent)", confettiCount: 90, spread: 1, crown: true };
+    return {
+      tier: "champion", winVar: "var(--accent)", accentColor: null,
+      confettiCount: Math.round(CONFETTI_TV_COUNT * 1.4), seed, crown: true,
+    };
   }
-  return { tier: "win", winVar: `var(--team-${m[1]})`, confettiCount: 64, spread: 0.8, crown: true };
+  const winVar = `var(--team-${m[1]})`;
+  return { tier: "win", winVar, accentColor: winVar, confettiCount: CONFETTI_TV_COUNT, seed, crown: true };
 }
 
 // ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ import {
   gameWinner,
   shouldFollowRoom,
   celebrationSpec,
+  confettiSpec,
   effectiveRoundCount,
   lockedOutTeams,
 } from "./flag.js";
@@ -281,7 +282,7 @@ function render(room) {
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvNote").textContent = "👑 The winner's phone starts the next game.";
-    if (wt && winner && !celebrated) celebrate(winner);
+    if (wt && winner && !celebrated) celebrate(winner, room.gameSeed || code);
     return;
   }
 
@@ -352,9 +353,9 @@ function render(room) {
 // + confetti below are UI-only glue. Reduced motion is handled entirely in CSS
 // (bloom to its resting frame, .tv-confetti display:none) so this stays
 // branch-free — we still build the nodes, CSS just hides them.
-function celebrate(winnerSlot) {
+function celebrate(winnerSlot, seed) {
   const disp = $("s-display");
-  const spec = celebrationSpec({ won: true, teamSlot: winnerSlot });
+  const spec = celebrationSpec({ won: true, teamSlot: winnerSlot, seed });
   if (spec.tier === "none") return;
   celebrated = true;
   disp.style.setProperty("--win", spec.winVar);
@@ -363,19 +364,27 @@ function celebrate(winnerSlot) {
   const wrap = $("tvConfetti");
   if (!wrap) return;
   wrap.innerHTML = "";
-  // Gold-flecked around the win color so a champion (gold) still reads distinct
-  // from the field, and a team color gets a little sparkle. Index-driven spread
-  // (no RNG) keeps the burst full-width and stable across re-renders.
-  const colors = [spec.winVar, spec.winVar, "var(--accent)", "var(--fg)"];
-  const n = spec.confettiCount;
+  // Seeded, deterministic per-strip specs (drift/spin/size/duration variety +
+  // gold-heavy champion / accent-leaning win palette) — the unit-tested pure
+  // generator. Reduced motion is still handled entirely in CSS (.tv-confetti
+  // display:none), so this stays branch-free: we build the looping spans and
+  // CSS hides them.
+  const strips = confettiSpec({
+    count: spec.confettiCount,
+    seed: spec.seed,
+    tier: spec.tier,
+    accentColor: spec.accentColor,
+  });
   const frag = document.createDocumentFragment();
-  for (let i = 0; i < n; i++) {
+  for (const strip of strips) {
     const s = document.createElement("span");
-    s.style.setProperty("--x", Math.round((i / n) * 100) + "%");
-    s.style.setProperty("--dx", Math.round((((i * 53) % 100) - 50) * spec.spread) + "vw");
-    s.style.setProperty("--rot", 360 + ((i * 97) % 540) + "deg");
-    s.style.setProperty("--delay", (i % 8) * 40 + "ms");
-    s.style.setProperty("--c", colors[i % colors.length]);
+    s.style.setProperty("--x", strip.left + "%");
+    s.style.setProperty("--c", strip.color);
+    s.style.setProperty("--dur", strip.durationS + "s");
+    s.style.setProperty("--delay", strip.delayS + "s");
+    s.style.setProperty("--drift", strip.driftVw + "vw");
+    s.style.setProperty("--spin", strip.spinDeg + "deg");
+    s.style.setProperty("--size", strip.sizeScale);
     frag.appendChild(s);
   }
   wrap.appendChild(frag);

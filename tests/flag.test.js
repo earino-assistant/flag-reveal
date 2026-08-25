@@ -21,6 +21,10 @@ import {
   roundConduct,
   gameWinner,
   celebrationSpec,
+  confettiSpec,
+  CONFETTI_COLORS,
+  CONFETTI_GOLD,
+  CONFETTI_MAX,
   carryStandings,
   shouldFollowRoom,
   versionCompatible,
@@ -609,6 +613,77 @@ test("celebrationSpec: unknown/invalid slot → falls back to gold, never undefi
     assert.equal(s.winVar, "var(--accent)");
     assert.equal(s.tier, "champion");
   }
+});
+
+test("celebrationSpec: passes the seed through + exposes an accent for a plain win", () => {
+  const win = celebrationSpec({ won: true, teamSlot: "t2", seed: 12345 });
+  assert.equal(win.seed, 12345);
+  assert.equal(win.accentColor, "var(--team-2)");
+  // A champion is gold-only — no accent to lean the palette on.
+  const champ = celebrationSpec({ won: true, teamSlot: "t2", champion: true, seed: 7 });
+  assert.equal(champ.seed, 7);
+  assert.equal(champ.accentColor, null);
+});
+
+// confettiSpec — the pure, deterministic confetti generator (the DOM/CSS loop
+// in screen-flag.js is UI-only and not unit-tested).
+test("confettiSpec: reduced motion → no confetti at all", () => {
+  assert.deepEqual(confettiSpec({ count: 90, seed: 1, reducedMotion: true }), []);
+});
+
+test("confettiSpec: deterministic — same seed yields byte-identical strips", () => {
+  const a = confettiSpec({ count: 40, seed: "GAME7", tier: "win" });
+  const b = confettiSpec({ count: 40, seed: "GAME7", tier: "win" });
+  assert.deepEqual(a, b);
+  const c = confettiSpec({ count: 40, seed: "GAME8", tier: "win" });
+  assert.notDeepEqual(a, c); // a different seed diverges
+});
+
+test("confettiSpec: every strip has the full per-strip variety, well-formed", () => {
+  const strips = confettiSpec({ count: 30, seed: 42, tier: "win" });
+  assert.equal(strips.length, 30);
+  for (const s of strips) {
+    assert.ok(s.left >= 0 && s.left <= 100);
+    assert.equal(typeof s.color, "string");
+    assert.ok(s.durationS > 0);
+    assert.ok(s.delayS >= 0);
+    assert.ok(Number.isFinite(s.driftVw));
+    assert.ok(s.spinDeg >= 360);       // always at least one full rotation
+    assert.ok(s.sizeScale > 0);
+  }
+  // Not lockstep: durations and drifts actually vary across strips.
+  assert.ok(new Set(strips.map((s) => s.durationS)).size > 1);
+  assert.ok(new Set(strips.map((s) => s.driftVw)).size > 1);
+});
+
+test("confettiSpec: champion → gold palette only, no palette/accent bleed", () => {
+  const strips = confettiSpec({ count: 60, seed: 3, tier: "champion", accentColor: "var(--team-1)" });
+  for (const s of strips) {
+    assert.ok(CONFETTI_GOLD.includes(s.color), `${s.color} not gold`);
+  }
+});
+
+test("confettiSpec: plain win leans on the accent color (~ACCENT_WEIGHT of strips)", () => {
+  const accent = "var(--team-3)";
+  const strips = confettiSpec({ count: 120, seed: 9, tier: "win", accentColor: accent });
+  const accentCount = strips.filter((s) => s.color === accent).length;
+  assert.ok(accentCount > 0, "some strips take the accent");
+  assert.ok(accentCount < strips.length, "not every strip is the accent");
+  // The rest come from the colorful (non-gold) palette.
+  for (const s of strips) {
+    assert.ok(s.color === accent || CONFETTI_COLORS.includes(s.color));
+  }
+});
+
+test("confettiSpec: strip count is capped at CONFETTI_MAX", () => {
+  const strips = confettiSpec({ count: 10000, seed: 1, tier: "champion" });
+  assert.equal(strips.length, CONFETTI_MAX);
+});
+
+test("confettiSpec: no count → sparse default, still non-empty", () => {
+  const strips = confettiSpec({ seed: 1, tier: "win" });
+  assert.ok(strips.length > 0);
+  assert.ok(strips.length <= CONFETTI_MAX);
 });
 
 test("carryStandings: zeroes totals by default, sets hostTeam, preserves identity", () => {
