@@ -54,12 +54,20 @@ const POOL = [
   { iso2: "XX", name: "Testland", aliases: [], tier: "world", eligible: false },
 ];
 
-// eligible "world" pool = easy + world tiers only → 7 (expert TD/RO and the
-// ineligible XX excluded). Expert is the opt-in hard lane, not part of world.
-const WORLD_SIZE = 7;
+// The `default` pool (the friendly party mix) = easy + world tiers → 7 (the
+// expert TD/RO and the ineligible XX excluded). Expert only appears in the
+// `hard` and `everything` settings.
+const DEFAULT_SIZE = 7;
+// `hard` = world + expert → 5 world (XX ineligible) + 2 expert = 7.
+const HARD_SIZE = 7;
+// `everything` = the whole eligible fixture → 9 (only XX excluded).
+const EVERYTHING_SIZE = 9;
 
-// The expert-tier isos in POOL — must never appear in a world/unknown pool.
+// The expert-tier isos in POOL — must never appear in an easy/default/unknown
+// pool.
 const EXPERT_ISOS = ["TD", "RO"];
+// The easy-tier isos in POOL — must never appear in a `hard` pool.
+const EASY_ISOS = ["BR", "US"];
 
 // ---------------------------------------------------------------------------
 // scoreRing
@@ -82,33 +90,33 @@ test("scoreRing: min floor binds under a non-default config", () => {
 // gameFlags
 // ---------------------------------------------------------------------------
 test("gameFlags: deterministic for the same seed", () => {
-  const a = gameFlags("seed-1", 5, "world", POOL);
-  const b = gameFlags("seed-1", 5, "world", POOL);
+  const a = gameFlags("seed-1", 5, "default", POOL);
+  const b = gameFlags("seed-1", 5, "default", POOL);
   assert.deepEqual(a, b);
 });
 
 test("gameFlags: different seeds generally differ", () => {
-  const a = gameFlags("seed-1", WORLD_SIZE, "world", POOL);
-  const b = gameFlags("seed-2", WORLD_SIZE, "world", POOL);
+  const a = gameFlags("seed-1", DEFAULT_SIZE, "default", POOL);
+  const b = gameFlags("seed-2", DEFAULT_SIZE, "default", POOL);
   assert.notDeepEqual(a, b);
 });
 
 test("gameFlags: repeat-free within a game", () => {
-  const seq = gameFlags("seed-1", WORLD_SIZE, "world", POOL);
+  const seq = gameFlags("seed-1", DEFAULT_SIZE, "default", POOL);
   assert.equal(new Set(seq).size, seq.length);
 });
 
 test("gameFlags: excludes ineligible entries", () => {
-  const seq = gameFlags("seed-1", 50, "world", POOL);
+  const seq = gameFlags("seed-1", 50, "default", POOL);
   assert.ok(!seq.includes("XX"));
 });
 
-test("gameFlags: a world game never deals an expert-tier flag (any seed)", () => {
+test("gameFlags: a default game never deals an expert-tier flag (any seed)", () => {
   for (const seed of ["a", "b", "c", "d", "e", "seed-1", "seed-2"]) {
-    const seq = gameFlags(seed, WORLD_SIZE, "world", POOL);
-    assert.equal(seq.length, WORLD_SIZE);
+    const seq = gameFlags(seed, DEFAULT_SIZE, "default", POOL);
+    assert.equal(seq.length, DEFAULT_SIZE);
     for (const iso of seq) {
-      assert.ok(!EXPERT_ISOS.includes(iso), `world seq for ${seed} leaked expert ${iso}`);
+      assert.ok(!EXPERT_ISOS.includes(iso), `default seq for ${seed} leaked expert ${iso}`);
     }
   }
 });
@@ -124,16 +132,16 @@ test("gameFlags: easy-first guard — easy game opens on an easy-tier flag", () 
 });
 
 test("gameFlags: clamps roundCount larger than the pool (no crash)", () => {
-  const seq = gameFlags("seed-1", 1000, "world", POOL);
-  assert.equal(seq.length, WORLD_SIZE);
+  const seq = gameFlags("seed-1", 1000, "default", POOL);
+  assert.equal(seq.length, DEFAULT_SIZE);
 });
 
 // ---------------------------------------------------------------------------
 // flagForRound
 // ---------------------------------------------------------------------------
 test("flagForRound: matches gameFlags[number-1] and a stable flagSeed", () => {
-  const cfg = { difficulty: "world", roundCount: 10 };
-  const seq = gameFlags("seed-1", Math.min(10, WORLD_SIZE), "world", POOL);
+  const cfg = { difficulty: "default", roundCount: 10 };
+  const seq = gameFlags("seed-1", Math.min(10, DEFAULT_SIZE), "default", POOL);
   const r2 = flagForRound(cfg, "seed-1", 2, POOL);
   assert.equal(r2.answerIso, seq[1]);
   assert.equal(r2.flagSeed, hash("seed-1", 2));
@@ -413,8 +421,8 @@ test("resolveOutcome win: non-winner wrong ring still disclosed for beats (multi
 // ---------------------------------------------------------------------------
 // advanceState
 // ---------------------------------------------------------------------------
-// roundCount 3 → effective 3 (world pool has 9); so round 3's reveal → gameOver.
-const ADV_CFG = { gameSeed: "seed-1", difficulty: "world", roundCount: 3, target: 0, pool: POOL, now: 5000 };
+// roundCount 3 → effective 3 (default pool has 7); so round 3's reveal → gameOver.
+const ADV_CFG = { gameSeed: "seed-1", difficulty: "default", roundCount: 3, target: 0, pool: POOL, now: 5000 };
 
 test("advanceState: lobby → round 1", () => {
   const gs = { phase: "lobby", teams: { t1: { total: 0 } } };
@@ -813,64 +821,109 @@ test("versionCompatible: both dataset and rules versions must match", () => {
 // eligiblePool (now exported) + effectiveRoundCount — the round-budget clamp
 // that used to be copy-pasted across flag.js/flag-ui.js/screen-flag.js.
 // ---------------------------------------------------------------------------
-test("eligiblePool: world = easy + world tiers, expert excluded", () => {
-  const world = eligiblePool(POOL, "world");
-  assert.equal(world.length, WORLD_SIZE);
-  assert.ok(!world.some((e) => e.iso2 === "XX")); // explicit eligible:false excluded
+test("eligiblePool: default = easy + world tiers, expert excluded", () => {
+  const dflt = eligiblePool(POOL, "default");
+  assert.equal(dflt.length, DEFAULT_SIZE);
+  assert.ok(!dflt.some((e) => e.iso2 === "XX")); // explicit eligible:false excluded
   for (const iso of EXPERT_ISOS) {
-    assert.ok(!world.some((e) => e.iso2 === iso), `expert ${iso} must not be in world`);
+    assert.ok(!dflt.some((e) => e.iso2 === iso), `expert ${iso} must not be in default`);
   }
 });
 
-test("eligiblePool: world holds exactly the easy + world isos", () => {
-  const isos = eligiblePool(POOL, "world").map((e) => e.iso2).sort();
+test("eligiblePool: default holds exactly the easy + world isos", () => {
+  const isos = eligiblePool(POOL, "default").map((e) => e.iso2).sort();
   assert.deepEqual(isos, ["BR", "CD", "CG", "CI", "DE", "FR", "US"]);
 });
 
-test("eligiblePool: easy/expert filter to the tier; unknown → world pool", () => {
+test("eligiblePool: easy = the easy tier only", () => {
   assert.deepEqual(
     eligiblePool(POOL, "easy").map((e) => e.iso2).sort(),
     ["BR", "US"]
   );
+});
+
+test("eligiblePool: hard = world + expert, easy excluded", () => {
+  const hard = eligiblePool(POOL, "hard");
+  assert.equal(hard.length, HARD_SIZE);
   assert.deepEqual(
-    eligiblePool(POOL, "expert").map((e) => e.iso2).sort(),
-    ["RO", "TD"]
+    hard.map((e) => e.iso2).sort(),
+    ["CD", "CG", "CI", "DE", "FR", "RO", "TD"]
   );
-  // Unknown difficulty falls back to the world pool — which is easy + world,
-  // so it excludes expert too (documented behavior).
+  for (const iso of EASY_ISOS) {
+    assert.ok(!hard.some((e) => e.iso2 === iso), `easy ${iso} must not be in hard`);
+  }
+  assert.ok(!hard.some((e) => e.iso2 === "XX")); // explicit eligible:false excluded
+});
+
+test("eligiblePool: everything = all three tiers (the full eligible deck)", () => {
+  const all = eligiblePool(POOL, "everything");
+  assert.equal(all.length, EVERYTHING_SIZE);
+  assert.deepEqual(
+    all.map((e) => e.iso2).sort(),
+    ["BR", "CD", "CG", "CI", "DE", "FR", "RO", "TD", "US"]
+  );
+  assert.ok(!all.some((e) => e.iso2 === "XX")); // eligible:false still excluded
+});
+
+test("eligiblePool: the four settings ramp monotonically (easy ⊂ default, hard ⊂ everything)", () => {
+  const isos = (d) => new Set(eligiblePool(POOL, d).map((e) => e.iso2));
+  const easy = isos("easy");
+  const dflt = isos("default");
+  const hard = isos("hard");
+  const every = isos("everything");
+  for (const iso of easy) assert.ok(dflt.has(iso), `easy ${iso} must be in default`);
+  for (const iso of dflt) assert.ok(every.has(iso), `default ${iso} must be in everything`);
+  for (const iso of hard) assert.ok(every.has(iso), `hard ${iso} must be in everything`);
+});
+
+test("eligiblePool: unknown difficulty falls back to the default pool", () => {
+  // Unknown difficulty falls back to `default` — easy + world, so it excludes
+  // expert too (documented behavior), and never throws.
   const unknown = eligiblePool(POOL, "nonsense");
-  assert.equal(unknown.length, WORLD_SIZE);
+  assert.equal(unknown.length, DEFAULT_SIZE);
+  assert.deepEqual(
+    unknown.map((e) => e.iso2).sort(),
+    eligiblePool(POOL, "default").map((e) => e.iso2).sort()
+  );
   for (const iso of EXPERT_ISOS) {
     assert.ok(!unknown.some((e) => e.iso2 === iso));
   }
+  // Absent difficulty behaves the same way.
+  assert.equal(eligiblePool(POOL, undefined).length, DEFAULT_SIZE);
 });
 
 test("eligiblePool: a missing `eligible` flag counts as eligible", () => {
   const pool = [{ iso2: "AA", name: "A", tier: "world" }]; // no eligible key
-  assert.equal(eligiblePool(pool, "world").length, 1);
+  assert.equal(eligiblePool(pool, "default").length, 1);
 });
 
 test("effectiveRoundCount: clamps roundCount to the eligible pool size", () => {
-  // 7 eligible world flags (expert excluded); asking for 20 clamps to 7.
-  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 20 }, POOL), 7);
+  // 7 eligible default flags (expert excluded); asking for 20 clamps to 7.
+  assert.equal(effectiveRoundCount({ difficulty: "default", roundCount: 20 }, POOL), 7);
   // Asking for fewer than the pool is honored.
-  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 5 }, POOL), 5);
+  assert.equal(effectiveRoundCount({ difficulty: "default", roundCount: 5 }, POOL), 5);
   // Easy tier has 2 flags; a bigger request clamps to 2.
   assert.equal(effectiveRoundCount({ difficulty: "easy", roundCount: 5 }, POOL), 2);
+  // Everything is the full deck; 20 clamps to 9.
+  assert.equal(effectiveRoundCount({ difficulty: "everything", roundCount: 20 }, POOL), EVERYTHING_SIZE);
 });
 
 test("effectiveRoundCount: absent roundCount defaults to the whole pool", () => {
-  assert.equal(effectiveRoundCount({ difficulty: "world" }, POOL), WORLD_SIZE);
-  assert.equal(effectiveRoundCount({ difficulty: "expert" }, POOL), 2);
+  assert.equal(effectiveRoundCount({ difficulty: "default" }, POOL), DEFAULT_SIZE);
+  assert.equal(effectiveRoundCount({ difficulty: "hard" }, POOL), HARD_SIZE);
+  assert.equal(effectiveRoundCount({ difficulty: "everything" }, POOL), EVERYTHING_SIZE);
+  assert.equal(effectiveRoundCount({ difficulty: "easy" }, POOL), 2);
+  // No difficulty at all → the default pool.
+  assert.equal(effectiveRoundCount({}, POOL), DEFAULT_SIZE);
 });
 
 test("effectiveRoundCount: matches gameFlags' own clamp (no phone/TV drift)", () => {
   // The whole point of exporting this: the sequence length and "Round N / M"
   // must agree. gameFlags clamps internally the same way.
-  const cfg = { difficulty: "world", roundCount: 100 };
-  const seq = gameFlags("seed-x", effectiveRoundCount(cfg, POOL), "world", POOL);
+  const cfg = { difficulty: "default", roundCount: 100 };
+  const seq = gameFlags("seed-x", effectiveRoundCount(cfg, POOL), "default", POOL);
   assert.equal(seq.length, effectiveRoundCount(cfg, POOL));
-  assert.equal(seq.length, WORLD_SIZE);
+  assert.equal(seq.length, DEFAULT_SIZE);
 });
 
 // ---------------------------------------------------------------------------
@@ -960,7 +1013,7 @@ test("hostStalled: never at the final step or once resolved", () => {
 // endsGameOnAdvance — the pure "does this advance end the game?" gate (Fix 4).
 // ---------------------------------------------------------------------------
 test("endsGameOnAdvance: true at the last reveal, false before it", () => {
-  const cfg = { roundCount: 2, difficulty: "world", pool: POOL, target: 0 };
+  const cfg = { roundCount: 2, difficulty: "default", pool: POOL, target: 0 };
   const reveal = (number) => ({
     phase: "reveal",
     round: { number, outcome: { kind: "win", team: "t1" } },
@@ -971,7 +1024,7 @@ test("endsGameOnAdvance: true at the last reveal, false before it", () => {
 });
 
 test("endsGameOnAdvance: false unless it's an advanceable resolved reveal", () => {
-  const cfg = { roundCount: 2, difficulty: "world", pool: POOL, target: 0 };
+  const cfg = { roundCount: 2, difficulty: "default", pool: POOL, target: 0 };
   // Wrong phase.
   assert.equal(
     endsGameOnAdvance({ phase: "roundActive", round: { number: 2 } }, 2, cfg),

@@ -85,27 +85,36 @@ function shuffle(arr, rng) {
 // Pool selection (spec §8, §8.4).
 // ---------------------------------------------------------------------------
 
-// The eligible pool for a difficulty tier. `world` is the default party pool
-// (easy + world tiers — NOT the full mix); `easy`/`expert` filter to that tier.
+// The eligible pool for a difficulty setting. Four explicit, strictly-nested
+// pools (each one a superset-or-harder step, not a re-mix):
+//
+//   easy       = tier `easy` only
+//   default    = `easy` + `world`            — the friendly party mix (DEFAULT)
+//   hard       = `world` + `expert`          — no easy flags
+//   everything = `easy` + `world` + `expert` — the full deck
+//
+// The difficulty SETTING values (easy/default/hard/everything) are distinct
+// from the DATA tiers in flags.json (easy/world/expert); `world` is a tier, not
+// a setting. An unknown/absent difficulty falls back to `default`.
+//
 // Entries are `eligible: false` unless explicitly true-or-absent — we treat a
 // missing `eligible` as eligible so a lean fixture pool "just works", and only
 // an explicit `eligible: false` excludes.
 //
-// NOTE (ambiguity resolved, see final report): the spec describes difficulty as
-// "selecting the flag pool by recognizability" without a formal tier→difficulty
-// table. `easy = tier:"easy"`, `expert = tier:"expert"` is the sensible reading
-// and keeps `gameFlags` a total function.
-// Exported so the phone and the TV derive the tier's size from the SAME filter
-// flag.js uses internally, instead of each re-deriving it (the old private
-// `poolSize` copies in flag-ui.js / screen-flag.js).
+// Exported so the phone and the TV derive the setting's pool size from the SAME
+// filter flag.js uses internally, instead of each re-deriving it (the old
+// private `poolSize` copies in flag-ui.js / screen-flag.js).
+const TIER_MAP = {
+  easy:        ["easy"],
+  default:     ["easy", "world"],
+  hard:        ["world", "expert"],
+  everything:  ["easy", "world", "expert"],
+};
+
 export function eligiblePool(pool, difficulty) {
   const eligible = (pool || []).filter((e) => e && e.eligible !== false);
-  if (difficulty === "easy") return eligible.filter((e) => e.tier === "easy");
-  if (difficulty === "expert") return eligible.filter((e) => e.tier === "expert");
-  // world (default) = easy + medium/world tiers only — EXPERT EXCLUDED.
-  // The full mixed pool (incl. expert) is no longer the default: expert is
-  // the optional hard lane.
-  return eligible.filter((e) => e.tier === "easy" || e.tier === "world");
+  const tiers = TIER_MAP[difficulty] || TIER_MAP.default;
+  return eligible.filter((e) => tiers.includes(e.tier));
 }
 
 // The pool-clamped round budget: min(requested, |eligible pool|). `requested`
@@ -114,7 +123,7 @@ export function eligiblePool(pool, difficulty) {
 // four+ call sites (flag.js twice, flag-ui.js, screen-flag.js), which meant a
 // future eligibility change could make the phone and TV disagree about M.
 export function effectiveRoundCount(cfg, pool) {
-  const difficulty = (cfg && cfg.difficulty) || "world";
+  const difficulty = (cfg && cfg.difficulty) || "default";
   const size = eligiblePool(pool, difficulty).length;
   const requested = cfg && cfg.roundCount != null ? cfg.roundCount : size;
   return Math.min(requested, size);
@@ -160,7 +169,7 @@ export function gameFlags(gameSeed, effectiveRoundCount, difficulty, pool) {
 // `hash(gameSeed, number)`. Because both derive from (gameSeed, number), an
 // owner refresh re-authors the identical round — no resample (§8.1).
 export function flagForRound(config, gameSeed, number, pool) {
-  const difficulty = (config && config.difficulty) || "world";
+  const difficulty = (config && config.difficulty) || "default";
   const seq = gameFlags(gameSeed, effectiveRoundCount(config, pool), difficulty, pool);
   return { answerIso: seq[number - 1], flagSeed: hash(gameSeed, number) };
 }
