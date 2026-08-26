@@ -27,6 +27,7 @@ The headline experiment signal: *are correct rings actually colliding?*
 | `difficulty` | string | `easy` \| `world` \| `expert` |
 | `inputMode` | string | `typeahead` \| `choice` |
 | `guessMode` | string | `single` (First correct wins — a wrong ring locks the team out) \| `multi` (Multiple guesses — a wrong ring is recorded but the team keeps guessing) |
+| `pace` | string | `chill` \| `classic` \| `fast` — the host's locked reveal cadence (`stepMs`/`graceMs` preset) |
 | `roundKey` | string | truncated `hash(gameSeed, round.number)` — `gameSeed` is random, so this is **not** identifying and never derived from the room code |
 
 ## `flag_round` — one per round at reveal, emitted by the committing phone
@@ -43,9 +44,11 @@ expected.
 | `outcome` | string | `won` \| `busted` |
 | `winningStep` | int | the winning `atStep`; **absent** on a bust (`null` is dropped by the sanitizer) |
 | `ringCount` | int | best-effort local count (results with `correct` or `rangOut`); the **canonical** count is reconstructed downstream (below) |
-| `difficulty` | string | enables "bust rate by difficulty tier" |
+| `difficulty` | string | the room's setting: `easy` \| `world` \| `expert`. Since v3.2 `world` deals easy + world tiers only (expert excluded) — pair with `tier` for the flag actually shown |
 | `inputMode` | string | typeahead vs. choice — likely the strongest explanatory variable |
 | `guessMode` | string | `single` \| `multi` — separates lockout vs. multiple-guesses rounds (bust rate, winning-step, ring counts by mode) |
+| `pace` | string | `chill` \| `classic` \| `fast` — the host's locked reveal cadence; a fast pace should push busts up and winning steps later |
+| `tier` | string | the round's **answer-flag tier**: `easy` \| `world` \| `expert`. Says how hard the flag was, **never which flag it was** — the iso and the country name are unallowlisted *and* banned keys. Splits bust rate by actual flag difficulty, not just by the room's `difficulty` setting (a `world` room deals easy- *and* world-tier flags) |
 | `roundNumber` | int | |
 | `roundKey` | string | join key with `flag_ring` |
 

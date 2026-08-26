@@ -51,13 +51,14 @@ built-in runner, `npm test`) and the whole repo must pass `npm run check`
   uninstrumented `track()` is silently dropped.
 - Aggregates only: `atStep`, `correct`, `points`, `contested`, `outcome`,
   `winningStep`, `ringCount`, `mode`, `roundNumber`, `roundKey`, `team` (slot
-  id `tN`). NEVER country names, ISO codes as free strings, team names, or
-  anything identifying.
+  id `tN`), `pace` (`chill`|`classic`|`fast`), `tier` (the answer flag's
+  `easy`|`world`|`expert` — how hard it was, never which flag). NEVER country
+  names, ISO codes as free strings, team names, or anything identifying.
 - `flag_ring` (one per ring): `{team, roundKey, mode, atStep, correct, points,
-  contested}`. Dedup on `(roundKey, team, correct)`. `flag_round` (one per
+  contested, pace}`. Dedup on `(roundKey, team, correct)`. `flag_round` (one per
   round, single named emitter — at-most-once emission, NOT exactly-once):
   `{mode, outcome, winningStep, ringCount, roundNumber, difficulty, inputMode,
-  roundKey}`.
+  pace, tier, roundKey}`.
 - Sanitizer tests in `tests/analytics.test.js`; document events in
   `docs/analytics.md`.
 - Consent gating is inviolable: all capture through `track()`/`trackError()` in
