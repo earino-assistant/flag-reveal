@@ -673,6 +673,20 @@ input:focus, select:focus {
   flex-direction: column;
 }
 .landing .ld-footer { margin-top: auto; }
+/* Secondary actions (Add a TV / How to play) as quiet buttons above the footer. */
+.ld-second {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-top: 1.4rem;
+  flex-wrap: wrap;
+}
+.ld-second .btn-ghost {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
 .landing-hero .brand { font-size: clamp(2.6rem, 11vw, 4rem); }
 .landing-hero .tagline { font-size: 1.1rem; }
 .ld-panel { margin: 1.6rem 0 0.4rem; display: flex; flex-direction: column; gap: 0.7rem; align-items: stretch; }
