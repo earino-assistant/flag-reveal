@@ -682,10 +682,17 @@ input:focus, select:focus {
   flex-wrap: wrap;
 }
 .ld-second .btn-ghost {
-  padding: 0.55rem 1.1rem;
-  border: 1px solid var(--line);
+  padding: 0.55rem 1.2rem;
+  min-height: 44px; /* comfortable phone target */
+  border: 1px solid var(--line-strong);
   border-radius: 999px;
   font-size: 0.95rem;
+  background: var(--panel-2); /* solid raised face so it reads as a button */
+  color: var(--fg);
+}
+.ld-second .btn-ghost:hover {
+  background: var(--raised);
+  color: var(--fg);
 }
 .landing-hero .brand { font-size: clamp(2.6rem, 11vw, 4rem); }
 .landing-hero .tagline { font-size: 1.1rem; }
