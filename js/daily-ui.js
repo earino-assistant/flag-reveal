@@ -26,7 +26,7 @@ import { dailyShareText, emojiRow, withUtm } from "./share.js";
 import { shareText } from "./share-ui.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2 } from "./flags-data.js";
-import { track, openBanner } from "./consent.js";
+import { track } from "./consent.js";
 import { toast, suggestFor, pop, primeAudio, vibrate } from "./ui-common.js";
 
 // Reveal cadence (Classic pace). A flag opens over ~8 steps, then a short grace
@@ -320,9 +320,6 @@ function wire() {
   $("btnDailyStart").addEventListener("click", startDaily);
   $("btnDNext").addEventListener("click", nextRound);
   $("btnDShare").addEventListener("click", doShare);
-  // Both the intro and the done screen carry a footer Privacy button; wire
-  // every .js-privacy so the consent banner reopens from either.
-  document.querySelectorAll(".js-privacy").forEach((b) => b.addEventListener("click", openBanner));
 
   const inp = $("dInput");
   inp.addEventListener("input", () => renderSuggest(inp.value));

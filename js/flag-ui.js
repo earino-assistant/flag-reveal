@@ -53,7 +53,7 @@ import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, deviceId } from "./roomcode.js";
 import { GAME_DEFAULTS, BUNDLED_VERSIONS } from "../config.js";
-import { track, openBanner } from "./consent.js";
+import { track } from "./consent.js";
 import { drawQr } from "./qr.js";
 import { partyShareText, withUtm } from "./share.js";
 import { shareText } from "./share-ui.js";
@@ -1325,10 +1325,6 @@ function wire() {
     clearSession();
     location.href = "player.html";
   });
-
-  // Both the home and create screens carry a footer Privacy button; wire every
-  // .js-privacy so the consent banner reopens from either.
-  document.querySelectorAll(".js-privacy").forEach((b) => b.addEventListener("click", openBanner));
 
   // Resume banner / URL routing.
   const params = new URLSearchParams(location.search);

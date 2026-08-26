@@ -58,9 +58,13 @@
     </div>
 
     <footer class="ld-footer">
+      <a href="index.html">Home</a>
+      <span aria-hidden="true">·</span>
+      <a href="howto.html">How to play</a>
+      <span aria-hidden="true">·</span>
       <a href="https://github.com/earino-assistant/flag-reveal/issues">Feedback</a>
       <span aria-hidden="true">·</span>
-      <button id="btnPrivacy" class="link-btn" type="button">Privacy</button>
+      <button class="link-btn js-privacy" type="button">Privacy</button>
       <span aria-hidden="true">·</span>
       <a href="https://github.com/earino-assistant/flag-reveal">GitHub</a>
     </footer>
@@ -70,7 +74,7 @@
   <script type="module" src="js/consent.js"></script>
   <script type="module">
     import { isValidRoomCode } from "./js/roomcode.js";
-    import { track, openBanner } from "./js/consent.js";
+    import { track } from "./js/consent.js";
     import { dailyKey, loadDailyResult, loadLastResult } from "./js/daily.js";
 
     const $ = (id) => document.getElementById(id);
@@ -115,7 +119,6 @@
     $("btnLdJoin").addEventListener("click", go);
     $("ldCode").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
     $("btnStart").addEventListener("click", () => track("front_door_create", { mode: "phone" }));
-    $("btnPrivacy").addEventListener("click", openBanner);
   </script>
 </body>
 </html>

@@ -143,3 +143,7 @@ if (getConsent(window.localStorage) === null) {
 } else {
   analytics.init();
 }
+
+// Every page's footer carries a Privacy button (class .js-privacy); wire them
+// all here so the consent banner reopens from any footer, on any page.
+document.querySelectorAll(".js-privacy").forEach((b) => b.addEventListener("click", openBanner));
