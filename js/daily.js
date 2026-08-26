@@ -21,10 +21,11 @@ import { gameFlags, hash, scoreRing } from "./flag.js";
 
 export const DAILY_ROUNDS = 5;
 export const DAILY_STEPS = 8;          // the reveal depth (flag.js STEPS default)
-// The everyone-plays tier. Since v3.2 `world` is easy + world tiers (expert
-// excluded, see eligiblePool in flag.js), so the daily got easier too — and
-// each day's sequence changed, since it derives from that pool.
-export const DAILY_DIFFICULTY = "world";
+// The everyone-plays setting. Since v3.3 the difficulty settings are
+// easy/default/hard/everything, and the daily runs on `default` — easy + world
+// tiers, expert excluded (see eligiblePool in flag.js). Same pool as the v3.2
+// `world` setting it replaces, so the day sequences are unchanged.
+export const DAILY_DIFFICULTY = "default";
 
 // Daily #1. The number is a day counter, not a date — "Daily #12" is what the
 // share card brags, exactly like Wordle's puzzle number. Flag Reveal's daily
