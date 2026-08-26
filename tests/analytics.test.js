@@ -140,6 +140,63 @@ test("the two flag events exist with the expected shape", () => {
   // guessMode rides both events (First correct wins vs Multiple guesses).
   assert.equal(EVENT_SCHEMA.flag_ring.guessMode, "string");
   assert.equal(EVENT_SCHEMA.flag_round.guessMode, "string");
+  // pace rides both events; tier (the answer flag's difficulty tier) is a
+  // per-ROUND dimension only — a ring has no flag of its own.
+  assert.equal(EVENT_SCHEMA.flag_ring.pace, "string");
+  assert.equal(EVENT_SCHEMA.flag_round.pace, "string");
+  assert.equal(EVENT_SCHEMA.flag_round.tier, "string");
+  assert.ok(!("tier" in EVENT_SCHEMA.flag_ring), "tier is not a flag_ring prop");
+});
+
+test("pace and tier survive the sanitizer without dragging a flag identity along", () => {
+  const ring = sanitizeProps(EVENT_SCHEMA.flag_ring, {
+    mode: "phone",
+    team: "t1",
+    atStep: 2,
+    correct: true,
+    points: 500,
+    contested: false,
+    difficulty: "world",
+    inputMode: "typeahead",
+    guessMode: "single",
+    pace: "chill",
+    roundKey: "1998273",
+    // Hostile extras: none of these are allowlisted, and all match BANNED_KEY_RE.
+    answerIso: "ro",
+    country: "Romania",
+    countryName: "Romania",
+    iso2: "ro",
+  });
+  assert.equal(ring.pace, "chill");
+  for (const leak of ["answerIso", "country", "countryName", "iso2", "tier"]) {
+    assert.ok(!(leak in ring), `${leak} must not survive on flag_ring`);
+  }
+
+  const round = sanitizeProps(EVENT_SCHEMA.flag_round, {
+    mode: "phone",
+    outcome: "busted",
+    winningStep: null,
+    ringCount: 3,
+    difficulty: "world",
+    inputMode: "typeahead",
+    guessMode: "single",
+    pace: "fast",
+    tier: "expert",
+    roundNumber: 4,
+    roundKey: "1998273",
+    // The tier must be the ONLY thing said about the answer flag.
+    answerIso: "ro",
+    country: "Romania",
+    name: "Romania",
+    iso2: "ro",
+  });
+  assert.equal(round.pace, "fast");
+  assert.equal(round.tier, "expert");
+  for (const leak of ["answerIso", "country", "name", "iso2"]) {
+    assert.ok(!(leak in round), `${leak} must not survive on flag_round`);
+  }
+  // winningStep: null is still dropped, not coerced to 0 (bust invariant).
+  assert.ok(!("winningStep" in round));
 });
 
 test("guessMode survives the sanitizer as a plain allowlisted dimension", () => {

@@ -446,6 +446,7 @@ function emitRing({ correct, contested, atStep, points }, roundNumber) {
       difficulty: cfg.difficulty,
       inputMode: cfg.inputMode,
       guessMode: guessModeLabel(cfg),
+      pace: cfg.pace,
       roundKey: roundKey(roundNumber),
     },
     { correct, contested, atStep, points }
@@ -999,6 +1000,11 @@ function emitRevealAnalytics(gs, r, oc) {
       difficulty: cfg.difficulty,
       inputMode: cfg.inputMode,
       guessMode: guessModeLabel(cfg),
+      pace: cfg.pace,
+      // The answer flag's TIER (easy | world | expert) — how hard the round
+      // was, never which flag it was. answerIso itself is a banned key and can
+      // never ride along.
+      tier: (byIso2(r.answerIso) || {}).tier,
       roundKey: rk,
       emittedRounds,
       committedOutcome,

@@ -159,6 +159,7 @@ export const EVENT_SCHEMA = Object.freeze({
     difficulty: "string",
     inputMode: "string",
     guessMode: "string", // "single" (lockout) | "multi" (multiple guesses)
+    pace: "string", // "chill" | "classic" | "fast" — the host's reveal cadence
     roundKey: "string", // truncated hash(gameSeed, number) — not identifying
   },
 
@@ -173,6 +174,10 @@ export const EVENT_SCHEMA = Object.freeze({
     difficulty: "string",
     inputMode: "string",
     guessMode: "string", // "single" (lockout) | "multi" (multiple guesses)
+    pace: "string", // "chill" | "classic" | "fast" — the host's reveal cadence
+    tier: "string", // the ANSWER FLAG's tier: "easy" | "world" | "expert".
+    // An enum-ish aggregate, not an identifier — it says how hard the flag was,
+    // never which flag it was (no iso, no country name; both are banned keys).
     roundNumber: "int",
     roundKey: "string",
   },

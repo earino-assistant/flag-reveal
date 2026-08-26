@@ -16,6 +16,7 @@ const RING_STATE = {
   difficulty: "world",
   inputMode: "choice",
   guessMode: "single",
+  pace: "classic",
   roundKey: "RK1",
 };
 
@@ -41,6 +42,7 @@ test("ringEmission: first ring emits with the full flag_ring props", () => {
     difficulty: "world",
     inputMode: "choice",
     guessMode: "single",
+    pace: "classic",
     roundKey: "RK1",
   });
 });
@@ -103,6 +105,8 @@ const REVEAL_STATE = {
   difficulty: "expert",
   inputMode: "type",
   guessMode: "multi",
+  pace: "fast",
+  tier: "expert",
   roundKey: "RK7",
   emittedRounds: new Set(),
   committedOutcome: null,
@@ -146,9 +150,31 @@ test("revealEmission: flag_round emits only when MY transaction committed", () =
     difficulty: "expert",
     inputMode: "type",
     guessMode: "multi",
+    pace: "fast",
+    tier: "expert",
     roundNumber: 7,
     roundKey: "RK7",
   });
+});
+
+test("the round-shape dimensions (pace, tier) ride the emitted props", () => {
+  const ring = ringEmission(RING_STATE, {
+    correct: true,
+    contested: false,
+    atStep: 4,
+    points: 625,
+  });
+  assert.equal(ring.props.pace, "classic"); // flag_ring carries pace only
+  assert.ok(!("tier" in ring.props), "tier is a flag_round dimension, not a ring one");
+
+  const committed = { ...REVEAL_STATE, committedOutcome: { number: 7, kind: "win" } };
+  const { round } = revealEmission(committed, {
+    roundNumber: 7,
+    outcome: { kind: "win", team: "t1", atStep: 3 },
+    results: { t1: { correct: true, points: 750 } },
+  });
+  assert.equal(round.props.pace, "fast");
+  assert.equal(round.props.tier, "expert"); // the ANSWER FLAG's tier
 });
 
 test("revealEmission: a committed win for a DIFFERENT round does not emit", () => {
