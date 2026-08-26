@@ -702,11 +702,11 @@ function renderLobby(gs) {
 
   // QR joins (GeoParty parity). A phone scanning the join QR lands on
   // player.html?room=CODE (auto-join); scanning the TV QR lands a spare phone
-  // on screen.html?room=CODE (the passive TV), tagged via=qr for attribution.
+  // on tv.html?room=CODE (redirects to the passive TV), tagged via=qr for attribution.
   // Drawn once per code — drawQr paints a fixed-resolution canvas; CSS scales
   // the display size down to the quiet lobby affordance.
   drawQrOnce("lobbyJoinQr", "join", pageUrl("player.html?room=" + code));
-  drawQrOnce("lobbyTvQr", "tv", pageUrl("screen.html?room=" + code + "&via=qr"));
+  drawQrOnce("lobbyTvQr", "tv", pageUrl("tv.html?room=" + code + "&via=qr"));
 
   // The mode note now summarises how the game is set up (a Configure detail),
   // not where the flag renders — the callout above owns the TV story.
@@ -1173,13 +1173,13 @@ async function sharePartyResult() {
   });
 }
 
-// Copy the TV join URL (screen.html?room=CODE) so the host can send it to the
+// Copy the TV join URL (tv.html?room=CODE) so the host can send it to the
 // TV — a real TV can't scan the lobby QR. The code rides in the URL that only
 // ever reaches the clipboard, never a rendered surface, so nothing here needs
 // masking. No analytics: this is a lobby setup helper, not a growth-loop share
 // (keeping share_party's counts to actual result shares).
 async function shareTvLink() {
-  const url = pageUrl("screen.html?room=" + code);
+  const url = pageUrl("tv.html?room=" + code);
   try {
     await navigator.clipboard.writeText(url);
     toast("TV link copied 📋");

@@ -1,6 +1,6 @@
 // tests/qr.test.js — the embedded QR encoder (js/qr.js, copied verbatim from
 // GeoParty's kernel). We test only the pure qrEncode; drawQr needs a canvas.
-// A join URL (player.html?room=CODE / screen.html?room=CODE&via=qr) must fit
+// A join URL (player.html?room=CODE / tv.html?room=CODE&via=qr) must fit
 // inside the supported versions (1–5, EC level L, ~106 bytes).
 
 import { test } from "node:test";
@@ -20,7 +20,7 @@ test("encodes a player join URL to a square 0/1 matrix", () => {
 });
 
 test("encodes the TV join URL with a via=qr tag", () => {
-  const m = qrEncode("https://earino-assistant.github.io/flag-reveal/screen.html?room=ABCDEF&via=qr");
+  const m = qrEncode("https://earino-assistant.github.io/flag-reveal/tv.html?room=ABCDEF&via=qr");
   assert.ok(Array.isArray(m));
 });
 
