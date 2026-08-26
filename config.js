@@ -27,7 +27,7 @@ export const GAME_DEFAULTS = {
   target: 0,
   gridN: 4,
   revealAspect: "3:2",
-  difficulty: "world",
+  difficulty: "default",
   inputMode: "typeahead",
   choiceUnlockStep: 5,
   autoAdvanceMs: 15000,
