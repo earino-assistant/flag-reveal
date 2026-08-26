@@ -40,7 +40,7 @@ export const GAME_DEFAULTS = {
 // whenever data/flags.json or the derivation algorithm changes in a way that
 // would change any derived sequence.
 export const DATASET_VERSION = "flags-1";
-export const RULES_VERSION = "v3.1";
+export const RULES_VERSION = "v3.2";
 export const BUNDLED_VERSIONS = Object.freeze({
   datasetVersion: DATASET_VERSION,
   rulesVersion: RULES_VERSION

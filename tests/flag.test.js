@@ -54,8 +54,12 @@ const POOL = [
   { iso2: "XX", name: "Testland", aliases: [], tier: "world", eligible: false },
 ];
 
-// eligible "world" pool = every eligible entry (any tier) → 9 (XX excluded).
-const WORLD_SIZE = 9;
+// eligible "world" pool = easy + world tiers only → 7 (expert TD/RO and the
+// ineligible XX excluded). Expert is the opt-in hard lane, not part of world.
+const WORLD_SIZE = 7;
+
+// The expert-tier isos in POOL — must never appear in a world/unknown pool.
+const EXPERT_ISOS = ["TD", "RO"];
 
 // ---------------------------------------------------------------------------
 // scoreRing
@@ -97,6 +101,16 @@ test("gameFlags: repeat-free within a game", () => {
 test("gameFlags: excludes ineligible entries", () => {
   const seq = gameFlags("seed-1", 50, "world", POOL);
   assert.ok(!seq.includes("XX"));
+});
+
+test("gameFlags: a world game never deals an expert-tier flag (any seed)", () => {
+  for (const seed of ["a", "b", "c", "d", "e", "seed-1", "seed-2"]) {
+    const seq = gameFlags(seed, WORLD_SIZE, "world", POOL);
+    assert.equal(seq.length, WORLD_SIZE);
+    for (const iso of seq) {
+      assert.ok(!EXPERT_ISOS.includes(iso), `world seq for ${seed} leaked expert ${iso}`);
+    }
+  }
 });
 
 test("gameFlags: easy-first guard — easy game opens on an easy-tier flag", () => {
@@ -799,13 +813,21 @@ test("versionCompatible: both dataset and rules versions must match", () => {
 // eligiblePool (now exported) + effectiveRoundCount — the round-budget clamp
 // that used to be copy-pasted across flag.js/flag-ui.js/screen-flag.js.
 // ---------------------------------------------------------------------------
-test("eligiblePool: world = every eligible entry (ineligible dropped)", () => {
+test("eligiblePool: world = easy + world tiers, expert excluded", () => {
   const world = eligiblePool(POOL, "world");
   assert.equal(world.length, WORLD_SIZE);
   assert.ok(!world.some((e) => e.iso2 === "XX")); // explicit eligible:false excluded
+  for (const iso of EXPERT_ISOS) {
+    assert.ok(!world.some((e) => e.iso2 === iso), `expert ${iso} must not be in world`);
+  }
 });
 
-test("eligiblePool: easy/expert filter to the tier; unknown → mixed pool", () => {
+test("eligiblePool: world holds exactly the easy + world isos", () => {
+  const isos = eligiblePool(POOL, "world").map((e) => e.iso2).sort();
+  assert.deepEqual(isos, ["BR", "CD", "CG", "CI", "DE", "FR", "US"]);
+});
+
+test("eligiblePool: easy/expert filter to the tier; unknown → world pool", () => {
   assert.deepEqual(
     eligiblePool(POOL, "easy").map((e) => e.iso2).sort(),
     ["BR", "US"]
@@ -814,8 +836,13 @@ test("eligiblePool: easy/expert filter to the tier; unknown → mixed pool", () 
     eligiblePool(POOL, "expert").map((e) => e.iso2).sort(),
     ["RO", "TD"]
   );
-  // Unknown difficulty falls back to the full mixed pool (documented behavior).
-  assert.equal(eligiblePool(POOL, "nonsense").length, WORLD_SIZE);
+  // Unknown difficulty falls back to the world pool — which is easy + world,
+  // so it excludes expert too (documented behavior).
+  const unknown = eligiblePool(POOL, "nonsense");
+  assert.equal(unknown.length, WORLD_SIZE);
+  for (const iso of EXPERT_ISOS) {
+    assert.ok(!unknown.some((e) => e.iso2 === iso));
+  }
 });
 
 test("eligiblePool: a missing `eligible` flag counts as eligible", () => {
@@ -824,8 +851,8 @@ test("eligiblePool: a missing `eligible` flag counts as eligible", () => {
 });
 
 test("effectiveRoundCount: clamps roundCount to the eligible pool size", () => {
-  // 9 eligible world flags; asking for 20 clamps to 9.
-  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 20 }, POOL), 9);
+  // 7 eligible world flags (expert excluded); asking for 20 clamps to 7.
+  assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 20 }, POOL), 7);
   // Asking for fewer than the pool is honored.
   assert.equal(effectiveRoundCount({ difficulty: "world", roundCount: 5 }, POOL), 5);
   // Easy tier has 2 flags; a bigger request clamps to 2.

@@ -85,16 +85,16 @@ function shuffle(arr, rng) {
 // Pool selection (spec §8, §8.4).
 // ---------------------------------------------------------------------------
 
-// The eligible pool for a difficulty tier. `world` is the default mixed pool
-// (every eligible entry, any tier); `easy`/`expert` filter to that tier.
+// The eligible pool for a difficulty tier. `world` is the default party pool
+// (easy + world tiers — NOT the full mix); `easy`/`expert` filter to that tier.
 // Entries are `eligible: false` unless explicitly true-or-absent — we treat a
 // missing `eligible` as eligible so a lean fixture pool "just works", and only
 // an explicit `eligible: false` excludes.
 //
 // NOTE (ambiguity resolved, see final report): the spec describes difficulty as
 // "selecting the flag pool by recognizability" without a formal tier→difficulty
-// table. `world = all eligible`, `easy = tier:"easy"`, `expert = tier:"expert"`
-// is the sensible reading and keeps `gameFlags` a total function.
+// table. `easy = tier:"easy"`, `expert = tier:"expert"` is the sensible reading
+// and keeps `gameFlags` a total function.
 // Exported so the phone and the TV derive the tier's size from the SAME filter
 // flag.js uses internally, instead of each re-deriving it (the old private
 // `poolSize` copies in flag-ui.js / screen-flag.js).
@@ -102,7 +102,10 @@ export function eligiblePool(pool, difficulty) {
   const eligible = (pool || []).filter((e) => e && e.eligible !== false);
   if (difficulty === "easy") return eligible.filter((e) => e.tier === "easy");
   if (difficulty === "expert") return eligible.filter((e) => e.tier === "expert");
-  return eligible; // "world" and any unknown difficulty → the mixed pool
+  // world (default) = easy + medium/world tiers only — EXPERT EXCLUDED.
+  // The full mixed pool (incl. expert) is no longer the default: expert is
+  // the optional hard lane.
+  return eligible.filter((e) => e.tier === "easy" || e.tier === "world");
 }
 
 // The pool-clamped round budget: min(requested, |eligible pool|). `requested`
