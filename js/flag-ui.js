@@ -711,7 +711,7 @@ function renderLobby(gs) {
 
   // The mode note now summarises how the game is set up (a Configure detail),
   // not where the flag renders — the callout above owns the TV story.
-  const diffLabel = { easy: "Easy", world: "World", expert: "Expert" }[cfg.difficulty] || cfg.difficulty;
+  const diffLabel = { easy: "Easy", default: "Default", hard: "Hard", everything: "Everything" }[cfg.difficulty] || cfg.difficulty;
   const inputLabel = cfg.inputMode === "choice" ? "tap to answer" : "type to answer";
   const paceLabel = paceOf(cfg.pace).label;
   const pool = eligiblePool(FLAGS, cfg.difficulty).length;
