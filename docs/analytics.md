@@ -140,8 +140,10 @@ target **PostHog project 256584** (Flag Reveal, EU instance
 `https://eu.i.posthog.com`) — NOT GeoParty's 252836.
 
 - **`tools/posthog_metrics.mjs`** — pulls the KPIs below over fixed 14d/30d
-  windows into a single JSON bag. The `POSTHOG_PERSONAL_API_KEY` is read from
-  the environment only (never committed, never printed). Windows are anchored
+  windows into a single JSON bag. The `POSTHOG_FLAGREVEAL_API_KEY` (Flag
+  Reveal's own personal API key, scoped to project 256584 — NOT GeoParty's
+  `POSTHOG_PERSONAL_API_KEY`, which is scoped to 252836 and 403s here) is read
+  from the environment only (never committed, never printed). Windows are anchored
   to `--asof` (default today UTC) as literal `toDate('…')` bounds, never
   `now()`, so a re-run reproduces the same numbers. Per-query 30s timeout + one
   5xx/timeout retry. **Exit contract:** exit 0 only if every query succeeded;
@@ -158,7 +160,7 @@ target **PostHog project 256584** (Flag Reveal, EU instance
 Usage:
 
 ```
-POSTHOG_PERSONAL_API_KEY=... node tools/posthog_metrics.mjs \
+POSTHOG_FLAGREVEAL_API_KEY=... node tools/posthog_metrics.mjs \
   --asof 2026-08-24 --out /opt/data/flag-reveal-metrics/flag-metrics-2026-08-24.json
 node tools/posthog_report.mjs flag-metrics-2026-08-24.json flag-metrics-last-week.json
 ```

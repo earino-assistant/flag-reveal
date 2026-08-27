@@ -16,7 +16,7 @@
 // failed Monday therefore reproduces Monday's numbers exactly.
 //
 // Usage:
-//   POSTHOG_PERSONAL_API_KEY=... node tools/posthog_metrics.mjs [--asof YYYY-MM-DD] [--out FILE]
+//   POSTHOG_FLAGREVEAL_API_KEY=... node tools/posthog_metrics.mjs [--asof YYYY-MM-DD] [--out FILE]
 //   node tools/posthog_metrics.mjs --asof 2026-08-24 --out /opt/data/flag-reveal-metrics/flag-metrics-2026-08-24.json
 //
 // The API key is read from the environment ONLY — never committed, never
@@ -51,9 +51,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // use. One retry on 5xx or timeout/network error, mirroring the AbortController
 // pattern; 4xx (a real query/auth fault) is not retried.
 async function query(sql) {
-  const key = process.env.POSTHOG_PERSONAL_API_KEY;
+  const key = process.env.POSTHOG_FLAGREVEAL_API_KEY;
   if (!key) {
-    console.error("posthog_metrics: POSTHOG_PERSONAL_API_KEY is not set");
+    console.error("posthog_metrics: POSTHOG_FLAGREVEAL_API_KEY is not set (Flag Reveal project 256584)");
     return { error: "no key" };
   }
   const url = `${HOST}/api/projects/${PROJECT}/query/`;
