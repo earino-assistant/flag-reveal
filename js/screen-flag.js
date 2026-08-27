@@ -28,7 +28,8 @@ import {
   lockedOutTeams,
   shouldLockOut,
 } from "./flag.js";
-import { escapeHtml } from "./ui-common.js";
+import { escapeHtml, primeAudio } from "./ui-common.js";
+import { soundState, soundDecisions, playSounds } from "./tv-sound.js";
 import { reconcileBoard } from "./board-juice.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { recordPartyRound, partyRecapCards, recapTeamResults } from "./partyrecap.js";
@@ -61,6 +62,18 @@ let celebrated = false;
 let wrongHintSeen = new Set();
 let wrongHintRound = null;
 let wrongHintTimer = null;
+// The TV sound layer (js/tv-sound.js). `lastSoundState` is the previous
+// snapshot's projected sound state; the DECISION of what to sound lives in the
+// pure soundDecisions(prev, next) — this is just the memory it diffs against.
+// Null means "no previous snapshot": the next render primes it and sounds
+// nothing, so a TV attaching mid-game never stings for a round it never watched.
+// Reset on every room change (connect) so a follow into the next game does not
+// blip once per team already in that lobby. `lastTickStep` is the belt-and-
+// braces per-step dedupe for the scrubber tick (snapshot echoes re-fire); it is
+// scoped to `lastTickRound` and reset when the round number changes.
+let lastSoundState = null;
+let lastTickStep = null;
+let lastTickRound = null;
 // Game-over round recap (Item 1). Flag Party keeps only the CURRENT round in
 // the RTDB, so — exactly like the phone (flag-ui.js) — the TV folds a
 // memory-only `partyHistory` at every reveal echo (recordPartyRound, idempotent
@@ -122,6 +135,10 @@ function connect(c, joinVia) {
   // the next game-over never shows the previous room's rounds.
   partyHistory = [];
   stopRecapCycle();
+  // A different room's first snapshot must prime, not sound (see lastSoundState).
+  lastSoundState = null;
+  lastTickStep = null;
+  lastTickRound = null;
 
   code = c;
   via = joinVia || "typed";
@@ -266,6 +283,12 @@ function render(room) {
   // instant we leave roundActive (reveal shows the beats; lobby/gameOver show
   // nothing). The new-ring detection lives in the roundActive branch below.
   if (phase !== "roundActive") hideWrongHint();
+
+  // The room sound layer (Change 1). Everything it needs is state the TV already
+  // renders — phase, round number, currentStep, outcome, team keys — projected by
+  // the pure soundState() and diffed by the pure soundDecisions(). No read is
+  // added, nothing is written: still a passive TV.
+  soundFor(room, cfg.steps);
 
   renderBoard($("tvBoard"), teams, phase === "gameOver" ? gameWinner(teams, cfg) : null);
   // The join QR belongs to the lobby only — hidden the moment play starts.
@@ -606,6 +629,31 @@ function hideWrongHint() {
   if (el) el.classList.add("hidden");
 }
 
+// Diff this snapshot against the last one and sound whatever changed. The whole
+// decision is the pure soundDecisions(); this is the memory + the per-step tick
+// dedupe + the (best-effort) playback. Never throws into the render path.
+function soundFor(room, steps) {
+  const next = soundState(room, steps);
+  const decisions = soundDecisions(lastSoundState, next);
+  lastSoundState = next;
+  // A new round resets the tick dedupe (step numbers restart at 1).
+  if (lastTickRound !== next.roundNumber) {
+    lastTickRound = next.roundNumber;
+    lastTickStep = null;
+  }
+  const play = [];
+  for (const d of decisions) {
+    // Belt and braces over the pure diff: a snapshot echo that somehow re-offers
+    // a step already ticked this round is dropped here too.
+    if (d.kind === "tick") {
+      if (lastTickStep != null && d.step <= lastTickStep) continue;
+      lastTickStep = d.step;
+    }
+    play.push(d);
+  }
+  playSounds(play);
+}
+
 // Standings, reconciled row-by-row (Change 2) rather than rebuilt: one `<li>`
 // per team slot, so totals count up and rank swaps FLIP instead of teleporting.
 // `#tvBoard` carries data-ph-mask, so the team name inside `.team-name` stays
@@ -664,6 +712,22 @@ function renderBeats(box, results, teams, steps, lockOut) {
 // Boot
 // ---------------------------------------------------------------------------
 function wire() {
+  // Unlock WebAudio inside the first real gesture (autoplay policy) so the room
+  // sound layer can actually sound — every trigger fires in the snapshot-echo
+  // render path, never in a gesture, and a context created outside one stays
+  // "suspended" forever. Same pattern as the phone and the Daily.
+  //
+  // HONEST CAVEAT: a TV is often never touched — a `?room=CODE` boot from a
+  // scanned QR or a shared link reaches the display screen with no gesture at
+  // all. Then the context stays suspended and every sound is a silent no-op
+  // (tv-sound.js bails rather than scheduling into it). That is the accepted
+  // degradation: the sound layer is decorative, the text is the source of truth.
+  // Typing the code on the TV (the common setup) is a keydown, so that path
+  // unlocks.
+  const prime = () => primeAudio();
+  window.addEventListener("pointerdown", prime, { once: true });
+  window.addEventListener("keydown", prime, { once: true });
+
   // The reconnecting pill: registered ONCE at boot (F5), not per connect() —
   // registering it on every follow/reconnect stacked a fresh listener each time.
   onConnectionChange((up) => $("connPill").classList.toggle("hidden", up));

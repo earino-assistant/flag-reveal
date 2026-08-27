@@ -75,15 +75,18 @@ const reduceMotion =
 let audioCtx = null;
 
 // The ONE source of truth for the reduced-motion gate. Everything that moves or
-// sounds (pop/vibrate here, js/board-juice.js) reads it through this helper
-// rather than re-running matchMedia, so a single query decides.
+// sounds (pop/vibrate here, js/tv-sound.js, js/board-juice.js) reads it through
+// this helper rather than re-running matchMedia, so a single query decides.
 // Evaluated once at module load, matching the existing behaviour.
 export function prefersReducedMotion() {
   return reduceMotion;
 }
 
 // Get (creating once) the shared AudioContext, or null if WebAudio is absent.
-function getCtx() {
+// Exported (additively) so the TV sound layer (js/tv-sound.js) can schedule into
+// the SAME context this module primes — one AudioContext per page, one
+// primeAudio(), no duplicated context management.
+export function getCtx() {
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
   } catch {
