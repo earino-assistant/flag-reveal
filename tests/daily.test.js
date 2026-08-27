@@ -24,6 +24,7 @@ import {
   DAILY_ROUNDS,
   DAILY_STEPS,
   DAILY_EPOCH_KEY,
+  DAILY_EASY_ROUNDS,
 } from "../js/daily.js";
 import { scoreRing } from "../js/flag.js";
 
@@ -38,6 +39,9 @@ const POOL = [
   { iso2: "ro", name: "Romania", tier: "expert", eligible: true },
   { iso2: "td", name: "Chad", tier: "expert", eligible: true },
 ];
+
+// iso2 → tier, for asserting the curated easy-first allocation.
+const TIER_OF = Object.fromEntries(POOL.map((p) => [p.iso2, p.tier]));
 
 // A localStorage-shaped stub.
 function fakeStorage(initial) {
@@ -92,6 +96,82 @@ test("dailyFlags entries are all from the eligible pool, no repeats", () => {
   const isos = new Set(POOL.map((p) => p.iso2));
   assert.equal(new Set(seq).size, seq.length, "no repeats");
   for (const iso of seq) assert.ok(isos.has(iso));
+});
+
+test("dailyFlags is curated easy-first: 2 easy openers, then world", () => {
+  for (const key of ["20260823", "20260824", "20260901", "20261231"]) {
+    const seq = dailyFlags(key, POOL);
+    const tiers = seq.map((iso) => TIER_OF[iso]);
+    assert.equal(seq.length, DAILY_ROUNDS, `${key}: full day`);
+    assert.deepEqual(
+      tiers.slice(0, DAILY_EASY_ROUNDS),
+      Array(DAILY_EASY_ROUNDS).fill("easy"),
+      `${key}: rounds 1–${DAILY_EASY_ROUNDS} are easy tier`
+    );
+    assert.deepEqual(
+      tiers.slice(DAILY_EASY_ROUNDS),
+      Array(DAILY_ROUNDS - DAILY_EASY_ROUNDS).fill("world"),
+      `${key}: the remaining rounds are world tier`
+    );
+  }
+});
+
+test("dailyFlags never serves an expert flag", () => {
+  for (const key of ["20260823", "20260824", "20260825", "20260826"]) {
+    const seq = dailyFlags(key, POOL);
+    for (const iso of seq) assert.notEqual(TIER_OF[iso], "expert", `${key}/${iso}`);
+  }
+});
+
+// The shipped pool has 40 easy flags — far more than the day needs. The tier
+// quota must cap the easy draw at DAILY_EASY_ROUNDS, not fill the whole day
+// from a large easy tier ("he explicitly does NOT want it too easy").
+test("dailyFlags caps the easy draw when the easy tier is large", () => {
+  const bigPool = [
+    ...Array.from({ length: 20 }, (_, i) => ({
+      iso2: `e${String(i).padStart(2, "0")}`,
+      tier: "easy",
+      eligible: true,
+    })),
+    ...Array.from({ length: 30 }, (_, i) => ({
+      iso2: `w${String(i).padStart(2, "0")}`,
+      tier: "world",
+      eligible: true,
+    })),
+  ];
+  const tierOf = Object.fromEntries(bigPool.map((p) => [p.iso2, p.tier]));
+  const seq = dailyFlags("20260823", bigPool);
+  assert.equal(seq.length, DAILY_ROUNDS);
+  assert.equal(
+    seq.filter((iso) => tierOf[iso] === "easy").length,
+    DAILY_EASY_ROUNDS,
+    "exactly DAILY_EASY_ROUNDS easy flags"
+  );
+  assert.equal(
+    seq.filter((iso) => tierOf[iso] === "world").length,
+    DAILY_ROUNDS - DAILY_EASY_ROUNDS,
+    "the rest are world"
+  );
+  assert.equal(new Set(seq).size, seq.length, "no repeats");
+});
+
+test("dailyFlags ignores eligible:false entries", () => {
+  const pool = POOL.map((p) =>
+    p.iso2 === "fr" ? { ...p, eligible: false } : p
+  );
+  for (const key of ["20260823", "20260824", "20260825"]) {
+    assert.ok(!dailyFlags(key, pool).includes("fr"), `${key}: fr excluded`);
+  }
+});
+
+// Defensive only: the shipped pool always fills both quotas. A thin easy tier
+// borrows from world rather than handing daily-ui a short day.
+test("dailyFlags still returns a full day when a tier is too thin", () => {
+  const thin = POOL.filter((p) => p.tier === "world" || p.iso2 === "br");
+  const seq = dailyFlags("20260823", thin);
+  assert.equal(seq.length, DAILY_ROUNDS);
+  assert.equal(seq[0], "br", "the one easy flag still opens");
+  assert.equal(new Set(seq).size, seq.length, "no repeats");
 });
 
 test("dailyFlagSeed is stable per (day, round)", () => {

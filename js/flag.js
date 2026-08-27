@@ -45,8 +45,10 @@ function xmur3(str) {
   return h >>> 0;
 }
 
-// mulberry32: number seed → () => float in [0, 1).
-function mulberry32(a) {
+// mulberry32: number seed → () => float in [0, 1). Exported so seeded callers
+// outside flag.js (daily.js's curated tier allocation) draw from the SAME PRNG
+// the party game uses instead of reimplementing it and drifting.
+export function mulberry32(a) {
   let s = a >>> 0;
   return function () {
     s = (s + 0x6d2b79f5) | 0;
@@ -69,8 +71,9 @@ export function hash(gameSeed, number) {
 }
 
 // Fisher–Yates shuffle without replacement, driven by an injected rng. Pure:
-// returns a new array, never mutates its input.
-function shuffle(arr, rng) {
+// returns a new array, never mutates its input. Exported alongside mulberry32
+// for the same single-source-of-truth reason.
+export function shuffle(arr, rng) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));

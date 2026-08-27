@@ -3,15 +3,16 @@
 // calendar date (Wordle's rule — your "today" is your local midnight, not
 // UTC's), so everyone playing on a given day walks the same shuffled flag
 // order and their scores are comparable and shareable. No DOM, no network in
-// here — the browser glue lives in daily-ui.js, and the deterministic flag
-// sequence + reveal plan + scoring all come from the already-tested pure core
-// in flag.js (gameFlags / revealPlan / scoreRing).
+// here — the browser glue lives in daily-ui.js, and the deterministic PRNG,
+// reveal plan and scoring all come from the already-tested pure core in
+// flag.js (mulberry32 / shuffle / revealPlan / scoreRing). The day's flag
+// sequence is the Daily's own curated easy-first allocation (see dailyFlags).
 //
 // This mirrors GeoParty's daily.js, adapted from "guess a place on a map" to
 // "name the country from a half-revealed flag": a round's quality is the STEP
 // at which the player rang it (earlier = worth more), not a distance.
 
-import { gameFlags, hash, scoreRing } from "./flag.js";
+import { hash, hashSeed, mulberry32, scoreRing, shuffle } from "./flag.js";
 
 /* ================================================================
  * The fixed rules. Comparable scores need identical rules for every
@@ -21,11 +22,16 @@ import { gameFlags, hash, scoreRing } from "./flag.js";
 
 export const DAILY_ROUNDS = 5;
 export const DAILY_STEPS = 8;          // the reveal depth (flag.js STEPS default)
-// The everyone-plays setting. Since v3.3 the difficulty settings are
-// easy/default/hard/everything, and the daily runs on `default` — easy + world
-// tiers, expert excluded (see eligiblePool in flag.js). Same pool as the v3.2
-// `world` setting it replaces, so the day sequences are unchanged.
-export const DAILY_DIFFICULTY = "default";
+
+// The Daily does NOT run on a party difficulty setting. It is a curated
+// easy-first sequence — "feel smart, then stretch": the first
+// DAILY_EASY_ROUNDS flags are drawn from the `easy` TIER, the rest from the
+// `world` TIER (2 easy + 3 world at DAILY_ROUNDS = 5). Expert is never in the
+// Daily. Drawing per tier is why this can't go through eligiblePool: the
+// difficulty SETTINGS are easy/default/hard/everything, so `world` there would
+// fall back to `default` (easy + world) and not isolate the tier at all.
+export const DAILY_EASY_ROUNDS = 2;           // rounds 1–2 are easy-tier
+export const DAILY_TIERS = ["easy", "world"]; // rounds 3–5 are world-tier
 
 // Daily #1. The number is a day counter, not a date — "Daily #12" is what the
 // share card brags, exactly like Wordle's puzzle number. Flag Reveal's daily
@@ -79,9 +85,31 @@ export function daysBetweenKeys(a, b) {
  * seeded off (dailySeed, roundNumber) exactly like the party game.
  * ================================================================ */
 
-// The DAILY_ROUNDS iso2 codes for a day, in play order (pure gameFlags).
+// The DAILY_ROUNDS iso2 codes for a day, in play order: a per-tier allocation
+// rather than one flat shuffle of the whole easy+world pool. Each tier is
+// ISO-sorted before its seeded shuffle (canonical order, independent of
+// flags.json's own ordering — §8.1), and both tiers draw from ONE rng stream,
+// so a day is fully determined by its date seed. Repeat-free by construction:
+// each tier is shuffled without replacement and the tiers are disjoint.
 export function dailyFlags(key, pool) {
-  return gameFlags(dailySeed(key), DAILY_ROUNDS, DAILY_DIFFICULTY, pool || []);
+  const rng = mulberry32(hashSeed(dailySeed(key)));
+  const eligible = (pool || []).filter((e) => e && e.eligible !== false);
+  const quota = [DAILY_EASY_ROUNDS, DAILY_ROUNDS - DAILY_EASY_ROUNDS];
+  const seq = [];
+  const spare = [];
+  DAILY_TIERS.forEach((tier, i) => {
+    const tierPool = eligible
+      .filter((e) => e.tier === tier)
+      .slice()
+      .sort((a, b) => (a.iso2 < b.iso2 ? -1 : a.iso2 > b.iso2 ? 1 : 0));
+    const drawn = shuffle(tierPool, rng).map((e) => e.iso2);
+    seq.push(...drawn.slice(0, quota[i]));
+    spare.push(...drawn.slice(quota[i]));
+  });
+  // A tier too small to fill its quota (never true for the shipped pool: 40
+  // easy, 98 world) borrows the other Daily tier's leftovers rather than
+  // handing daily-ui a short day. Clamped to DAILY_ROUNDS either way.
+  return seq.concat(spare).slice(0, DAILY_ROUNDS);
 }
 
 // Round `n` (1-based) reveal seed for a day — the same (seed, number) folding
