@@ -49,6 +49,7 @@ import {
 import { ringEmission, revealEmission } from "./flag-analytics.js";
 import { recordPartyRound, partyRecapCards, recapTeamResult } from "./partyrecap.js";
 import { escapeHtml, toast, suggestFor, pop, primeAudio, vibrate } from "./ui-common.js";
+import { reconcileBoard } from "./board-juice.js";
 import { renderReveal } from "./reveal-render.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { isValidRoomCode, deviceId } from "./roomcode.js";
@@ -1022,23 +1023,39 @@ function emitRevealAnalytics(gs, r, oc) {
 
 // `results` (optional, reveal only) is this round's per-team scoring; when
 // present each row gets a delta chip so the board shows what just changed.
+//
+// Reconciled row-by-row (js/board-juice.js) rather than rebuilt from innerHTML:
+// one `<li>` per team slot survives across snapshots, so a total counts up and a
+// rank swap FLIPs instead of teleporting. Both boards that call this
+// (#revealBoard, #goBoard) carry data-ph-mask, so the team name inside
+// `.team-name` stays masked for session replay exactly as before.
 function renderBoard(ul, teams, results) {
-  ul.innerHTML = "";
   const rows = Object.keys(teams)
-    .map((tN) => ({ tN, ...teams[tN] }))
-    .sort((a, b) => (b.total || 0) - (a.total || 0));
-  for (const row of rows) {
-    const li = document.createElement("li");
-    li.className = "team-row team-" + row.tN.slice(1);
-    const you = row.tN === myTeam ? " (you)" : "";
-    let delta = "";
-    if (results) {
-      const pts = (results[row.tN] && results[row.tN].points) || 0;
-      delta = ` <span class="delta${pts ? "" : " zero"}">+${pts}</span>`;
+    .map((tN) => ({
+      key: tN,
+      name: teams[tN].name,
+      total: teams[tN].total || 0,
+      points: results ? (results[tN] && results[tN].points) || 0 : null,
+    }))
+    .sort((a, b) => b.total - a.total);
+  reconcileBoard(ul, rows, (li, row) => {
+    li.querySelector(".team-label").textContent =
+      (row.name == null ? row.key : row.name) + (row.key === myTeam ? " (you)" : "");
+    // The `+N` delta chip lives inside `.score`, beside the counting number, and
+    // exists only on the reveal board (results present).
+    const score = li.querySelector(".score");
+    let delta = score.querySelector(".delta");
+    if (row.points == null) {
+      if (delta) delta.remove();
+      return;
     }
-    li.innerHTML = `<span>${escapeHtml(row.name)}${you}</span><span class="score">${row.total || 0}${delta}</span>`;
-    ul.appendChild(li);
-  }
+    if (!delta) {
+      delta = document.createElement("span");
+      score.appendChild(delta);
+    }
+    delta.className = "delta" + (row.points ? "" : " zero");
+    delta.textContent = " +" + row.points;
+  });
 }
 
 function renderBeats(box, results, teams) {
@@ -1135,9 +1152,18 @@ function renderGameOver(gs) {
   const winner = gameWinner(teams, cfg);
   const wt = teams[winner];
   const iWon = winner === myTeam;
-  $("goWinner").textContent = wt
-    ? `${iWon ? "👑 You win" : "👑 " + wt.name + " wins"} — ${wt.total || 0} pts!`
+  // The crown is its own element so it can take the one-shot bounce at game-over
+  // (CSS `.crown`, dropped under reduced motion). #goWinner carries data-ph-mask,
+  // and the team name is escaped — same masked surface as before. render() re-runs
+  // on every snapshot echo, so the markup is written ONLY when it changes:
+  // re-inserting the crown node would restart the bounce on every echo.
+  const winnerHtml = wt
+    ? `<span class="crown">👑</span> ${
+        iWon ? "You win" : escapeHtml(wt.name) + " wins"
+      } — ${wt.total || 0} pts!`
     : "—";
+  const goWinner = $("goWinner");
+  if (goWinner.innerHTML !== winnerHtml) goWinner.innerHTML = winnerHtml;
 
   // The round recap fills the band above the winner line: each round's answer
   // (a country flag + name — shared truth) and THIS phone's own guess. It is a

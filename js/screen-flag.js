@@ -29,6 +29,7 @@ import {
   shouldLockOut,
 } from "./flag.js";
 import { escapeHtml } from "./ui-common.js";
+import { reconcileBoard } from "./board-juice.js";
 import { FLAGS, byIso2, flagAssetPath } from "./flags-data.js";
 import { recordPartyRound, partyRecapCards, recapTeamResults } from "./partyrecap.js";
 import { isValidRoomCode, screenQuery, emitsScreenJoined } from "./roomcode.js";
@@ -605,20 +606,32 @@ function hideWrongHint() {
   if (el) el.classList.add("hidden");
 }
 
+// Standings, reconciled row-by-row (Change 2) rather than rebuilt: one `<li>`
+// per team slot, so totals count up and rank swaps FLIP instead of teleporting.
+// `#tvBoard` carries data-ph-mask, so the team name inside `.team-name` stays
+// masked for session replay exactly as before. The crown gets its own element so
+// it can take the one-shot bounce at game-over (CSS `.crown`).
 function renderBoard(ul, teams, winner) {
-  ul.innerHTML = "";
   const rows = Object.keys(teams)
-    .map((tN) => ({ tN, ...teams[tN] }))
-    .sort((a, b) => (b.total || 0) - (a.total || 0));
-  for (const row of rows) {
-    const li = document.createElement("li");
-    li.className = "team-row team-" + row.tN.slice(1);
-    const crown = winner === row.tN ? " 👑" : "";
-    li.innerHTML = `<span>${escapeHtml(row.name)}${crown}</span><span class="score">${
-      row.total || 0
-    }</span>`;
-    ul.appendChild(li);
-  }
+    .map((tN) => ({ key: tN, name: teams[tN].name, total: teams[tN].total || 0 }))
+    .sort((a, b) => b.total - a.total);
+  reconcileBoard(ul, rows, (li, row) => {
+    li.querySelector(".team-label").textContent = row.name == null ? row.key : row.name;
+    // The crown element is created ONCE (when the winner appears) and left in
+    // place: render() re-runs on every heartbeat, and re-inserting the node
+    // would restart its one-shot bounce every few seconds.
+    const nameWrap = li.querySelector(".team-name");
+    const crowned = winner === row.key;
+    let crown = nameWrap.querySelector(".crown");
+    if (crowned && !crown) {
+      crown = document.createElement("span");
+      crown.className = "crown";
+      crown.textContent = "👑";
+      nameWrap.appendChild(crown);
+    } else if (!crowned && crown) {
+      crown.remove();
+    }
+  });
 }
 
 function renderBeats(box, results, teams, steps, lockOut) {

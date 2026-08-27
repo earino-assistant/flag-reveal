@@ -321,9 +321,26 @@ input:focus, select:focus {
   padding: 0.72em 0.9em;
   font-weight: 600;
 }
+/* Board rows are reconciled in place (js/board-juice.js), not rebuilt: the name
+   and the score number live in their own spans so the number can count up and
+   the crown can bounce without either clobbering the other. `.team-name` is the
+   wrapper (label + optional crown) and stays ONE flex child of .team-row, so the
+   space-between layout is unchanged. */
+.team-row .team-name { display: inline-flex; align-items: baseline; gap: 0.35em; min-width: 0; }
 .team-row .score { color: var(--accent); font-variant-numeric: tabular-nums; font-family: var(--font-display); }
+.team-row .score-num { font-variant-numeric: tabular-nums; }
 .team-row .delta { color: var(--good); font-size: 0.8em; margin-left: 0.35em; font-variant-numeric: tabular-nums; }
 .team-row .delta.zero { opacity: 0.4; }
+
+/* The crown's one-shot bounce at game-over. The element is created once (and
+   left in place across snapshot echoes) so the animation plays exactly once. */
+.crown { display: inline-block; animation: crownBounce 0.5s cubic-bezier(0.2, 0.75, 0.3, 1) 1 both; }
+@keyframes crownBounce {
+  0%   { transform: translateY(-40%) scale(0.7); }
+  55%  { transform: translateY(0) scale(1.18); }
+  78%  { transform: translateY(0) scale(0.95); }
+  100% { transform: none; }
+}
 .team-1 { border-left-color: var(--team-1); }
 .team-2 { border-left-color: var(--team-2); }
 .team-3 { border-left-color: var(--team-3); }
@@ -1191,6 +1208,10 @@ body.tv { overflow: hidden; }
   .tv-confetti { display: none; }
   /* The "guessed wrong" hint still shows/hides — just no slide-in. */
   .tv-wrong-hint { animation: none; }
+  /* The game-over crown appears at its resting size, no bounce. The scoreboard
+     count-up and rank-swap FLIP are gated in JS (js/board-juice.js reads the
+     same prefersReducedMotion() helper), so there is nothing to disable here. */
+  .crown { animation: none; }
 }
 
 /* ============================ v0.2 additions ============================ */

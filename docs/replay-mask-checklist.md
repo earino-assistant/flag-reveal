@@ -48,6 +48,14 @@ the banner copy becomes a false claim — fix the mask, not the copy.
 - `#revealBoard` — standings with team names → `data-ph-mask`.
 - `#revealBeats` — wrong-ring comedy beats carry team names → `data-ph-mask`.
 - `#goWinner`, `#goBoard` — winner + standings team names → `data-ph-mask`.
+  `#goWinner` now renders its markup via `innerHTML` (the 👑 is its own
+  `.crown` span so it can take the game-over bounce); the winning team name is
+  run through `escapeHtml` and the element keeps `data-ph-mask`, so the masked
+  surface is unchanged.
+- `#revealBoard` / `#goBoard` rows are reconciled in place by
+  `js/board-juice.js` (one `<li>` per team slot, name in
+  `.team-name > .team-label`). The name still renders inside the `data-ph-mask`ed
+  `<ul>` — no change to what is masked.
 - `#goGuestNote` — the non-winner game-over note names the winning **team** ("👑
   {winner} can start the next game…") → `data-ph-mask`.
 - `#btnShareTvLink` — the "Share the TV link" lobby button copies
@@ -86,6 +94,17 @@ the banner copy becomes a false claim — fix the mask, not the copy.
 - `#btnTvNewEntry` — the "← Enter a different code" escape hatch (Item 2). A
   static button label with no team name or room code; it leaves the room back to
   the join screen. Nothing to mask.
+- **TV sound layer + scoreboard juice (2026-08-27):** neither change adds a
+  surface. `js/tv-sound.js` renders nothing at all — it reads only the phase,
+  round number, `currentStep`, outcome kind and team **slot ids** (`t1`…) the TV
+  already renders, and emits synthesized WebAudio. No team name, no room code,
+  no country ever reaches it (and session replay does not capture audio). The
+  scoreboard reconciliation (`js/board-juice.js`) **restructures** the existing
+  `#tvBoard` rows rather than adding new ones: the team name moved from a bare
+  `<span>` into `.team-name > .team-label`, and the crown into a sibling
+  `.crown` span, both still inside the `data-ph-mask`ed `<ul>` — the mask is
+  ancestor-based, so every name stays blanked exactly as before. No new
+  team-name or room-code text surface was introduced.
 - **TV layout polish (flag-dominant round + rich reveal, 2026-08-24):** the
   `data-phase` layout state machine and the reveal "results card" render the
   same masked surfaces in new positions — `#tvBoard` (standings) and `#tvBeats`

@@ -74,6 +74,14 @@ const reduceMotion =
   matchMedia("(prefers-reduced-motion: reduce)").matches;
 let audioCtx = null;
 
+// The ONE source of truth for the reduced-motion gate. Everything that moves or
+// sounds (pop/vibrate here, js/board-juice.js) reads it through this helper
+// rather than re-running matchMedia, so a single query decides.
+// Evaluated once at module load, matching the existing behaviour.
+export function prefersReducedMotion() {
+  return reduceMotion;
+}
+
 // Get (creating once) the shared AudioContext, or null if WebAudio is absent.
 function getCtx() {
   try {
