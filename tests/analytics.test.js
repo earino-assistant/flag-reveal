@@ -329,6 +329,19 @@ test("daily_round drops a null atStep (a miss) rather than coercing to 0", () =>
   assert.equal(clean.points, 0);
 });
 
+test("daily_replay keeps only the day counter", () => {
+  assert.ok(EVENT_SCHEMA.daily_replay, "daily_replay must be in the schema");
+  assert.equal(EVENT_SCHEMA.daily_replay.dayNumber, "int");
+  const clean = sanitizeProps(EVENT_SCHEMA.daily_replay, {
+    dayNumber: 12,
+    // hostile extras a careless caller might pass:
+    answerIso: "fr",
+    country: "France",
+  });
+  assert.deepEqual(clean, { dayNumber: 12 });
+  assert.ok(!("answerIso" in clean) && !("country" in clean));
+});
+
 test("share_party carries only mode/points/method", () => {
   const clean = sanitizeProps(EVENT_SCHEMA.share_party, {
     mode: "phone",

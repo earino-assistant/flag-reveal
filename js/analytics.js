@@ -146,6 +146,10 @@ export const EVENT_SCHEMA = Object.freeze({
     tier: "string",
   },
 
+  // daily_replay — a same-day replay was attempted but swallowed by the
+  // one-run-per-day replay lock. dayNumber is the public day counter.
+  daily_replay: { dayNumber: "int" },
+
   // A finished result copied/shared. method ∈ "share" | "copy". Never the emoji
   // grid text, never a country name — only the aggregate score/streak.
   share_daily: {

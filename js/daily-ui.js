@@ -145,7 +145,10 @@ function boot() {
 // The run
 // ---------------------------------------------------------------------------
 function startDaily() {
-  if (loadDailyResult(store(), key)) return; // guard: already played
+  if (loadDailyResult(store(), key)) {
+    track("daily_replay", { dayNumber: dayNum });
+    return; // guard: already played
+  }
   run = newDailyRun(key);
   roundIdx = 0;
   track("daily_started", { dayNumber: dayNum });
