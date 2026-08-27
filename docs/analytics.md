@@ -89,6 +89,7 @@ not a date-of-play) and the score/streak.
 |---|---|---|
 | `daily_started` | `dayNumber:int` | a solo Daily run began |
 | `daily_completed` | `dayNumber:int`, `score:int`, `correct:int`, `streak:int` | run finished; `correct` = flags named of `DAILY_ROUNDS` |
+| `daily_round` | `dayNumber:int`, `roundNumber:int`, `correct:bool`, `atStep:int`, `points:int`, `tier:string` | one per Daily round at reveal; `tier` = the answer flag's `easy`\|`world`\|`expert`, never which flag; `atStep` absent on a miss |
 | `share_daily` | `dayNumber:int`, `score:int`, `rounds:int`, `streak:int`, `method:string` | Daily result copied/shared; `method` ∈ `share` \| `copy` |
 | `share_party` | `mode:string`, `points:int`, `method:string` | game-over result copied/shared |
 

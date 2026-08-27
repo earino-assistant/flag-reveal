@@ -134,6 +134,18 @@ export const EVENT_SCHEMA = Object.freeze({
     streak: "int",
   },
 
+  // daily_round — one per Daily round at reveal, aggregate-only. tier is the
+  // ANSWER FLAG's tier (easy|world|expert) — how hard it was, never which flag
+  // (no iso, no country name). roundNumber is 1-based.
+  daily_round: {
+    dayNumber: "int",
+    roundNumber: "int",
+    correct: "bool",
+    atStep: "int",
+    points: "int",
+    tier: "string",
+  },
+
   // A finished result copied/shared. method ∈ "share" | "copy". Never the emoji
   // grid text, never a country name — only the aggregate score/streak.
   share_daily: {

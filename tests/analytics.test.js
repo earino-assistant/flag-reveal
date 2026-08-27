@@ -279,6 +279,56 @@ test("share_daily keeps aggregates, never the emoji grid / a country name", () =
   assert.ok(!("grid" in clean) && !("countryName" in clean) && !("answerIso" in clean));
 });
 
+test("daily_round exists with the expected aggregate types", () => {
+  assert.ok(EVENT_SCHEMA.daily_round, "daily_round must be in the schema");
+  assert.equal(EVENT_SCHEMA.daily_round.dayNumber, "int");
+  assert.equal(EVENT_SCHEMA.daily_round.roundNumber, "int");
+  assert.equal(EVENT_SCHEMA.daily_round.correct, "bool");
+  assert.equal(EVENT_SCHEMA.daily_round.atStep, "int");
+  assert.equal(EVENT_SCHEMA.daily_round.points, "int");
+  assert.equal(EVENT_SCHEMA.daily_round.tier, "string");
+});
+
+test("daily_round keeps aggregates + tier, strips any flag identity", () => {
+  const clean = sanitizeProps(EVENT_SCHEMA.daily_round, {
+    dayNumber: 12,
+    roundNumber: 3,
+    correct: true,
+    atStep: 4,
+    points: 800,
+    tier: "expert",
+    // hostile extras: nothing that says WHICH flag may survive.
+    answerIso: "fr",
+    country: "France",
+    name: "France",
+    iso2: "FR",
+  });
+  assert.deepEqual(clean, {
+    dayNumber: 12,
+    roundNumber: 3,
+    correct: true,
+    atStep: 4,
+    points: 800,
+    tier: "expert",
+  });
+  // tier is the ONLY thing said about the answer flag.
+  assert.ok(!("answerIso" in clean) && !("country" in clean) && !("name" in clean) && !("iso2" in clean));
+});
+
+test("daily_round drops a null atStep (a miss) rather than coercing to 0", () => {
+  const clean = sanitizeProps(EVENT_SCHEMA.daily_round, {
+    dayNumber: 12,
+    roundNumber: 2,
+    correct: false,
+    atStep: null, // a miss has no step
+    points: 0,
+    tier: "world",
+  });
+  assert.ok(!("atStep" in clean), "null atStep must be dropped, not coerced");
+  assert.equal(clean.correct, false);
+  assert.equal(clean.points, 0);
+});
+
 test("share_party carries only mode/points/method", () => {
   const clean = sanitizeProps(EVENT_SCHEMA.share_party, {
     mode: "phone",

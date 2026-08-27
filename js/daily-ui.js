@@ -226,6 +226,14 @@ function missOut() {
 
 function showReveal() {
   const entry = run.rounds[roundIdx];
+  track("daily_round", {
+    dayNumber: dayNum,
+    roundNumber: roundIdx + 1,
+    correct: entry.correct,
+    atStep: entry.atStep,
+    points: entry.points,
+    tier: (byIso2(answerIso()) || {}).tier,
+  });
   const ans = byIso2(answerIso());
   $("dRevealHead").textContent = `Flag ${roundIdx + 1} / ${DAILY_ROUNDS}`;
   paintReveal($("dRevealFlag"), true);
