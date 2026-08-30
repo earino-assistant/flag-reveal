@@ -1058,18 +1058,51 @@ body.tv { overflow: hidden; }
   height: 25vh;
 }
 /* Game-over: the maps rotate in the recap band (where the ghost flag box used to
-   sit) in sync with the recap card. 20vh, not reveal's 25vh — at gameOver the
-   standings board + recap card share this single centered column, so the maps
-   trade a little height to keep the common case within 100vh. Budget (720p):
-   usable = 100vh − #s-display padding (1.6rem×2 ≈ 51) = 669. Worst-case 2-team
-   column: head ~52 + maps 20vh=144 + cap ~25 + recap card (bottom margin trimmed
-   to 0) ~150 + winner ~32 + button ~45 + side(Standings 2 teams ~88 + note ~26)
-   + grid gaps ~48 ≈ 610 ≤ 669. Two recoveries got us here: #tvReveal is now
-   display:none at gameOver (−~26px ghost holder margin) and .tv-recap dropped its
-   1rem bottom margin (−16px). 4+ teams push past 669 and the pre-existing
-   overflow-y:auto scrolls, exactly as gameOver did before. */
+   sit) in sync with the recap card. 16vh, not reveal's 25vh — at gameOver the
+   standings board + recap card + winner + button all stack in this single
+   centered column, and a screenshot-verified overflow (STANDINGS overlaying the
+   "👑 … wins" line at 1512×765) proved the earlier 20vh budget under-counted the
+   standings rows. So gameOver cuts real height across the whole column, biggest
+   lever first (this map). Honest worst-case 2-team column, values grepped from
+   this file, display-font single lines at line-height 1.25 (winner 1.6rem×1.25 =
+   32, the convention already baked into these budgets), body copy at 1.5:
+     720p (1vh=7.2, usable 100vh − padding 1.6rem×2 = 669):
+       head 65 (round 3vw@1280=38.4×1.25 + pb 1rem + border)
+       + maps 159 (mt 1.1rem=17.6 + 16vh=115.2 + cap 26.4)
+       + recap 125 (mt 0.4rem + card: pad 0.7rem×2 + body 96: label+answer 1.55rem
+         ×1.15 + mb 0.25rem + 2 teams 1.1rem×1.25 + gap 0.15rem)
+       + winner 41 (1.6rem×1.25 + mt 0.55rem)
+       + button 51 (pad 0.6rem×2 + 1rem×1.25 + border + mt 0.6rem)
+       + side 212 (title 20 + 2 team rows 1.3rem, pad 0.8em×2 + border = 61.3 ea +
+         inner gap 0.45rem + note 24, margins collapsed)
+       + 2 inter-content grid gaps 0.5rem×2 = 16  (busts track is empty at
+         gameOver — its trailing gap is dead space below the column, not overlap)
+       ≈ 669 ≤ 669.
+     765p (1vh=7.65, usable 714): maps→166, head→69, rest flat ≈ 680 ≤ 714.
+   Levers vs the pre-fix column (≈ +83px): map 20→16vh (−29), recap card pad
+   1→0.7rem + answer 1.8→1.55rem/mb 0.4→0.25rem (−17), .tv-newentry mt 1.4→0.6rem
+   (−13), grid gap 1→0.5rem (−24). 3+ teams still push past 669 and the
+   pre-existing overflow-y:auto scrolls, exactly as gameOver did before. */
 #s-display[data-phase="gameOver"] .tv-map {
-  height: 20vh;
+  height: 16vh;
+}
+/* gameOver height cuts (measure-then-cut; reveal + lobby values are untouched):
+   compact the recap card and drop the escape-hatch + grid gaps. */
+#s-display[data-phase="gameOver"] {
+  gap: 0.5rem;
+}
+#s-display[data-phase="gameOver"] .tv-recap-card {
+  padding: 0.7rem 1.2rem;
+}
+#s-display[data-phase="gameOver"] .tv-recap-answer {
+  font-size: 1.55rem;
+  margin-bottom: 0.25rem;
+}
+#s-display[data-phase="gameOver"] .tv-recap-teams {
+  gap: 0.15rem;
+}
+#s-display[data-phase="gameOver"] .tv-newentry {
+  margin-top: 0.6rem;
 }
 /* Standings move out of the sidebar into the centered column, center-stage. */
 #s-display[data-phase="reveal"] .tv-side,
