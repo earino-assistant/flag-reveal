@@ -78,6 +78,9 @@ let marker = null;
 let mapContainer = null; // element ref, so destroy can clear the box it filled
 let captionContainer = null; // figcaption ref, so destroy can reset the caption
 let spec = null; // the live spec, read by the leg chooser + re-aim path
+let activeLeg = null; // which leg is airing now ("world"/"country"), so the recap
+                      // re-aim can re-fly the SAME leg at a new country instead of
+                      // restarting the chain; null before any leg / after destroy
 let rafId = 0; // handle of the pending double-rAF build (0 = none scheduled)
 let legTimer = 0; // handle of the pending cycle leg (0 = none); only ever one
 let buildToken = 0; // bumped by destroy; the deferred build + every leg bail if it moved
@@ -140,7 +143,6 @@ export function renderRevealMaps({ mapEl, captionEl, iso2, table }) {
   // (see the module header). A double rAF crosses one full layout pass; the token
   // captured here lets a destroy that lands in between abort the build cleanly.
   const myToken = buildToken;
-  cancelPendingBuild();
   rafId = raf(() => {
     rafId = raf(() => {
       rafId = 0;
@@ -156,10 +158,18 @@ export function renderRevealMaps({ mapEl, captionEl, iso2, table }) {
  * recap can rotate it in sync with its 5s card cycle — no per-cycle Leaflet
  * rebuild, hence no flicker and no tile re-fetch. Contract:
  *  - Map live AND no deferred build in flight AND spec resolves → re-aim in
- *    place: invalidateSize (the reveal 25vh → gameOver 20vh flip resized the row
- *    and Leaflet caches the container size until told to re-measure), MOVE the
- *    marker (setLatLng), then restart the pulse at the WORLD leg of the NEW
- *    country (cancel the pending leg first so the old chain can't fire).
+ *    place WITHOUT touching the free-running leg chain (the fix for the pulse/
+ *    recap-clock lock: LEG_MS === RECAP_CYCLE_MS, so a per-card clearLegTimer→
+ *    restart-at-world killed the country leg before it ever flew — "Up close"
+ *    never aired). Instead: invalidateSize (the reveal 25vh → gameOver 20vh flip
+ *    resized the row and Leaflet caches the container size until told to
+ *    re-measure), MOVE the marker (setLatLng), then RE-FLY THE CURRENTLY ACTIVE
+ *    LEG at the new country immediately (interrupting Leaflet's fly is clean),
+ *    with the caption swapped to match that same leg so map and caption never
+ *    disagree. The untouched chain's NEXT leg then alternates as usual, reading
+ *    the now-swapped module spec — so alternating 5s cards land on alternating
+ *    legs and BOTH stories air across the rotation. reduced-motion → static
+ *    country framing (fitBounds) + permanent "Up close" caption, no timers.
  *  - Otherwise → delegate to renderRevealMaps, which destroys-then-builds. That
  *    single fallback covers every not-safely-re-aimable case correctly:
  *      · offline (no globalThis.L) or unknown iso (spec null) → placeholder;
@@ -178,10 +188,8 @@ export function updateRevealMaps({ mapEl, captionEl, iso2, table }) {
     return;
   }
 
-  // Map live and settled → re-aim in place. Cancel the in-flight leg FIRST: the
-  // old chain guards on buildToken (unchanged here), so without this its pending
-  // setTimeout would still fire and fight the new country's pulse.
-  clearLegTimer();
+  // Map live and settled → re-aim in place. The leg chain keeps free-running:
+  // we DON'T clearLegTimer and DON'T restart it, we only swap the spec it reads.
   spec = resolved;
   mapContainer = mapEl;
   captionContainer = captionEl || null;
@@ -190,8 +198,25 @@ export function updateRevealMaps({ mapEl, captionEl, iso2, table }) {
   if (marker) marker.setLatLng(spec.world.marker);
   else marker = L.circleMarker(spec.world.marker, MARKER_STYLE).addTo(map);
 
-  // Restart the choreography on the new country, from the WORLD leg.
-  startMotion(buildToken);
+  if (reducedMotion()) {
+    // No chain under reduced motion: just re-frame the static country view and
+    // hold the permanent "Up close" caption. No timers (house convention).
+    setCaption(COUNTRY_CAPTION);
+    map.fitBounds(countryBounds(), fitOpts(spec.borders, mapContainer));
+    return;
+  }
+
+  // Re-fly the leg that's airing right now at the NEW country, and match the
+  // caption to it. null-but-map-live (no leg has launched yet) falls to the
+  // country branch. The chain's next scheduled leg alternates off the new spec.
+  if (activeLeg === "world") {
+    setCaption(WORLD_CAPTION);
+    const [center, zoom] = worldView(mapContainer);
+    map.flyTo(center, zoom, { duration: FLY_S });
+  } else {
+    setCaption(COUNTRY_CAPTION);
+    map.flyToBounds(countryBounds(), { ...fitOpts(spec.borders, mapContainer), duration: FLY_S });
+  }
 }
 
 // The deferred build proper. Runs only once the container is laid out, so Leaflet
@@ -241,6 +266,7 @@ function startMotion(token) {
 // schedule and fire drops the stale leg silently.
 function leg(token, which) {
   if (token !== buildToken || !map) return;
+  activeLeg = which; // so a mid-flight recap re-aim can re-fly THIS same leg
   if (which === "world") {
     setCaption(WORLD_CAPTION);
     const [center, zoom] = worldView(mapContainer);
@@ -303,6 +329,7 @@ export function destroyRevealMaps() {
   // so a stale handle can't leak into the next build's setLatLng.
   marker = null;
   spec = null;
+  activeLeg = null;
   // Clear whatever we put in the box (a built map's leftover DOM or an offline
   // placeholder) so the next reveal starts from a clean container, and reset the
   // caption to its world-leg default.

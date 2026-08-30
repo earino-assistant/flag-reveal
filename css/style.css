@@ -1058,7 +1058,7 @@ body.tv { overflow: hidden; }
   height: 25vh;
 }
 /* Game-over: the maps rotate in the recap band (where the ghost flag box used to
-   sit) in sync with the recap card. 20vh, not reveal's 24vh — at gameOver the
+   sit) in sync with the recap card. 20vh, not reveal's 25vh — at gameOver the
    standings board + recap card share this single centered column, so the maps
    trade a little height to keep the common case within 100vh. Budget (720p):
    usable = 100vh − #s-display padding (1.6rem×2 ≈ 51) = 669. Worst-case 2-team
