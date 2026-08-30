@@ -183,7 +183,12 @@ function buildMaps(L, spec, worldEl, bordersEl, myToken) {
 
   // Belt and braces: re-measure and RE-APPLY each view one frame later so a late
   // layout shift can never leave a stale center/zoom (the field bug's core cause).
-  raf(() => {
+  // Store this rAF's id in rafId so updateRevealMaps's `rafId` guard sees it (a
+  // re-aim landing in this one-frame window would otherwise be reverted to the
+  // build-time view) and cancelPendingBuild()/destroy can cancel it. Clear rafId
+  // FIRST inside the callback so the settled state reads as no-pending-build.
+  rafId = raf(() => {
+    rafId = 0;
     if (myToken !== buildToken) return;
     if (worldMap) {
       worldMap.invalidateSize();

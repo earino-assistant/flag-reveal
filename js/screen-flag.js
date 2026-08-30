@@ -726,6 +726,7 @@ function clearReveal() {
   el.innerHTML = "";
   el.classList.remove("flag-canvas", "full");
   el.style.removeProperty("--flag-aspect");
+  el.style.removeProperty("--flag-grid");
   delete el._flagKey;
   delete el._img;
   delete el._tiles;

@@ -979,11 +979,11 @@ body.tv { overflow: hidden; }
 #s-display[data-phase="gameOver"] .tv-main {
   justify-content: flex-start;
 }
-/* The flag is revealed now — shrink it so the answer + standings own the frame. */
-#s-display[data-phase="gameOver"] .tv-reveal {
-  max-width: min(46vh, 42rem);
-  margin: 0 auto;
-}
+/* At gameOver the answer flags live in the rotating recap card, so #tvReveal is
+   empty. Hide it (mirrors the lobby rule above): an empty .reveal-holder still
+   charges its ~26px top/bottom margin, the last ghost remnant of the reveal
+   flag — collapsing it recovers that height toward the 720p budget. */
+#s-display[data-phase="gameOver"] .tv-reveal { display: none; }
 
 /* Reveal: an EXPLICIT grid so the flag can never be flex-squeezed and the two
  * maps claim their own full-width row. (Regression 7a49b5e: #tvMaps joined the
@@ -1056,12 +1056,14 @@ body.tv { overflow: hidden; }
 /* Game-over: the maps rotate in the recap band (where the ghost flag box used to
    sit) in sync with the recap card. 20vh, not reveal's 24vh — at gameOver the
    standings board + recap card share this single centered column, so the maps
-   trade a little height to keep the common case within 100vh. Math (720p):
-     head ~50 + main(maps 20vh=144 + cap 25 + margin-top 18 + recap card ~166 +
-     winner line ~32 + button ~40 = ~425) + side (Standings, 2 teams ~162) +
-     gaps 48 ≈ 685px ≤ 720. The old ghost box occupied ~216px of this band, so
-     20vh maps (~187px) are a net reduction; 4+ teams push past 720 and the
-     pre-existing overflow-y:auto scrolls, exactly as gameOver did before. */
+   trade a little height to keep the common case within 100vh. Budget (720p):
+   usable = 100vh − #s-display padding (1.6rem×2 ≈ 51) = 669. Worst-case 2-team
+   column: head ~52 + maps 20vh=144 + cap ~25 + recap card (bottom margin trimmed
+   to 0) ~150 + winner ~32 + button ~45 + side(Standings 2 teams ~88 + note ~26)
+   + grid gaps ~48 ≈ 610 ≤ 669. Two recoveries got us here: #tvReveal is now
+   display:none at gameOver (−~26px ghost holder margin) and .tv-recap dropped its
+   1rem bottom margin (−16px). 4+ teams push past 669 and the pre-existing
+   overflow-y:auto scrolls, exactly as gameOver did before. */
 #s-display[data-phase="gameOver"] .tv-map {
   height: 20vh;
 }
@@ -1092,7 +1094,9 @@ body.tv { overflow: hidden; }
  * gameOver — screen-flag.js toggles `.hidden` (it only ever builds at gameOver).
  * Sized for the couch; the card fades in on each auto-cycle (reduced-motion
  * drops the animation — the content still advances). */
-.tv-recap { width: 100%; max-width: 42rem; margin: 0.4rem auto 1rem; }
+/* Bottom margin trimmed 1rem → 0 (gameOver-only element): tightens the card band
+   so the recap column clears the 720p budget with the reveal holder now hidden. */
+.tv-recap { width: 100%; max-width: 42rem; margin: 0.4rem auto 0; }
 .tv-recap-card {
   display: flex;
   gap: 1rem;
