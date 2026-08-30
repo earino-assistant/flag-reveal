@@ -1046,7 +1046,7 @@ test("tvAdvanceNote: a past-due deadline clamps at 0s", () => {
 test("tvAdvanceNote: a held reveal (autoAdvanceAt null) shows the paused note", () => {
   const cfg = { difficulty: "default", pool: POOL };
   const round = { number: 3, autoAdvanceAt: null, outcome: { kind: "bust" } };
-  assert.equal(tvAdvanceNote(round, cfg, 0), "Paused — waiting for the host's phone…");
+  assert.equal(tvAdvanceNote(round, cfg, 0), "Host paused — next round when they're ready");
 });
 
 test("tvAdvanceNote: a missing round → null", () => {

@@ -660,7 +660,7 @@ export function hostStalled(round, cfg, now) {
 export function tvAdvanceNote(round, cfg, now) {
   if (!round) return null;
   if (round.outcome == null) return null;
-  if (round.autoAdvanceAt == null) return "Paused — waiting for the host's phone…";
+  if (round.autoAdvanceAt == null) return "Host paused — next round when they're ready";
   const n = Math.max(0, Math.ceil((round.autoAdvanceAt - now) / 1000));
   const eff = effectiveRoundCount(cfg || {}, (cfg && cfg.pool) || []);
   const isFinal = eff > 0 && round.number >= eff;

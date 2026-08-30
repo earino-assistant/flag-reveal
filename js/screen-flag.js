@@ -118,6 +118,8 @@ function cfgFromRoom(room) {
     target: s.target != null ? s.target : d.target,
     roundCount: s.roundCount != null ? s.roundCount : d.roundCount,
     difficulty: s.difficulty || d.difficulty,
+    stepMs: s.stepMs || d.stepMs,
+    graceMs: s.graceMs || d.graceMs,
     pool: FLAGS,
   };
 }
@@ -469,9 +471,9 @@ function render(room) {
     // the idle line tells the couch any phone can take over. Re-rendered every
     // snapshot, so it clears itself the instant the step advances or the phase
     // changes — no timer (passive-TV contract).
-    const stalled = hostStalled(r, { ...cfg, graceMs: GAME_DEFAULTS.graceMs }, serverNow());
+    const stalled = hostStalled(r, cfg, serverNow());
     $("tvNote").textContent = stalled
-      ? "The round is running long — any phone can advance it."
+      ? "The host's phone may be asleep — give it a tap 👋"
       : "Ring in on your phone!";
   }
 }
