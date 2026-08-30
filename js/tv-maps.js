@@ -26,9 +26,13 @@ const leaflet = () => globalThis.L;
 // Interaction-off map options, mirroring GeoParty's LEAFLET_MAP_OPTIONS. The
 // reveal maps are decorative — the couch never touches the TV. attributionControl
 // is left default-on so the OSM tile attribution stays visible (required).
+// zoomSnap 0.25 lets both maps honor the fractional zoom worldZoomFor now returns
+// (and fitBounds snap to the same 0.25 grid) instead of Leaflet's coarse integer
+// default — the world map lands ~120° visible instead of z2's 171° Europe-crop.
 const MAP_OPTIONS = Object.freeze({
   zoomControl: false, dragging: false, scrollWheelZoom: false,
   doubleClickZoom: false, boxZoom: false, keyboard: false, touchZoom: false,
+  zoomSnap: 0.25,
 });
 
 const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";

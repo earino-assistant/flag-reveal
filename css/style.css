@@ -992,14 +992,14 @@ body.tv { overflow: hidden; }
  * result / coming-up stack in column 2; row band 2 = the 2-up maps, full width.
  * All track sizes are vh-based so header + flag + maps + answer fit within 100vh
  * at 1280×720 … 1920×1080 with no overflow:
- *   ~48vh flag (row band 1) + ~26vh maps (row band 2) + ~10vh header ≈ 84vh.
+ *   ~42vh flag (row band 1) + ~29vh maps (row band 2) + ~10vh header ≈ 81vh.
  * The three tiny answer rows share the flag's band (flanked by 1fr spacers that
  * vertically center them) since the flag spans them — no HTML wrapper needed.
  * Scoped to reveal ONLY — gameOver keeps the flex / recap layout above. */
 #s-display[data-phase="reveal"] .tv-main {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto auto auto 1fr 26vh;
+  grid-template-rows: 1fr auto auto auto 1fr 29vh;
   column-gap: 2.4rem;
   row-gap: 0.4rem;
   justify-items: center;
@@ -1011,12 +1011,13 @@ body.tv { overflow: hidden; }
   grid-row: 1 / 6; /* span the two spacer rows + the three answer rows */
   align-self: center;
   width: auto; /* height-driven; 3:2 aspect-ratio derives the width */
-  height: 46vh;
+  height: 42vh;
   /* Cap the flag against its GRID COLUMN, not the viewport. Height-driven the
-     flag is ~69vh wide (46vh × 3:2), so the old 60vw cap never fired and the
-     answer column (992px main − flag − 2.4rem gap) collapsed on tall screens.
-     38rem = 608px leaves ≥ ~345px for the answer column at every 16:9 size:
-     720p flag=497px→col=457px, 1080p/1440p flag=608px→col=346px. */
+     flag is ~63vh wide (42vh × 3:2), so the 60vw cap never fires and the answer
+     column (992px main − flag − 2.4rem gap) stays roomy on tall screens.
+     38rem = 608px leaves ≥ ~340px for the answer column at every 16:9 size:
+     720p flag=42vh·1.5=454px→col≈500px, 1080p/1440p flag=608px→col=346px
+     (the width cap binds ≥1080p, so the flag width there is unchanged). */
   max-width: min(60vw, 38rem);
   /* No min-height: once the width cap binds (≥1080p) it would exceed the
      aspect-derived height (608/1.5 = 405px < 40vh@1080p = 432px) and distort. */
@@ -1027,6 +1028,7 @@ body.tv { overflow: hidden; }
   grid-row: 2;
   align-self: end;
   margin: 0;
+  overflow-wrap: anywhere; /* a long country name wraps, never spills the column */
 }
 #s-display[data-phase="reveal"] .tv-result {
   grid-column: 2;
@@ -1046,10 +1048,10 @@ body.tv { overflow: hidden; }
   margin: 0;
 }
 #s-display[data-phase="reveal"] .tv-map {
-  /* 21vh (not 23vh) so map + figcaption fit the 26vh row. figcaption ≈ 24.6px
-     (0.4rem margin + 0.95rem line). 720p: 21vh=151px + 25px = 176px < 26vh=187px
-     (was 23vh=166px + 25px = 191px, a ~4px overrun); 1080p: 227px + 25px < 281px. */
-  height: 21vh;
+  /* 24vh so map + figcaption fit the taller 29vh row — the maps are the point of
+     the reveal. figcaption ≈ 25px (0.4rem margin + 0.95rem line). 720p:
+     24vh=173px + 25px = 198px ≤ 29vh=209px; 1080p: 259px + 25px = 284px ≤ 313px. */
+  height: 24vh;
 }
 /* Standings move out of the sidebar into the centered column, center-stage. */
 #s-display[data-phase="reveal"] .tv-side,

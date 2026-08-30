@@ -1127,9 +1127,9 @@ test("revealMapSpec: known iso returns world + borders, marker = centroid", () =
   assert.deepEqual(spec.world.marker, [46.6, 2.3]);
   assert.deepEqual(spec.borders.marker, [46.6, 2.3]);
   assert.deepEqual(spec.world.center, [46.6, 2.3]);
-  // Borders bounds are the whole-country bbox verbatim; maxZoom 8, pad 0.18.
+  // Borders bounds are the whole-country bbox verbatim; maxZoom 6, pad 0.18.
   assert.deepEqual(spec.borders.bounds, [-4.6, 42.3, 8.1, 51.1]);
-  assert.equal(spec.borders.maxZoom, 8);
+  assert.equal(spec.borders.maxZoom, 6);
   assert.equal(spec.borders.pad, 0.18);
 });
 
@@ -1150,35 +1150,46 @@ test("revealMapSpec: iso lookup is case-insensitive", () => {
   assert.ok(revealMapSpec("FR", TABLE));
 });
 
-test("worldZoomFor: derives a comfortable ~1/3-world zoom from container width", () => {
-  // The TV's ~488px map column at the 120° target lands on zoom 2; a wider
-  // 1200px map lands on zoom 3 (more pixels → room for more zoom, still context).
-  assert.equal(worldZoomFor(488, 120), 2);
-  assert.equal(worldZoomFor(1200, 120), 3);
+// Visible longitude span at a given fractional zoom: Leaflet's world (360°) is
+// 256·2^z px wide, so a w-px map shows 360·w / (256·2^z) degrees across.
+const visibleSpan = (w, z) => (360 * w) / (256 * Math.pow(2, z));
+
+test("worldZoomFor: fractional zoom lands the visible span near the 120° target", () => {
+  // At the real ~486px map column the fractional zoom must show a comfortable
+  // ~120° across — NOT z2's 171° Europe-crop nor z3's 85° tight frame. The 0.25
+  // quantization keeps the visible span inside [105, 135]° at every realistic width.
+  for (const w of [486, 1200]) {
+    const z = worldZoomFor(w, 120);
+    const span = visibleSpan(w, z);
+    assert.ok(span >= 105 && span <= 135,
+      `w=${w}: zoom ${z} shows ${span.toFixed(1)}° (want 105–135°)`);
+  }
 });
 
-test("worldZoomFor: a narrower span zooms in more than a wider one", () => {
-  // Same width, smaller target span ⇒ higher zoom (fewer degrees across the map).
-  assert.ok(worldZoomFor(488, 60) > worldZoomFor(488, 120));
-  assert.equal(worldZoomFor(488, 60), 3);
-  assert.equal(worldZoomFor(488, 120), 2);
+test("worldZoomFor: quantizes to the 0.25 zoomSnap grid", () => {
+  // Every returned zoom is a multiple of 0.25 (fractional — the old floor()
+  // integer grid is gone). z2.5 at 486px, not z2.
+  for (const [w, span] of [[486, 120], [1200, 120], [486, 60], [640, 90]]) {
+    const z = worldZoomFor(w, span);
+    assert.equal(z * 4, Math.round(z * 4), `w=${w},span=${span}: ${z} off the 0.25 grid`);
+  }
+  assert.equal(worldZoomFor(486, 120), 2.5); // was 2 under floor semantics
 });
 
-test("worldZoomFor: clamps to [1, 4] at the extremes", () => {
-  assert.equal(worldZoomFor(40, 120), 1); // tiny container → floor of 1
-  assert.equal(worldZoomFor(8000, 120), 4); // huge container → capped at 4
+test("worldZoomFor: monotonic — a narrower span zooms in more than a wider one", () => {
+  // Same width, smaller target span ⇒ higher zoom (fewer degrees across the map),
+  // by more than half a zoom level (tighter span → decisively higher zoom).
+  assert.ok(worldZoomFor(486, 60) > worldZoomFor(486, 120) + 0.5);
 });
 
-test("worldZoomFor: pins the floor() boundary at span 120° (682→2, 683→3)", () => {
-  // z = log2(360·w / (256·120)); floor(z) hits 3 when 360·w/(256·120) ≥ 8,
-  // i.e. w ≥ 682.66… — so 682 floors to 2 and 683 floors to 3. Any future
-  // round()-instead-of-floor() "fix" would push the boundary and fail here.
-  assert.equal(worldZoomFor(682, 120), 2);
-  assert.equal(worldZoomFor(683, 120), 3);
+test("worldZoomFor: clamps to [1, 4.5] at the extremes", () => {
+  assert.equal(worldZoomFor(40, 120), 1); // tiny container → clamped up to 1
+  assert.equal(worldZoomFor(8000, 120), 4.5); // huge container → capped at 4.5
 });
 
 test("worldZoomFor: degrades gracefully on a zero/absent width", () => {
-  // clientWidth 0 (not laid out yet) falls back to a sane world zoom, never NaN.
+  // clientWidth 0 (not laid out yet) falls back to a sane fractional zoom, never NaN.
   const z = worldZoomFor(0, 120);
-  assert.ok(Number.isInteger(z) && z >= 1 && z <= 4);
+  assert.equal(z, 2.5);
+  assert.ok(z >= 1 && z <= 4.5);
 });

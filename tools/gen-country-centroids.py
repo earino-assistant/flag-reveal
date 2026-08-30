@@ -60,13 +60,19 @@ HALF = 0.5  # ±degrees for the hand-set square bbox
 # antimeridian artifact (a ring clamped at ±180), never a real country extent.
 DATELINE_SPAN = 200.0
 
-# Verified whole-country frames for antimeridian crossers, [minLng, minLat,
-# maxLng, maxLat]. ru/us are fixed extents (cited from Natural Earth): ru clamps
-# its east edge just shy of the dateline; us is CONUS-only ([-125, 24.5, -66.9,
-# 49.5] — no Alaska/Hawaii; the marker stays on the mainland centroid).
+# Verified whole-country frames, [minLng, minLat, maxLng, maxLat]. ru/us are
+# antimeridian/overseas fixed extents (cited from Natural Earth): ru clamps its
+# east edge just shy of the dateline; us is CONUS-only ([-125, 24.5, -66.9, 49.5]
+# — no Alaska/Hawaii; the marker stays on the mainland centroid). fr/no are
+# METROPOLITAN overrides (owner-flagged ocean-heavy "Up close" frames): the auto
+# whole-multipolygon bbox drags in an overseas territory (French Guiana for fr,
+# Svalbard for no) that makes the up-close map mostly ocean — these frame the
+# European mainland only. All apply BEFORE the >200° dateline detector.
 BBOX_OVERRIDE = {
     "ru": [19.0, 41.0, 179.9, 81.9],
     "us": [-125.0, 24.5, -66.9, 49.5],
+    "fr": [-5.1, 41.3, 9.6, 51.1],  # metropolitan France — French Guiana out of frame
+    "no": [4.2, 57.9, 31.2, 71.3],  # mainland Norway — Svalbard out of frame
 }
 
 # Crossers we frame with a small ±FRAME_HALF° box around the largest-ring centroid
@@ -263,7 +269,7 @@ def main():
     print(f"{len(ordered)}/{len(required)} centroids written to {OUT_JSON}")
     # Sanity lines (impl brief): the dateline crossers now have sane frames, and
     # nz spans BOTH islands (~lng 166–179), not just the largest.
-    for iso2 in ("ru", "us", "nz", "fr"):
+    for iso2 in ("ru", "us", "nz", "fr", "no"):
         if iso2 in ordered:
             print(f"  {iso2}: b={ordered[iso2]['b']}")
     if "mt" in ordered:

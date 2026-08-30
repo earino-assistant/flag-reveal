@@ -884,8 +884,10 @@ export function celebrationSpec({
 //            knows the container width. `center`/`marker` are the centroid.
 //   borders: { bounds, maxZoom, pad, marker } — bounds is the whole-country bbox
 //            verbatim; the glue pads it by `pad` (fraction, so immediate
-//            neighbors show) and caps at `maxZoom` so a microstate still frames
-//            sensibly. marker is the centroid on both maps.
+//            neighbors show) and caps at `maxZoom` (6 — a 135px strip at z8 shows
+//            a city block; z6 shows ~3° of neighbors around a microstate) so a
+//            microstate still frames with its surroundings. marker is the
+//            centroid on both maps.
 export function revealMapSpec(iso2, table) {
   if (!table) return null;
   const key = String(iso2 == null ? "" : iso2).toLowerCase();
@@ -895,23 +897,29 @@ export function revealMapSpec(iso2, table) {
   const b = entry.b; // [minLng, minLat, maxLng, maxLat]
   return {
     world: { center: c, spanDeg: 120, marker: c },
-    borders: { bounds: b, maxZoom: 8, pad: 0.18, marker: c },
+    borders: { bounds: b, maxZoom: 6, pad: 0.18, marker: c },
   };
 }
 
-// worldZoomFor(containerWidthPx, spanDeg) → an integer Leaflet zoom that shows
+// worldZoomFor(containerWidthPx, spanDeg) → a FRACTIONAL Leaflet zoom that shows
 // roughly `spanDeg` degrees of longitude across a `containerWidthPx`-wide map.
 // Leaflet's whole world (360°) is 256 * 2^z px wide, so the zoom whose width
-// spans `spanDeg` is z = log2(360 * w / (256 * spanDeg)). We FLOOR (not round)
-// so the couch always sees a *little* more than spanDeg — a comfortable frame
-// rather than a tight crop — and clamp to [1, 4] (a world map is never useful
-// below 1, and past 4 it stops being "world context"). At the TV's ~488px map
-// column a 120° target lands on zoom 2; a wider 1200px map lands on zoom 3.
+// spans `spanDeg` is z = log2(360 * w / (256 * spanDeg)). Integer flooring used
+// to collapse this to a coarse grid — at the real ~486px map column the only
+// choices were z2 (171° visible, Europe-tight) or z3 (85°), nothing near the
+// 120° target. Leaflet supports fractional zoom (zoomSnap 0.25), so we QUANTIZE
+// z to the 0.25 grid (round, not floor — the nearest snap lands the visible span
+// within ~[105, 135]°) and clamp to [1, 4.5] (a world map is never useful below
+// 1, and past 4.5 it stops being "world context"). At the ~486px column a 120°
+// target now lands on z2.5 (~121° visible); a wider 1200px map on z3.75 (~125°).
+// A zero/absent width (not laid out yet) falls back to a sensible 2.5.
 export function worldZoomFor(containerWidthPx, spanDeg) {
-  const w = Number(containerWidthPx) > 0 ? Number(containerWidthPx) : 256;
+  const w = Number(containerWidthPx);
+  if (!(w > 0)) return 2.5; // graceful-zero contract: fractional default
   const span = Number(spanDeg) > 0 ? Number(spanDeg) : 360;
   const z = Math.log2((360 * w) / (256 * span));
-  return Math.max(1, Math.min(4, Math.floor(z)));
+  const q = Math.round(z * 4) / 4; // zoomSnap 0.25 grid
+  return Math.max(1, Math.min(4.5, q));
 }
 
 // ---------------------------------------------------------------------------
