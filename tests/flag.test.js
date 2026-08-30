@@ -1169,6 +1169,14 @@ test("worldZoomFor: clamps to [1, 4] at the extremes", () => {
   assert.equal(worldZoomFor(8000, 120), 4); // huge container → capped at 4
 });
 
+test("worldZoomFor: pins the floor() boundary at span 120° (682→2, 683→3)", () => {
+  // z = log2(360·w / (256·120)); floor(z) hits 3 when 360·w/(256·120) ≥ 8,
+  // i.e. w ≥ 682.66… — so 682 floors to 2 and 683 floors to 3. Any future
+  // round()-instead-of-floor() "fix" would push the boundary and fail here.
+  assert.equal(worldZoomFor(682, 120), 2);
+  assert.equal(worldZoomFor(683, 120), 3);
+});
+
 test("worldZoomFor: degrades gracefully on a zero/absent width", () => {
   // clientWidth 0 (not laid out yet) falls back to a sane world zoom, never NaN.
   const z = worldZoomFor(0, 120);

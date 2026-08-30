@@ -62,8 +62,8 @@ DATELINE_SPAN = 200.0
 
 # Verified whole-country frames for antimeridian crossers, [minLng, minLat,
 # maxLng, maxLat]. ru/us are fixed extents (cited from Natural Earth): ru clamps
-# its east edge just shy of the dateline; us frames the mainland + an Alaska
-# proxy (Hawaii out of frame is fine — the marker stays on the mainland centroid).
+# its east edge just shy of the dateline; us is CONUS-only ([-125, 24.5, -66.9,
+# 49.5] — no Alaska/Hawaii; the marker stays on the mainland centroid).
 BBOX_OVERRIDE = {
     "ru": [19.0, 41.0, 179.9, 81.9],
     "us": [-125.0, 24.5, -66.9, 49.5],
