@@ -232,7 +232,7 @@ function resetDisplay(header) {
   $("tvHeader").textContent = header;
   $("tvBoard").innerHTML = "";
   $("tvBeats").innerHTML = "";
-  $("tvReveal").innerHTML = "";
+  clearReveal();
   $("tvResult").textContent = "";
   $("tvComingUp").textContent = "";
   $("tvNote").textContent = "";
@@ -349,7 +349,7 @@ function render(room) {
     $("tvResult").textContent = "";
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
-    $("tvReveal").innerHTML = "";
+    clearReveal();
     hideMaps();
     const n = Object.keys(teams).length;
     $("tvNote").textContent = n
@@ -366,7 +366,7 @@ function render(room) {
     const winner = gameWinner(teams, cfg);
     const wt = teams[winner];
     $("tvHeader").textContent = "Game over";
-    $("tvReveal").innerHTML = "";
+    clearReveal();
     $("tvAnswer").classList.add("hidden");
     hideMaps();
     $("tvResult").innerHTML = wt
@@ -682,6 +682,22 @@ function showWrongHint(name) {
     wrongHintTimer = null;
     el.classList.add("hidden");
   }, 2500);
+}
+
+// Clear the reveal holder INCLUDING the classes/renderState renderReveal
+// stamps on the container itself (`flag-canvas`, `full`, --flag-aspect,
+// _flagKey latch). innerHTML="" alone leaves a blank 3:2 "ghost flag" box
+// above the gameOver recap (field-reported 2026-08-30) and can strand the
+// render latch on detached nodes.
+function clearReveal() {
+  const el = $("tvReveal");
+  if (!el) return;
+  el.innerHTML = "";
+  el.classList.remove("flag-canvas", "full");
+  el.style.removeProperty("--flag-aspect");
+  delete el._flagKey;
+  delete el._img;
+  delete el._tiles;
 }
 
 // Tear the two reveal maps down and hide the block. Idempotent (destroyRevealMaps
