@@ -867,6 +867,39 @@ export function celebrationSpec({
 }
 
 // ---------------------------------------------------------------------------
+// 12d. revealMapSpec — the two reveal maps as a pure spec (TV reveal dressing).
+// ---------------------------------------------------------------------------
+// At reveal the answer country is public, so the TV shows two maps: a zoomed-OUT
+// "where on Earth" view with a marker, and a zoomed-IN view framed to the
+// country's main-polygon bbox. This is the ONLY decision layer — js/tv-maps.js is
+// thin Leaflet glue that executes the returned spec. The centroid `table` is
+// injected as an ARGUMENT (shape { iso2: { c:[lat,lng], b:[minLng,minLat,maxLng,
+// maxLat] } }) so flag.js stays import-free and tests inject fixtures.
+//
+// Returns null for an unknown iso or a missing table. Otherwise:
+//   world:   { center, zoom, marker } — world-context. zoom 2 if the bbox
+//            diagonal span > 60°, else 3.
+//   borders: { bounds, maxZoom, marker } — bounds is the bbox verbatim; maxZoom
+//            9 so a microstate still frames sensibly. marker is the centroid on
+//            both maps.
+export function revealMapSpec(iso2, table) {
+  if (!table) return null;
+  const key = String(iso2 == null ? "" : iso2).toLowerCase();
+  const entry = table[key];
+  if (!entry || !entry.c || !entry.b) return null;
+  const c = entry.c; // [lat, lng]
+  const b = entry.b; // [minLng, minLat, maxLng, maxLat]
+  const spanLng = b[2] - b[0];
+  const spanLat = b[3] - b[1];
+  const diagonal = Math.sqrt(spanLng * spanLng + spanLat * spanLat);
+  const zoom = diagonal > 60 ? 2 : 3;
+  return {
+    world: { center: c, zoom, marker: c },
+    borders: { bounds: b, maxZoom: 9, marker: c },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // 13. versionCompatible — refuse to derive on a dataset/rules skew (§8.1).
 // ---------------------------------------------------------------------------
 export function versionCompatible(room, bundled) {

@@ -38,6 +38,7 @@ import {
   endsGameOnAdvance,
   shouldLockOut,
   guessModeLabel,
+  revealMapSpec,
 } from "../js/flag.js";
 
 // A small fixture pool covering tiers, aliases, diacritics, the "Congo"
@@ -1106,4 +1107,42 @@ test("endsGameOnAdvance: false unless it's an advanceable resolved reveal", () =
     ),
     false
   );
+});
+
+// ---------------------------------------------------------------------------
+// revealMapSpec — the two-reveal-maps spec (pure; table injected as a fixture).
+// ---------------------------------------------------------------------------
+test("revealMapSpec: unknown iso and missing table both yield null", () => {
+  const TABLE = { fr: { c: [46.6, 2.3], b: [-4.6, 42.3, 8.1, 51.1] } };
+  assert.equal(revealMapSpec("zz", TABLE), null); // unknown iso
+  assert.equal(revealMapSpec("fr", null), null); // missing table
+});
+
+test("revealMapSpec: known iso returns world + borders, marker = centroid", () => {
+  const TABLE = { fr: { c: [46.6, 2.3], b: [-4.6, 42.3, 8.1, 51.1] } };
+  const spec = revealMapSpec("fr", TABLE);
+  assert.ok(spec && spec.world && spec.borders);
+  // Marker equals the centroid on both maps.
+  assert.deepEqual(spec.world.marker, [46.6, 2.3]);
+  assert.deepEqual(spec.borders.marker, [46.6, 2.3]);
+  assert.deepEqual(spec.world.center, [46.6, 2.3]);
+  // Borders bounds are the bbox verbatim; maxZoom is 9.
+  assert.deepEqual(spec.borders.bounds, [-4.6, 42.3, 8.1, 51.1]);
+  assert.equal(spec.borders.maxZoom, 9);
+});
+
+test("revealMapSpec: world.zoom is 2 for a wide bbox, 3 for a small one", () => {
+  const TABLE = {
+    // Diagonal span ≫ 60° → zoom 2 (world-context view).
+    ru: { c: [62, 99], b: [27, 41, 180, 78] },
+    // Tiny bbox (~1.4° diagonal) → zoom 3.
+    ad: { c: [42.5, 1.6], b: [1.1, 42.0, 2.1, 43.0] },
+  };
+  assert.equal(revealMapSpec("ru", TABLE).world.zoom, 2);
+  assert.equal(revealMapSpec("ad", TABLE).world.zoom, 3);
+});
+
+test("revealMapSpec: iso lookup is case-insensitive", () => {
+  const TABLE = { fr: { c: [46.6, 2.3], b: [-4.6, 42.3, 8.1, 51.1] } };
+  assert.ok(revealMapSpec("FR", TABLE));
 });

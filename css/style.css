@@ -875,6 +875,47 @@ body.tv { overflow: hidden; }
 .tv-result { font-size: 1.6rem; margin-top: 0.55rem; text-align: center; color: var(--muted); }
 .tv-result strong { color: var(--accent); }
 .tv-comingup { font-size: 1.2rem; margin-top: 0.5rem; text-align: center; color: var(--accent-2); }
+
+/* The two reveal maps (Items B): a 2-up grid under the answer, collapsing to a
+   single column under ~900px. Fixed-ish heights so the couch takes both in at a
+   glance. Visibility is toggled via .hidden from screen-flag.js (reveal only). */
+.tv-maps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 1.1rem;
+}
+.tv-map-wrap { margin: 0; }
+.tv-map {
+  height: 32vh;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--tile-cover);
+  overflow: hidden;
+}
+.tv-map-wrap figcaption {
+  margin-top: 0.4rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+/* Offline degradation: tv-maps.js drops a one-line note into the box when
+   Leaflet isn't loaded (served offline). Center it. */
+.tv-map.tv-map-offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+/* Never hide the OSM attribution (tile licensing) — just size it for the couch. */
+.tv-map .leaflet-control-attribution { font-size: 0.7rem; }
+@media (max-width: 900px) {
+  .tv-maps { grid-template-columns: 1fr; }
+}
 .tv-side { grid-area: side; overflow-y: auto; }
 .side-title { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.14em; font-weight: 700; margin: 0 0 0.6rem; }
 .tv-board .team-row { font-size: 1.3rem; padding: 0.8em 1em; }

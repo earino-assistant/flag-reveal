@@ -30,7 +30,10 @@ import {
   shouldLockOut,
   tvAdvanceNote,
   hostStalled,
+  revealMapSpec,
 } from "./flag.js";
+import { renderRevealMaps, destroyRevealMaps } from "./tv-maps.js";
+import CENTROIDS from "../data/country-centroids.json" with { type: "json" };
 import { escapeHtml, primeAudio } from "./ui-common.js";
 import { soundState, soundDecisions, playSounds } from "./tv-sound.js";
 import { reconcileBoard } from "./board-juice.js";
@@ -61,6 +64,12 @@ let followedCodes = new Set();
 // whenever the phase leaves gameOver (next game / lobby) so a fresh game can
 // celebrate again.
 let celebrated = false;
+// The two reveal maps (Items B) are built ONCE per reveal round — render() re-runs
+// on every heartbeat/snapshot, and rebuilding the Leaflet maps each time would
+// flicker and re-fetch tiles. `mapsRound` holds the round number the maps were
+// built for; hideMaps() resets it so the next reveal rebuilds. Decorative reveal
+// dressing — no write, no read beyond the public answer ISO (passive-TV).
+let mapsRound = null;
 // Item 4 — the transient "guessed wrong" hint. When a team rings in wrong DURING
 // a round, the TV pops a brief, content-free pill (masked team name; never the
 // country) that fades after ~2.5s. Pure local render — no write (passive-TV
@@ -148,6 +157,8 @@ function connect(c, joinVia) {
   lastSoundState = null;
   lastTickStep = null;
   lastTickRound = null;
+  // A fresh room — tear down any reveal maps from the previous room/game.
+  hideMaps();
 
   code = c;
   via = joinVia || "typed";
@@ -224,6 +235,7 @@ function resetDisplay(header) {
   $("tvComingUp").textContent = "";
   $("tvNote").textContent = "";
   $("tvAnswer").classList.add("hidden");
+  hideMaps();
   hideWrongHint();
   stopRecapCycle();
   const qrWrap = $("tvJoinQr");
@@ -243,6 +255,10 @@ function notFound(message) {
   $("s-display").classList.add("hidden");
   $("s-join").classList.remove("hidden");
   $("sErr").textContent = message || "";
+  // Item C — back on the join screen, focus the input so the next code can be
+  // typed immediately (same semantics as leaveToJoin()).
+  const input = $("sCode");
+  if (input) input.focus();
 }
 
 // Return to the join screen after the room went away under us (F4): stop the
@@ -260,6 +276,10 @@ function leave(message) {
   $("s-display").classList.add("hidden");
   $("s-join").classList.remove("hidden");
   $("sErr").textContent = message || "";
+  // Item C — focus the code input on return to the join screen (same as
+  // leaveToJoin()), so the operator can type a new code without a click.
+  const input = $("sCode");
+  if (input) input.focus();
   try {
     history.replaceState(null, "", location.pathname);
   } catch {
@@ -328,6 +348,7 @@ function render(room) {
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
     $("tvReveal").innerHTML = "";
+    hideMaps();
     const n = Object.keys(teams).length;
     $("tvNote").textContent = n
       ? `${n} team${n === 1 ? "" : "s"} in.`
@@ -345,6 +366,7 @@ function render(room) {
     $("tvHeader").textContent = "Game over";
     $("tvReveal").innerHTML = "";
     $("tvAnswer").classList.add("hidden");
+    hideMaps();
     $("tvResult").innerHTML = wt
       ? `👑 <strong data-ph-mask>${escapeHtml(wt.name)}</strong> wins — ${wt.total || 0} pts!`
       : "Game over";
@@ -389,6 +411,24 @@ function render(room) {
     const answer = byIso2(r.answerIso);
     $("tvAnswer").textContent = answer ? answer.name : r.answerIso.toUpperCase();
     $("tvAnswer").classList.remove("hidden");
+    // The two reveal maps (Items B): the answer is public now, so show a
+    // world-context view + an up-close view of the country. Built ONCE per reveal
+    // round (mapsRound latch) — render() re-runs on every heartbeat and rebuilding
+    // would flicker. tv-maps.js reads only the args; no private/* read is added.
+    if (mapsRound !== r.number) {
+      mapsRound = r.number;
+      if (revealMapSpec(r.answerIso, CENTROIDS)) {
+        renderRevealMaps({
+          worldEl: $("tvMapWorld"),
+          bordersEl: $("tvMapBorders"),
+          iso2: r.answerIso,
+          table: CENTROIDS,
+        });
+        $("tvMaps").classList.remove("hidden");
+      } else {
+        hideMaps();
+      }
+    }
     if (oc.kind === "win") {
       const wt = teams[oc.team];
       const pts = (r.results && r.results[oc.team] && r.results[oc.team].points) || 0;
@@ -423,6 +463,7 @@ function render(room) {
     $("tvResult").textContent = "";
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
+    hideMaps(); // roundActive — the answer is still secret; no maps
     // Sleeping-host cue: when the owner's phone freezes mid-round, currentStep
     // stops advancing. hostStalled (pure, public fields only) detects the gap and
     // the idle line tells the couch any phone can take over. Re-rendered every
@@ -641,6 +682,16 @@ function showWrongHint(name) {
   }, 2500);
 }
 
+// Tear the two reveal maps down and hide the block. Idempotent (destroyRevealMaps
+// is safe to call twice) — called on every non-reveal phase and every teardown
+// path. Resets the per-round build latch so the next reveal rebuilds fresh.
+function hideMaps() {
+  destroyRevealMaps();
+  mapsRound = null;
+  const el = $("tvMaps");
+  if (el) el.classList.add("hidden");
+}
+
 // Hide the hint immediately (leaving roundActive, following a room, or a reset).
 function hideWrongHint() {
   if (wrongHintTimer) {
@@ -786,6 +837,15 @@ function wire() {
   if (isValidRoomCode(urlRoom)) {
     followedCodes = new Set(); // URL boot starts a fresh follow chain (F3)
     connect(urlRoom, urlVia);
+  } else {
+    // Item C — a TV booting to the join screen (no valid ?room=) starts with the
+    // code input focused so the operator can type immediately. HONEST LIMIT:
+    // browsers that gate the on-screen keyboard behind a user gesture (mobile
+    // Safari, some TV browsers) show the caret but won't pop the keyboard until
+    // one tap — a browser policy the page can't override. Not focused when the
+    // URL boots straight into a room (the display screen is up, not the input).
+    const input = $("sCode");
+    if (input) input.focus();
   }
 }
 

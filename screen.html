@@ -7,6 +7,12 @@
   <meta name="description" content="The big screen for Flag Party. Subscribes and renders the progressive flag reveal." />
   <meta name="theme-color" content="#0E0E12" />
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <!-- Leaflet for the two reveal maps (decorative, loaded at reveal). Pinned
+       1.9.4 from unpkg with SRI, exactly as the sibling game GeoParty does —
+       Leaflet/OSM tiles are runtime CDN services, not vendored content (the
+       vendoring rule covers the flag SVGs, the game's core asset). -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H" crossorigin="anonymous" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body class="tv">
@@ -52,6 +58,17 @@
           <span id="tvJoinCode" class="tv-join-code skeleton" data-ph-mask>······</span></p>
       </div>
       <div id="tvAnswer" class="tv-answer hidden">—</div>
+      <!-- Two reveal maps (Items B): a zoomed-out "where in the world" view with
+           a marker, and a zoomed-in "up close" view framed to the country's
+           borders (OSM tiles). Filled by js/screen-flag.js at reveal only (the
+           answer is public then); js/tv-maps.js tears them down on every other
+           phase. Decorative — offline-after-served they may render empty. -->
+      <div id="tvMaps" class="tv-maps hidden" aria-hidden="true">
+        <figure class="tv-map-wrap"><div id="tvMapWorld" class="tv-map"></div>
+          <figcaption>Where in the world?</figcaption></figure>
+        <figure class="tv-map-wrap"><div id="tvMapBorders" class="tv-map"></div>
+          <figcaption>Up close</figcaption></figure>
+      </div>
       <!-- Game-over round recap (read-only fold of settled rounds): a single
            auto-cycling card in the empty band above the winner line — each
            round's answer flag + name and what every team guessed. Filled and
@@ -81,6 +98,8 @@
     <section id="tvBeats" class="reveal-beats tv-busts" data-ph-mask></section>
   </section>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH" crossorigin="anonymous"></script>
   <script type="module" src="js/consent.js"></script>
   <script type="module" src="js/screen-flag.js"></script>
 </body>
