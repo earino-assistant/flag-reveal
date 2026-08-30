@@ -976,15 +976,71 @@ body.tv { overflow: hidden; }
   overflow-y: auto;
   gap: 1rem;
 }
-#s-display[data-phase="reveal"] .tv-main,
 #s-display[data-phase="gameOver"] .tv-main {
   justify-content: flex-start;
 }
 /* The flag is revealed now — shrink it so the answer + standings own the frame. */
-#s-display[data-phase="reveal"] .tv-reveal,
 #s-display[data-phase="gameOver"] .tv-reveal {
   max-width: min(46vh, 42rem);
   margin: 0 auto;
+}
+
+/* Reveal: an EXPLICIT grid so the flag can never be flex-squeezed and the two
+ * maps claim their own full-width row. (Regression 7a49b5e: #tvMaps joined the
+ * flex column and squeezed #tvReveal to ~4px, and the column overflowed 100vh.)
+ * Row band 1 = the flag (height-driven, the visual star) beside the answer /
+ * result / coming-up stack in column 2; row band 2 = the 2-up maps, full width.
+ * All track sizes are vh-based so header + flag + maps + answer fit within 100vh
+ * at 1280×720 … 1920×1080 with no overflow:
+ *   ~48vh flag (row band 1) + ~26vh maps (row band 2) + ~10vh header ≈ 84vh.
+ * The three tiny answer rows share the flag's band (flanked by 1fr spacers that
+ * vertically center them) since the flag spans them — no HTML wrapper needed.
+ * Scoped to reveal ONLY — gameOver keeps the flex / recap layout above. */
+#s-display[data-phase="reveal"] .tv-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto auto auto 1fr 26vh;
+  column-gap: 2.4rem;
+  row-gap: 0.4rem;
+  justify-items: center;
+  align-content: center;
+  width: 100%;
+}
+#s-display[data-phase="reveal"] .tv-reveal {
+  grid-column: 1;
+  grid-row: 1 / 6; /* span the two spacer rows + the three answer rows */
+  align-self: center;
+  width: auto; /* height-driven; 3:2 aspect-ratio derives the width */
+  height: 46vh;
+  min-height: 40vh;
+  max-width: 60vw; /* guard: never eat the answer column on a short-wide screen */
+  margin: 0;
+}
+#s-display[data-phase="reveal"] .tv-answer {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: end;
+  margin: 0;
+}
+#s-display[data-phase="reveal"] .tv-result {
+  grid-column: 2;
+  grid-row: 3;
+  margin: 0;
+}
+#s-display[data-phase="reveal"] .tv-comingup {
+  grid-column: 2;
+  grid-row: 4;
+  align-self: start;
+  margin: 0;
+}
+#s-display[data-phase="reveal"] .tv-maps {
+  grid-column: 1 / -1;
+  grid-row: 6;
+  width: 100%;
+  margin: 0;
+}
+#s-display[data-phase="reveal"] .tv-map {
+  height: 23vh;
 }
 /* Standings move out of the sidebar into the centered column, center-stage. */
 #s-display[data-phase="reveal"] .tv-side,

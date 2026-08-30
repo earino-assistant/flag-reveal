@@ -4,11 +4,19 @@
 For every iso2 in data/flags.json, emit
     { "iso2": { "c": [lat, lng], "b": [minLng, minLat, maxLng, maxLat] }, ... }
 
-`c` / `b` are computed from the LARGEST polygon ring only (shoelace area
-centroid + that ring's bbox) of Natural Earth's 110m admin-0 countries — NOT
-the whole-multipolygon bbox, which would center the US on the Pacific and
-Russia at lng=0. Countries missing from NE 110m (microstates / small islands)
-use a verbatim hand-set table below.
+`c` is the LARGEST polygon ring's shoelace-area centroid (a marker point that
+always lands on land — the whole-multipolygon centroid could fall in the sea
+between islands, and would put the US in the Pacific / Russia near lng=0). `c`
+drives BOTH map markers and the world-view center.
+
+`b` is the WHOLE-multipolygon bbox (all rings) so the up-close map frames the
+entire country, not just its largest island (New Zealand spans both islands,
+etc.). Antimeridian crossers whose auto bbox spans >200° of longitude are a
+projection artifact (a ring clamped at ±180): they MUST appear in the override
+table below (verified whole-country frames) or generation FAILS.
+
+Countries missing from NE 110m (microstates / small islands) use a verbatim
+hand-set table below.
 
 Stdlib only. Reads NE from GitHub raw. Fails (nonzero exit) unless all iso2s
 in flags.json are covered, and prints the count on success.
@@ -47,6 +55,26 @@ HAND_SET = {
 }
 
 HALF = 0.5  # ±degrees for the hand-set square bbox
+
+# A whole-multipolygon bbox wider than this in longitude can only be an
+# antimeridian artifact (a ring clamped at ±180), never a real country extent.
+DATELINE_SPAN = 200.0
+
+# Verified whole-country frames for antimeridian crossers, [minLng, minLat,
+# maxLng, maxLat]. ru/us are fixed extents (cited from Natural Earth): ru clamps
+# its east edge just shy of the dateline; us frames the mainland + an Alaska
+# proxy (Hawaii out of frame is fine — the marker stays on the mainland centroid).
+BBOX_OVERRIDE = {
+    "ru": [19.0, 41.0, 179.9, 81.9],
+    "us": [-125.0, 24.5, -66.9, 49.5],
+}
+
+# Crossers we frame with a small ±FRAME_HALF° box around the largest-ring centroid
+# (`c`) instead of a fixed extent — the main islands sit comfortably in view.
+# `ki` is hand-set (absent from NE 110m) so it never reaches the detector; listed
+# for completeness. Populated by inspecting which >200°-span iso2s the run reports.
+BBOX_C_FRAME = {"fj", "ki"}
+FRAME_HALF = 1.5
 
 
 def round4(x):
@@ -90,6 +118,37 @@ def ring_bbox(ring):
     xs = [p[0] for p in ring]
     ys = [p[1] for p in ring]
     return [min(xs), min(ys), max(xs), max(ys)]  # [minLng, minLat, maxLng, maxLat]
+
+
+def whole_bbox(geometry):
+    """Bounding box over the exterior rings of EVERY polygon in a Polygon or
+    MultiPolygon geometry (the whole country, not its largest island).
+    Returns [minLng, minLat, maxLng, maxLat], or None for an unusable geometry."""
+    gtype = geometry.get("type")
+    coords = geometry.get("coordinates") or []
+    if gtype == "Polygon":
+        polygons = [coords]
+    elif gtype == "MultiPolygon":
+        polygons = coords
+    else:
+        return None
+    min_lng = min_lat = float("inf")
+    max_lng = max_lat = float("-inf")
+    for poly in polygons:
+        if not poly:
+            continue
+        for x, y in ((p[0], p[1]) for p in poly[0]):
+            if x < min_lng:
+                min_lng = x
+            if x > max_lng:
+                max_lng = x
+            if y < min_lat:
+                min_lat = y
+            if y > max_lat:
+                max_lat = y
+    if min_lng == float("inf"):
+        return None
+    return [min_lng, min_lat, max_lng, max_lat]
 
 
 def largest_ring(geometry):
@@ -141,19 +200,36 @@ def main():
         iso2 = iso_of(props)
         if not iso2:
             continue
-        ring = largest_ring(feat.get("geometry") or {})
-        if not ring:
+        geometry = feat.get("geometry") or {}
+        ring = largest_ring(geometry)
+        bbox = whole_bbox(geometry)
+        if not ring or not bbox:
             continue
         lat, lng = ring_centroid(ring)
-        from_ne[iso2] = {
-            "c": [round4(lat), round4(lng)],
-            "b": [round4(v) for v in ring_bbox(ring)],
-        }
+        from_ne[iso2] = {"c": [lat, lng], "b": bbox}
 
     out = {}
+    wide_uncovered = []
     for iso2 in required:
         if iso2 in from_ne:
-            out[iso2] = from_ne[iso2]
+            c = from_ne[iso2]["c"]
+            b = list(from_ne[iso2]["b"])
+            if iso2 in BBOX_OVERRIDE:
+                # A verified whole-country frame replaces the artifact bbox.
+                b = list(BBOX_OVERRIDE[iso2])
+            elif (b[2] - b[0]) > DATELINE_SPAN:
+                # Antimeridian artifact: only allowed if we hand-frame it.
+                if iso2 in BBOX_C_FRAME:
+                    lat, lng = c
+                    b = [lng - FRAME_HALF, lat - FRAME_HALF,
+                         lng + FRAME_HALF, lat + FRAME_HALF]
+                else:
+                    wide_uncovered.append(iso2)
+                    continue
+            out[iso2] = {
+                "c": [round4(c[0]), round4(c[1])],
+                "b": [round4(v) for v in b],
+            }
         elif iso2 in HAND_SET:
             lat, lng = HAND_SET[iso2]
             out[iso2] = {
@@ -163,6 +239,15 @@ def main():
                     round4(lng + HALF), round4(lat + HALF),
                 ],
             }
+
+    if wide_uncovered:
+        print(
+            f"ERROR: {len(wide_uncovered)} iso2(s) have a >{DATELINE_SPAN:.0f}° "
+            f"longitude bbox (antimeridian artifact) and are not in the override "
+            f"table: {sorted(wide_uncovered)}",
+            file=sys.stderr,
+        )
+        return 1
 
     missing = [iso2 for iso2 in required if iso2 not in out]
     if missing:
@@ -176,6 +261,13 @@ def main():
         f.write("\n")
 
     print(f"{len(ordered)}/{len(required)} centroids written to {OUT_JSON}")
+    # Sanity lines (impl brief): the dateline crossers now have sane frames, and
+    # nz spans BOTH islands (~lng 166–179), not just the largest.
+    for iso2 in ("ru", "us", "nz", "fr"):
+        if iso2 in ordered:
+            print(f"  {iso2}: b={ordered[iso2]['b']}")
+    if "mt" in ordered:
+        print(f"  mt: c={ordered['mt']['c']} b={ordered['mt']['b']}")
     return 0
 
 

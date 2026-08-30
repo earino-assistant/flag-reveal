@@ -871,17 +871,21 @@ export function celebrationSpec({
 // ---------------------------------------------------------------------------
 // At reveal the answer country is public, so the TV shows two maps: a zoomed-OUT
 // "where on Earth" view with a marker, and a zoomed-IN view framed to the
-// country's main-polygon bbox. This is the ONLY decision layer — js/tv-maps.js is
-// thin Leaflet glue that executes the returned spec. The centroid `table` is
-// injected as an ARGUMENT (shape { iso2: { c:[lat,lng], b:[minLng,minLat,maxLng,
-// maxLat] } }) so flag.js stays import-free and tests inject fixtures.
+// country's WHOLE-multipolygon bbox. This is the ONLY decision layer —
+// js/tv-maps.js is thin Leaflet glue that executes the returned spec. The
+// centroid `table` is injected as an ARGUMENT (shape { iso2: { c:[lat,lng],
+// b:[minLng,minLat,maxLng,maxLat] } }) so flag.js stays import-free and tests
+// inject fixtures.
 //
 // Returns null for an unknown iso or a missing table. Otherwise:
-//   world:   { center, zoom, marker } — world-context. zoom 2 if the bbox
-//            diagonal span > 60°, else 3.
-//   borders: { bounds, maxZoom, marker } — bounds is the bbox verbatim; maxZoom
-//            9 so a microstate still frames sensibly. marker is the centroid on
-//            both maps.
+//   world:   { center, spanDeg, marker } — world-context. `spanDeg` is the
+//            target longitude span (a comfortable ~1/3 of the world); the glue
+//            turns it into a concrete Leaflet zoom via `worldZoomFor` once it
+//            knows the container width. `center`/`marker` are the centroid.
+//   borders: { bounds, maxZoom, pad, marker } — bounds is the whole-country bbox
+//            verbatim; the glue pads it by `pad` (fraction, so immediate
+//            neighbors show) and caps at `maxZoom` so a microstate still frames
+//            sensibly. marker is the centroid on both maps.
 export function revealMapSpec(iso2, table) {
   if (!table) return null;
   const key = String(iso2 == null ? "" : iso2).toLowerCase();
@@ -889,14 +893,25 @@ export function revealMapSpec(iso2, table) {
   if (!entry || !entry.c || !entry.b) return null;
   const c = entry.c; // [lat, lng]
   const b = entry.b; // [minLng, minLat, maxLng, maxLat]
-  const spanLng = b[2] - b[0];
-  const spanLat = b[3] - b[1];
-  const diagonal = Math.sqrt(spanLng * spanLng + spanLat * spanLat);
-  const zoom = diagonal > 60 ? 2 : 3;
   return {
-    world: { center: c, zoom, marker: c },
-    borders: { bounds: b, maxZoom: 9, marker: c },
+    world: { center: c, spanDeg: 120, marker: c },
+    borders: { bounds: b, maxZoom: 8, pad: 0.18, marker: c },
   };
+}
+
+// worldZoomFor(containerWidthPx, spanDeg) → an integer Leaflet zoom that shows
+// roughly `spanDeg` degrees of longitude across a `containerWidthPx`-wide map.
+// Leaflet's whole world (360°) is 256 * 2^z px wide, so the zoom whose width
+// spans `spanDeg` is z = log2(360 * w / (256 * spanDeg)). We FLOOR (not round)
+// so the couch always sees a *little* more than spanDeg — a comfortable frame
+// rather than a tight crop — and clamp to [1, 4] (a world map is never useful
+// below 1, and past 4 it stops being "world context"). At the TV's ~488px map
+// column a 120° target lands on zoom 2; a wider 1200px map lands on zoom 3.
+export function worldZoomFor(containerWidthPx, spanDeg) {
+  const w = Number(containerWidthPx) > 0 ? Number(containerWidthPx) : 256;
+  const span = Number(spanDeg) > 0 ? Number(spanDeg) : 360;
+  const z = Math.log2((360 * w) / (256 * span));
+  return Math.max(1, Math.min(4, Math.floor(z)));
 }
 
 // ---------------------------------------------------------------------------

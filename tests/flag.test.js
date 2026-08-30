@@ -39,6 +39,7 @@ import {
   shouldLockOut,
   guessModeLabel,
   revealMapSpec,
+  worldZoomFor,
 } from "../js/flag.js";
 
 // A small fixture pool covering tiers, aliases, diacritics, the "Congo"
@@ -1126,23 +1127,50 @@ test("revealMapSpec: known iso returns world + borders, marker = centroid", () =
   assert.deepEqual(spec.world.marker, [46.6, 2.3]);
   assert.deepEqual(spec.borders.marker, [46.6, 2.3]);
   assert.deepEqual(spec.world.center, [46.6, 2.3]);
-  // Borders bounds are the bbox verbatim; maxZoom is 9.
+  // Borders bounds are the whole-country bbox verbatim; maxZoom 8, pad 0.18.
   assert.deepEqual(spec.borders.bounds, [-4.6, 42.3, 8.1, 51.1]);
-  assert.equal(spec.borders.maxZoom, 9);
+  assert.equal(spec.borders.maxZoom, 8);
+  assert.equal(spec.borders.pad, 0.18);
 });
 
-test("revealMapSpec: world.zoom is 2 for a wide bbox, 3 for a small one", () => {
+test("revealMapSpec: world carries a fixed spanDeg (glue derives the zoom)", () => {
   const TABLE = {
-    // Diagonal span ≫ 60° → zoom 2 (world-context view).
-    ru: { c: [62, 99], b: [27, 41, 180, 78] },
-    // Tiny bbox (~1.4° diagonal) → zoom 3.
+    ru: { c: [62, 99], b: [19, 41, 179.9, 81.9] },
     ad: { c: [42.5, 1.6], b: [1.1, 42.0, 2.1, 43.0] },
   };
-  assert.equal(revealMapSpec("ru", TABLE).world.zoom, 2);
-  assert.equal(revealMapSpec("ad", TABLE).world.zoom, 3);
+  // spanDeg is the comfortable ~1/3-world target, independent of bbox size —
+  // the old zoom 2/3 heuristic is gone; worldZoomFor turns spanDeg into a zoom.
+  assert.equal(revealMapSpec("ru", TABLE).world.spanDeg, 120);
+  assert.equal(revealMapSpec("ad", TABLE).world.spanDeg, 120);
+  assert.equal(revealMapSpec("ru", TABLE).world.zoom, undefined);
 });
 
 test("revealMapSpec: iso lookup is case-insensitive", () => {
   const TABLE = { fr: { c: [46.6, 2.3], b: [-4.6, 42.3, 8.1, 51.1] } };
   assert.ok(revealMapSpec("FR", TABLE));
+});
+
+test("worldZoomFor: derives a comfortable ~1/3-world zoom from container width", () => {
+  // The TV's ~488px map column at the 120° target lands on zoom 2; a wider
+  // 1200px map lands on zoom 3 (more pixels → room for more zoom, still context).
+  assert.equal(worldZoomFor(488, 120), 2);
+  assert.equal(worldZoomFor(1200, 120), 3);
+});
+
+test("worldZoomFor: a narrower span zooms in more than a wider one", () => {
+  // Same width, smaller target span ⇒ higher zoom (fewer degrees across the map).
+  assert.ok(worldZoomFor(488, 60) > worldZoomFor(488, 120));
+  assert.equal(worldZoomFor(488, 60), 3);
+  assert.equal(worldZoomFor(488, 120), 2);
+});
+
+test("worldZoomFor: clamps to [1, 4] at the extremes", () => {
+  assert.equal(worldZoomFor(40, 120), 1); // tiny container → floor of 1
+  assert.equal(worldZoomFor(8000, 120), 4); // huge container → capped at 4
+});
+
+test("worldZoomFor: degrades gracefully on a zero/absent width", () => {
+  // clientWidth 0 (not laid out yet) falls back to a sane world zoom, never NaN.
+  const z = worldZoomFor(0, 120);
+  assert.ok(Number.isInteger(z) && z >= 1 && z <= 4);
 });
