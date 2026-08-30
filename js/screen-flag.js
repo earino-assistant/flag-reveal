@@ -468,7 +468,7 @@ function render(room) {
     hideMaps(); // roundActive — the answer is still secret; no maps
     // Sleeping-host cue: when the owner's phone freezes mid-round, currentStep
     // stops advancing. hostStalled (pure, public fields only) detects the gap and
-    // the idle line tells the couch any phone can take over. Re-rendered every
+    // the idle line tells the couch the host's phone may be asleep. Re-rendered every
     // snapshot, so it clears itself the instant the step advances or the phase
     // changes — no timer (passive-TV contract).
     const stalled = hostStalled(r, cfg, serverNow());
