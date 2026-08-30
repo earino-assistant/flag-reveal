@@ -34,6 +34,7 @@ import {
   winAttemptOutcome,
   winRetryExhausted,
   hostStalled,
+  tvAdvanceNote,
   endsGameOnAdvance,
   shouldLockOut,
   guessModeLabel,
@@ -1007,6 +1008,67 @@ test("hostStalled: never at the final step or once resolved", () => {
     false
   );
   assert.equal(hostStalled(null, cfg, 999999), false);
+});
+
+// ---------------------------------------------------------------------------
+// tvAdvanceNote — the TV's reveal-phase countdown / paused note (Item A).
+// ---------------------------------------------------------------------------
+test("tvAdvanceNote: counts down to the next round when rounds remain", () => {
+  const now = 100000;
+  // default pool → effectiveRoundCount 7; round 3 is well short of final.
+  const cfg = { difficulty: "default", pool: POOL };
+  const round = { number: 3, autoAdvanceAt: now + 12000, outcome: { kind: "bust" } };
+  assert.equal(tvAdvanceNote(round, cfg, now), "Next round in 12s…");
+});
+
+test("tvAdvanceNote: the final round heads to the scoreboard", () => {
+  const now = 100000;
+  const cfg = { difficulty: "default", pool: POOL }; // eff 7
+  const round = { number: 7, autoAdvanceAt: now + 500, outcome: { kind: "win", team: "t1" } };
+  assert.equal(tvAdvanceNote(round, cfg, now), "Final scores in 1s…");
+});
+
+test("tvAdvanceNote: seconds are ceil'd (1500ms → 2s)", () => {
+  const now = 100000;
+  const cfg = { difficulty: "default", pool: POOL };
+  const round = { number: 3, autoAdvanceAt: now + 1500, outcome: { kind: "bust" } };
+  assert.equal(tvAdvanceNote(round, cfg, now), "Next round in 2s…");
+});
+
+test("tvAdvanceNote: a past-due deadline clamps at 0s", () => {
+  const now = 100000;
+  const cfg = { difficulty: "default", pool: POOL };
+  const round = { number: 3, autoAdvanceAt: now - 5000, outcome: { kind: "bust" } };
+  assert.equal(tvAdvanceNote(round, cfg, now), "Next round in 0s…");
+});
+
+test("tvAdvanceNote: a held reveal (autoAdvanceAt null) shows the paused note", () => {
+  const cfg = { difficulty: "default", pool: POOL };
+  const round = { number: 3, autoAdvanceAt: null, outcome: { kind: "bust" } };
+  assert.equal(tvAdvanceNote(round, cfg, 0), "Paused — waiting for the host's phone…");
+});
+
+test("tvAdvanceNote: a missing round → null", () => {
+  const cfg = { difficulty: "default", pool: POOL };
+  assert.equal(tvAdvanceNote(null, cfg, 0), null);
+  assert.equal(tvAdvanceNote(undefined, cfg, 0), null);
+});
+
+test("tvAdvanceNote: an unresolved round (outcome absent) → null", () => {
+  const cfg = { difficulty: "default", pool: POOL };
+  const round = { number: 3, autoAdvanceAt: 5000 };
+  assert.equal(tvAdvanceNote(round, cfg, 0), null);
+});
+
+test("tvAdvanceNote: cfg.roundCount decides finality (final vs not)", () => {
+  const now = 100000;
+  // roundCount 3 (clamped under the 7-strong default pool) → round 3 IS final.
+  const finalCfg = { difficulty: "default", pool: POOL, roundCount: 3 };
+  const r3 = { number: 3, autoAdvanceAt: now + 4000, outcome: { kind: "bust" } };
+  assert.equal(tvAdvanceNote(r3, finalCfg, now), "Final scores in 4s…");
+  // Same round number, but roundCount 5 → round 3 is NOT final.
+  const midCfg = { difficulty: "default", pool: POOL, roundCount: 5 };
+  assert.equal(tvAdvanceNote(r3, midCfg, now), "Next round in 4s…");
 });
 
 // ---------------------------------------------------------------------------

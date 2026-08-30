@@ -647,6 +647,26 @@ export function hostStalled(round, cfg, now) {
   return now - round.stepStartedAt > 2 * stepMs;
 }
 
+// tvAdvanceNote(round, cfg, now) → the reveal-phase advance note the TV shows, or
+// null when it should show nothing. PURE (no DOM). The TV calls this only in the
+// reveal branch, but it guards defensively: a missing round or an unresolved one
+// (outcome absent — RTDB stores no null, §2) yields null. A held/paused reveal
+// (autoAdvanceAt == null — includes a stale snapshot whose outcome landed before
+// the key) shows the paused note. Otherwise it counts down: the final round
+// (effectiveRoundCount reached, mirroring flag-ui.js#isFinalRound) heads to the
+// scoreboard, every other round to the next flag. N = seconds remaining, ceil'd
+// and clamped at 0. Only round.number / round.autoAdvanceAt / round.outcome
+// matter; the pool arrives via cfg.pool exactly as the phone reads it.
+export function tvAdvanceNote(round, cfg, now) {
+  if (!round) return null;
+  if (round.outcome == null) return null;
+  if (round.autoAdvanceAt == null) return "Paused — waiting for the host's phone…";
+  const n = Math.max(0, Math.ceil((round.autoAdvanceAt - now) / 1000));
+  const eff = effectiveRoundCount(cfg || {}, (cfg && cfg.pool) || []);
+  const isFinal = eff > 0 && round.number >= eff;
+  return isFinal ? `Final scores in ${n}s…` : `Next round in ${n}s…`;
+}
+
 // ---------------------------------------------------------------------------
 // 12. gameWinner + carryStandings — game-over fold and next-game carry (§1.8/§7).
 // ---------------------------------------------------------------------------

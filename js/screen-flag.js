@@ -17,6 +17,7 @@ import {
   subscribeRoom,
   writeScreenHeartbeat,
   onConnectionChange,
+  subscribeServerTimeOffset,
 } from "./firebase.js";
 import { renderReveal } from "./reveal-render.js";
 import {
@@ -27,6 +28,8 @@ import {
   effectiveRoundCount,
   lockedOutTeams,
   shouldLockOut,
+  tvAdvanceNote,
+  hostStalled,
 } from "./flag.js";
 import { escapeHtml, primeAudio } from "./ui-common.js";
 import { soundState, soundDecisions, playSounds } from "./tv-sound.js";
@@ -43,6 +46,12 @@ let code = null;
 let via = "typed";
 let heartbeatTimer = null;
 let unsubRoom = null;
+// Server-time correction (§1.4): the TV subscribes to `.info/serverTimeOffset`
+// (never a one-shot read) so its reveal countdown / stall cue are anchored on the
+// same server clock the owner phone writes autoAdvanceAt/stepStartedAt against.
+// Display-only — the TV still writes nothing but the heartbeat (passive-TV).
+let serverTimeOffset = 0;
+const serverNow = () => Date.now() + serverTimeOffset;
 // Rooms joined since the last manual entry — breaks nextRoom pointer cycles
 // (A → B → A would otherwise re-subscribe forever). SPEC-v3.1 §1530 mandates
 // this "verbatim" from the GeoParty kernel. Reset on manual entry and URL boot.
@@ -391,8 +400,13 @@ function render(room) {
     }
     renderBeats($("tvBeats"), r.results || {}, teams, cfg.steps, shouldLockOut(cfg));
     // Coming-up line rides in the main column under the result, where all eyes
-    // are; tvNote is reserved for lobby/idle states.
-    $("tvComingUp").textContent = "Next round coming up…";
+    // are; tvNote is reserved for lobby/idle states. The pure tvAdvanceNote ticks
+    // the countdown to the next round (or the final scoreboard) so the couch can
+    // see the timeout; it lands the paused note when the reveal is held. No timer
+    // is added — snapshots/heartbeats re-render often enough for second-granularity
+    // (passive-TV: no cadence). A null note falls back to the static line.
+    const note = tvAdvanceNote(r, cfg, serverNow());
+    $("tvComingUp").textContent = note || "Next round coming up…";
     $("tvNote").textContent = "";
   } else {
     // Item 4: surface a NEW wrong ring as a transient hint. lockedOutTeams reads
@@ -409,7 +423,15 @@ function render(room) {
     $("tvResult").textContent = "";
     $("tvComingUp").textContent = "";
     $("tvBeats").innerHTML = "";
-    $("tvNote").textContent = "Ring in on your phone!";
+    // Sleeping-host cue: when the owner's phone freezes mid-round, currentStep
+    // stops advancing. hostStalled (pure, public fields only) detects the gap and
+    // the idle line tells the couch any phone can take over. Re-rendered every
+    // snapshot, so it clears itself the instant the step advances or the phase
+    // changes — no timer (passive-TV contract).
+    const stalled = hostStalled(r, { ...cfg, graceMs: GAME_DEFAULTS.graceMs }, serverNow());
+    $("tvNote").textContent = stalled
+      ? "The round is running long — any phone can advance it."
+      : "Ring in on your phone!";
   }
 }
 
@@ -731,6 +753,13 @@ function wire() {
   // The reconnecting pill: registered ONCE at boot (F5), not per connect() —
   // registering it on every follow/reconnect stacked a fresh listener each time.
   onConnectionChange((up) => $("connPill").classList.toggle("hidden", up));
+
+  // Server-time correction for the reveal countdown / stall cue — a live
+  // subscription (§1.4), never a one-shot read, so a drifting TV clock stays
+  // anchored on the server's. Registered once at boot; display-only.
+  subscribeServerTimeOffset((off) => {
+    serverTimeOffset = off || 0;
+  });
 
   // The reenter-code escape hatch (Item 2): visible on lobby + gameOver (CSS),
   // it leaves the room back to the join screen so a new code can be typed.
