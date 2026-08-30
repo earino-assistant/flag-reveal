@@ -1053,6 +1053,18 @@ body.tv { overflow: hidden; }
      24vh=173px + 25px = 198px ≤ 29vh=209px; 1080p: 259px + 25px = 284px ≤ 313px. */
   height: 24vh;
 }
+/* Game-over: the maps rotate in the recap band (where the ghost flag box used to
+   sit) in sync with the recap card. 20vh, not reveal's 24vh — at gameOver the
+   standings board + recap card share this single centered column, so the maps
+   trade a little height to keep the common case within 100vh. Math (720p):
+     head ~50 + main(maps 20vh=144 + cap 25 + margin-top 18 + recap card ~166 +
+     winner line ~32 + button ~40 = ~425) + side (Standings, 2 teams ~162) +
+     gaps 48 ≈ 685px ≤ 720. The old ghost box occupied ~216px of this band, so
+     20vh maps (~187px) are a net reduction; 4+ teams push past 720 and the
+     pre-existing overflow-y:auto scrolls, exactly as gameOver did before. */
+#s-display[data-phase="gameOver"] .tv-map {
+  height: 20vh;
+}
 /* Standings move out of the sidebar into the centered column, center-stage. */
 #s-display[data-phase="reveal"] .tv-side,
 #s-display[data-phase="gameOver"] .tv-side {

@@ -32,7 +32,7 @@ import {
   hostStalled,
   revealMapSpec,
 } from "./flag.js";
-import { renderRevealMaps, destroyRevealMaps } from "./tv-maps.js";
+import { renderRevealMaps, destroyRevealMaps, updateRevealMaps } from "./tv-maps.js";
 import CENTROIDS from "../data/country-centroids.json" with { type: "json" };
 import { escapeHtml, primeAudio } from "./ui-common.js";
 import { soundState, soundDecisions, playSounds } from "./tv-sound.js";
@@ -332,7 +332,14 @@ function render(room) {
   // the next game-over entry) so they never leak across phases/games.
   if (phase !== "gameOver") {
     if (celebrated) endCelebration();
-    if (recapBuilt) stopRecapCycle();
+    if (recapBuilt) {
+      stopRecapCycle();
+      // The recap-band maps ride the recap: tear them down on the SAME
+      // leave-gameOver edge so lobby/roundActive return to the no-maps state.
+      // Gated on recapBuilt (a once-per-gameOver latch) so this fires only on
+      // the edge — never on a reveal render, which would fight renderRevealMaps.
+      hideMaps();
+    }
   }
 
   if (phase === "lobby") {
@@ -368,7 +375,9 @@ function render(room) {
     $("tvHeader").textContent = "Game over";
     clearReveal();
     $("tvAnswer").classList.add("hidden");
-    hideMaps();
+    // NOTE: no hideMaps() here — at gameOver the maps now RIDE the recap band,
+    // unhidden and rotated by buildRecap()/the recap cycle. hideMaps() runs on
+    // the leave-gameOver edge instead (the phase !== "gameOver" block above).
     $("tvResult").innerHTML = wt
       ? `👑 <strong data-ph-mask>${escapeHtml(wt.name)}</strong> wins — ${wt.total || 0} pts!`
       : "Game over";
@@ -557,12 +566,34 @@ function buildRecap(teams) {
   box.classList.remove("hidden");
   recapIndex = 0;
   drawRecapCard(teams);
+  // The two reveal maps ride the recap band at gameOver (owner spec: rotate them
+  // in sync with the recap flags, use the ghost-box space well). Show + aim them
+  // at the first card's country; the cycle below re-aims on each advance.
+  // updateRevealMaps re-aims live maps in place (no rebuild/flicker) and falls
+  // back to a clean build offline / on the first entry — still passive-TV.
+  $("tvMaps").classList.remove("hidden");
+  syncRecapMaps();
   if (recapCards.length > 1 && !recapTimer) {
     recapTimer = setInterval(() => {
       recapIndex = (recapIndex + 1) % recapCards.length;
       drawRecapCard(teams);
+      syncRecapMaps();
     }, RECAP_CYCLE_MS);
   }
+}
+
+// Point the two reveal maps at the recap card currently on screen
+// (recapCards[recapIndex]). Shared by the first draw and the auto-cycle so both
+// stay in lock-step with the card's flag. Read-only (passive-TV).
+function syncRecapMaps() {
+  const card = recapCards[recapIndex];
+  if (!card) return;
+  updateRevealMaps({
+    worldEl: $("tvMapWorld"),
+    bordersEl: $("tvMapBorders"),
+    iso2: card.answerIso,
+    table: CENTROIDS,
+  });
 }
 
 // Draw the card at recapIndex into #tvRecap: the round header, the answer flag

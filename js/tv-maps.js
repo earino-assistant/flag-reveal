@@ -52,6 +52,10 @@ const MARKER_STYLE = Object.freeze({
 // Module-level handles so destroy is idempotent across every phase edge.
 let worldMap = null;
 let bordersMap = null;
+// The answer-country markers, kept so the game-over recap rotation can MOVE them
+// (setLatLng) instead of rebuilding the maps each 5s cycle (see updateRevealMaps).
+let worldMarker = null;
+let bordersMarker = null;
 let containers = []; // element refs, so destroy can clear the boxes it filled
 let rafId = 0; // handle of the pending double-rAF build (0 = none scheduled)
 let buildToken = 0; // bumped by destroy; the deferred build bails if it moved
@@ -114,6 +118,47 @@ export function renderRevealMaps({ worldEl, bordersEl, iso2, table }) {
   });
 }
 
+/**
+ * Re-aim the two reveal maps at a NEW answer WITHOUT tearing them down, so the
+ * game-over recap can rotate them in sync with its 5s card cycle — no per-cycle
+ * Leaflet rebuild, hence no flicker and no tile re-fetch. Contract:
+ *  - Both maps live AND no deferred build in flight → re-aim in place: setView /
+ *    fitBounds and MOVE the markers (setLatLng), invalidateSize first so a
+ *    container that just resized (reveal 24vh → gameOver 20vh) re-measures.
+ *  - Otherwise → delegate to renderRevealMaps, which destroys-then-builds. That
+ *    single fallback covers every not-safely-re-aimable case correctly:
+ *      · offline (no globalThis.L) or unknown iso (spec null) → placeholder;
+ *      · a deferred build still pending (rafId set) → clean rebuild (the destroy
+ *        bumps the token so the in-flight build aborts);
+ *      · maps not both live yet (first call this game-over) → clean build.
+ * Reads only its args; no write, no analytics, no consent (passive-TV).
+ */
+export function updateRevealMaps({ worldEl, bordersEl, iso2, table }) {
+  if (!worldEl || !bordersEl) return;
+
+  const L = leaflet();
+  const spec = L ? revealMapSpec(iso2, table) : null;
+  if (!L || !spec || rafId || !worldMap || !bordersMap) {
+    renderRevealMaps({ worldEl, bordersEl, iso2, table });
+    return;
+  }
+
+  // Both maps live and settled → re-aim in place. invalidateSize first: the
+  // reveal→gameOver phase flip resizes the map row and Leaflet caches the
+  // container size until told to re-measure.
+  worldMap.invalidateSize();
+  worldMap.setView(spec.world.center, worldZoomFor(worldEl.clientWidth, spec.world.spanDeg));
+  if (worldMarker) worldMarker.setLatLng(spec.world.marker);
+  else worldMarker = L.circleMarker(spec.world.marker, MARKER_STYLE).addTo(worldMap);
+
+  const b = spec.borders.bounds;
+  const llBounds = L.latLngBounds([b[1], b[0]], [b[3], b[2]]);
+  bordersMap.invalidateSize();
+  bordersMap.fitBounds(llBounds, fitOpts(spec.borders, bordersEl));
+  if (bordersMarker) bordersMarker.setLatLng(spec.borders.marker);
+  else bordersMarker = L.circleMarker(spec.borders.marker, MARKER_STYLE).addTo(bordersMap);
+}
+
 // The deferred build proper. Runs only once the containers are laid out, so
 // Leaflet measures the real size; a final rAF re-applies the view against any
 // late shift. Guarded by `myToken` throughout — a phase edge (destroy) between
@@ -124,7 +169,7 @@ function buildMaps(L, spec, worldEl, bordersEl, myToken) {
   worldMap = L.map(worldEl, MAP_OPTIONS);
   L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(worldMap);
   worldMap.setView(spec.world.center, worldZoomFor(worldEl.clientWidth, spec.world.spanDeg));
-  L.circleMarker(spec.world.marker, MARKER_STYLE).addTo(worldMap);
+  worldMarker = L.circleMarker(spec.world.marker, MARKER_STYLE).addTo(worldMap);
 
   // Map 2 — "Up close": frame the whole-country bbox VERBATIM, then pad it so the
   // immediate neighbors show; cap the zoom so a microstate still frames sensibly.
@@ -134,7 +179,7 @@ function buildMaps(L, spec, worldEl, bordersEl, myToken) {
   bordersMap = L.map(bordersEl, MAP_OPTIONS);
   L.tileLayer(TILE_URL, TILE_OPTIONS).addTo(bordersMap);
   bordersMap.fitBounds(llBounds, fitOpts(spec.borders, bordersEl));
-  L.circleMarker(spec.borders.marker, MARKER_STYLE).addTo(bordersMap);
+  bordersMarker = L.circleMarker(spec.borders.marker, MARKER_STYLE).addTo(bordersMap);
 
   // Belt and braces: re-measure and RE-APPLY each view one frame later so a late
   // layout shift can never leave a stale center/zoom (the field bug's core cause).
@@ -181,6 +226,10 @@ export function destroyRevealMaps() {
     try { bordersMap.remove(); } catch { /* already gone */ }
     bordersMap = null;
   }
+  // Markers die with their maps (map.remove() drops all layers); clear the refs
+  // so a stale handle can't leak into the next build's setLatLng.
+  worldMarker = null;
+  bordersMarker = null;
   // Clear whatever we put in the boxes (a built map's leftover DOM or an offline
   // placeholder) so the next reveal starts from a clean container.
   for (const el of containers) {
