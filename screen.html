@@ -59,16 +59,15 @@
           <span id="tvJoinCode" class="tv-join-code skeleton" data-ph-mask>······</span></p>
       </div>
       <div id="tvAnswer" class="tv-answer hidden">—</div>
-      <!-- Two reveal maps (Items B): a zoomed-out "where in the world" view with
-           a marker, and a zoomed-in "up close" view framed to the country's
-           borders (OSM tiles). Filled by js/screen-flag.js at reveal only (the
-           answer is public then); js/tv-maps.js tears them down on every other
-           phase. Decorative — offline-after-served they may render empty. -->
+      <!-- ONE breathing reveal map (Items B): a single OSM-tile canvas that
+           pulses between a zoomed-out "where in the world" view and a zoomed-in
+           "up close" view framed to the country's borders, swapping the caption
+           per leg. Filled by js/screen-flag.js at reveal only (the answer is
+           public then); js/tv-maps.js drives the pulse and tears it down on every
+           other phase. Decorative — offline-after-served it may render empty. -->
       <div id="tvMaps" class="tv-maps hidden" aria-hidden="true">
-        <figure class="tv-map-wrap"><div id="tvMapWorld" class="tv-map"></div>
-          <figcaption>Where in the world?</figcaption></figure>
-        <figure class="tv-map-wrap"><div id="tvMapBorders" class="tv-map"></div>
-          <figcaption>Up close</figcaption></figure>
+        <figure class="tv-map-wrap"><div id="tvMap" class="tv-map"></div>
+          <figcaption id="tvMapCaption">Where in the world?</figcaption></figure>
       </div>
       <!-- Game-over round recap (read-only fold of settled rounds): a single
            auto-cycling card in the empty band above the winner line — each

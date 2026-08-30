@@ -430,8 +430,8 @@ function render(room) {
       mapsRound = r.number;
       if (revealMapSpec(r.answerIso, CENTROIDS)) {
         renderRevealMaps({
-          worldEl: $("tvMapWorld"),
-          bordersEl: $("tvMapBorders"),
+          mapEl: $("tvMap"),
+          captionEl: $("tvMapCaption"),
           iso2: r.answerIso,
           table: CENTROIDS,
         });
@@ -589,8 +589,8 @@ function syncRecapMaps() {
   const card = recapCards[recapIndex];
   if (!card) return;
   updateRevealMaps({
-    worldEl: $("tvMapWorld"),
-    bordersEl: $("tvMapBorders"),
+    mapEl: $("tvMap"),
+    captionEl: $("tvMapCaption"),
     iso2: card.answerIso,
     table: CENTROIDS,
   });
